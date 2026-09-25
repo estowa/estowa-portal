@@ -2,9 +2,9 @@
 
 <div class="kpi-grid">
   <div class="kpi-card">
-    <div class="label">今月の売上</div>
+    <div class="label">今月のEC売上</div>
     <% if (salesSummary.monthlyTotal === null) { %>
-      <div class="value placeholder">売上ダッシュボード実装後に表示</div>
+      <div class="value placeholder">データがまだありません</div>
     <% } else { %>
       <div class="value">¥<%= salesSummary.monthlyTotal.toLocaleString() %></div>
     <% } %>
