@@ -652,3 +652,113 @@ table.sheet-table.readonly td {
   resize: vertical;
   margin-bottom: 10px;
 }
+
+/* ---- ユーザーアイコン(アバター) ---- */
+.avatar {
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.avatar-xs { width: 18px; height: 18px; font-size: 11px; }
+.avatar-sm { width: 22px; height: 22px; font-size: 12px; }
+.avatar-md { width: 30px; height: 30px; font-size: 15px; }
+.avatar-lg { width: 64px; height: 64px; font-size: 30px; }
+
+.avatar-group {
+  display: inline-flex;
+  align-items: center;
+}
+.avatar-group .avatar {
+  border: 2px solid var(--panel-bg, #fff);
+}
+.avatar-group .avatar + .avatar { margin-left: -7px; }
+
+.assignee-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.assignee-inline .names { color: var(--text-muted); }
+
+.assignee-check-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeline-item-head .name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.updated-by-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-task {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.announcement-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- アイコン設定画面 ---- */
+.icon-picker-section { margin-bottom: 20px; }
+.icon-picker-section h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.icon-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.icon-option {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: white;
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.icon-option.selected {
+  border-color: var(--primary);
+  background: #eef0ff;
+}
+.color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.color-option.selected {
+  border-color: #222;
+  box-shadow: 0 0 0 2px white inset;
+}
+.icon-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}

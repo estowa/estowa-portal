@@ -40,8 +40,9 @@
         <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">担当者（メンバー管理・複数選択可）</label>
         <div class="assignee-checklist" style="margin-bottom:12px;">
           <% users.forEach(u => { %>
-            <label class="assignee-check">
+            <label class="assignee-check assignee-check-icon">
               <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" />
+              <span class="avatar avatar-xs" style="background: <%= u.avatar.color %>;"><%= u.avatar.emoji || u.avatar.initial %></span>
               <%= u.display_name %>
             </label>
           <% }) %>

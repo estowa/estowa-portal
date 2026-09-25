@@ -12,9 +12,20 @@
     <% tasks.forEach(t => { %>
       <a href="/tasks/<%= t.id %>" class="task-item" style="display:block;">
         <strong><%= t.title %></strong>
+        <div class="assignee-inline" style="margin-top:4px;">
+          <% if (t.assignees.length === 0) { %>
+            <span class="names" style="color:var(--text-muted); font-size:12px;">未割当</span>
+          <% } else { %>
+            <span class="avatar-group">
+              <% t.assignees.forEach(a => { %>
+                <span class="avatar avatar-xs" style="background: <%= a.avatar.color %>;" title="<%= a.display_name %>"><%= a.avatar.emoji || a.avatar.initial %></span>
+              <% }) %>
+            </span>
+            <span class="names" style="color:var(--text-muted); font-size:12px;"><%= t.assigneeNames %></span>
+          <% } %>
+        </div>
         <div style="color:var(--text-muted); font-size:12px; margin-top:2px;">
-          <%= t.assigneeNames || '未割当' %>
-          <% if (t.start_date) { %> ・ 期間: <%= t.start_date %><%= t.start_time ? ' ' + t.start_time : '' %> 〜 <%= t.due_at.split('T')[0] %><% } %>
+          <% if (t.start_date) { %>期間: <%= t.start_date %><%= t.start_time ? ' ' + t.start_time : '' %> 〜 <%= t.due_at.split('T')[0] %><% } %>
           <% if (t.due_at) { %> ・ 締切: <%= t.due_at.replace('T', ' ') %><% } %>
         </div>
       </a>

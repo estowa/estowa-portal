@@ -31,8 +31,10 @@
         <% if (a.body) { %>
           <div style="color:#444a5e; font-size:14px; margin-top:6px; white-space:pre-wrap;"><%= a.body %></div>
         <% } %>
-        <div style="color:var(--text-muted); font-size:12px; margin-top:6px;">
-          投稿者: <%= a.author_name || a.created_by %>
+        <div class="announcement-author" style="color:var(--text-muted); font-size:12px; margin-top:6px;">
+          投稿者:
+          <span class="avatar avatar-xs" style="background: <%= a.authorAvatar.color %>;"><%= a.authorAvatar.emoji || a.authorAvatar.initial %></span>
+          <%= a.author_name || a.created_by %>
         </div>
         <% if (currentUser && currentUser.role === 'admin') { %>
           <form method="POST" action="/announcements/<%= a.id %>/delete" style="margin-top:8px;" onsubmit="return confirm('このお知らせを削除しますか？');">

@@ -30,6 +30,17 @@ if (!userColumns.includes('email')) {
   console.log('usersテーブルに email 列を追加しました');
 }
 
+// 既存DBに avatar_emoji / avatar_color 列がない場合は追加(マイグレーション)
+// タスク一覧・お知らせでの視認性向上のため、担当者/投稿者をアイコン表示できるようにする
+if (!userColumns.includes('avatar_emoji')) {
+  db.exec('ALTER TABLE users ADD COLUMN avatar_emoji TEXT');
+  console.log('usersテーブルに avatar_emoji 列を追加しました');
+}
+if (!userColumns.includes('avatar_color')) {
+  db.exec('ALTER TABLE users ADD COLUMN avatar_color TEXT');
+  console.log('usersテーブルに avatar_color 列を追加しました');
+}
+
 // お知らせテーブル(ホーム画面用の先行実装)
 db.exec(`
   CREATE TABLE IF NOT EXISTS announcements (

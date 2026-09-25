@@ -55,9 +55,9 @@
 
     <div class="sidebar-footer">
       <% if (currentUser) { %>
-        <div class="user-chip" title="<%= currentUser.display_name %>（<%= currentUser.role === 'admin' ? '管理者' : 'メンバー' %>）">
-          <%= currentUser.display_name.slice(0, 1) %>
-        </div>
+        <a href="/profile" class="user-chip avatar" style="background: <%= currentUserAvatar.color %>;" title="<%= currentUser.display_name %>（<%= currentUser.role === 'admin' ? '管理者' : 'メンバー' %>）・クリックでアイコン設定">
+          <%= currentUserAvatar.emoji || currentUserAvatar.initial %>
+        </a>
         <form method="POST" action="/logout">
           <button type="submit" title="ログアウト">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>

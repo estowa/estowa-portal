@@ -4,8 +4,12 @@
   <div>
     <h1><%= task.title %></h1>
     <% if (updatedByName && task.updated_at) { %>
-      <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-        最終更新: <%= updatedByName %>（<%= task.updated_at.slice(0, 16).replace('T', ' ') %>）
+      <div class="updated-by-line" style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+        最終更新:
+        <% if (updatedByAvatar) { %>
+          <span class="avatar avatar-xs" style="background: <%= updatedByAvatar.color %>;"><%= updatedByAvatar.emoji || updatedByAvatar.initial %></span>
+        <% } %>
+        <%= updatedByName %>（<%= task.updated_at.slice(0, 16).replace('T', ' ') %>）
       </div>
     <% } %>
   </div>
@@ -48,8 +52,9 @@
         <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">担当者（メンバー管理・複数選択可）</label>
         <div class="assignee-checklist" style="margin-bottom:12px;">
           <% users.forEach(u => { %>
-            <label class="assignee-check">
+            <label class="assignee-check assignee-check-icon">
               <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" <%= assignedIds.has(u.user_id) ? 'checked' : '' %> />
+              <span class="avatar avatar-xs" style="background: <%= u.avatar.color %>;"><%= u.avatar.emoji || u.avatar.initial %></span>
               <%= u.display_name %>
             </label>
           <% }) %>
@@ -70,7 +75,10 @@
           <% timeline.forEach(item => { %>
             <div class="timeline-item">
               <div class="timeline-item-head">
-                <span class="name"><%= item.userName %></span>
+                <span class="name">
+                  <span class="avatar avatar-xs" style="background: <%= item.avatar.color %>;"><%= item.avatar.emoji || item.avatar.initial %></span>
+                  <%= item.userName %>
+                </span>
                 <span><%= item.createdAt.slice(0, 16).replace('T', ' ') %></span>
               </div>
               <% if (item.body) { %>

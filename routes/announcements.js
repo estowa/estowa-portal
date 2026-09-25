@@ -1,20 +1,31 @@
 const express = require('express');
 const db = require('../db/connection');
 const { requireLogin, requireAdmin } = require('../middleware/auth');
+const { avatarFor } = require('../lib/avatar');
 
 const router = express.Router();
 
+const ANNOUNCEMENT_SELECT = `SELECT announcements.*, users.display_name AS author_name,
+    users.avatar_emoji AS author_avatar_emoji, users.avatar_color AS author_avatar_color
+   FROM announcements
+   LEFT JOIN users ON users.user_id = announcements.created_by
+   ORDER BY announcements.created_at DESC`;
+
+function withAuthorAvatar(rows) {
+  return rows.map((a) => ({
+    ...a,
+    authorAvatar: avatarFor({
+      user_id: a.created_by,
+      display_name: a.author_name,
+      avatar_emoji: a.author_avatar_emoji,
+      avatar_color: a.author_avatar_color,
+    }),
+  }));
+}
+
 // お知らせ一覧
 router.get('/announcements', requireLogin, (req, res) => {
-  const announcements = db
-    .prepare(
-      `SELECT announcements.*, users.display_name AS author_name
-       FROM announcements
-       LEFT JOIN users ON users.user_id = announcements.created_by
-       ORDER BY announcements.created_at DESC`
-    )
-    .all();
-
+  const announcements = withAuthorAvatar(db.prepare(ANNOUNCEMENT_SELECT).all());
   res.render('announcements/index', { announcements, error: null });
 });
 
@@ -22,14 +33,7 @@ router.get('/announcements', requireLogin, (req, res) => {
 router.post('/announcements', requireLogin, requireAdmin, (req, res) => {
   const { title, body } = req.body;
   if (!title) {
-    const announcements = db
-      .prepare(
-        `SELECT announcements.*, users.display_name AS author_name
-         FROM announcements
-         LEFT JOIN users ON users.user_id = announcements.created_by
-         ORDER BY announcements.created_at DESC`
-      )
-      .all();
+    const announcements = withAuthorAvatar(db.prepare(ANNOUNCEMENT_SELECT).all());
     return res.render('announcements/index', { announcements, error: 'タイトルを入力してください' });
   }
 

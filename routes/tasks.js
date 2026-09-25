@@ -5,6 +5,7 @@ const multer = require('multer');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
 const mailer = require('../lib/mailer');
+const { avatarFor } = require('../lib/avatar');
 
 const router = express.Router();
 
@@ -105,6 +106,20 @@ function displayNamesFor(userIds) {
   return userIds.map((id) => byId[id] || id);
 }
 
+// 指定したユーザーID群の { user_id, display_name, avatar } をまとめて取得する
+function usersMapFor(userIds) {
+  if (!userIds || userIds.length === 0) return {};
+  const placeholders = userIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT user_id, display_name, avatar_emoji, avatar_color FROM users WHERE user_id IN (${placeholders})`)
+    .all(...userIds);
+  const byId = {};
+  rows.forEach((r) => {
+    byId[r.user_id] = { user_id: r.user_id, display_name: r.display_name, avatar: avatarFor(r) };
+  });
+  return byId;
+}
+
 // 指定したユーザーIDのメールアドレス一覧を取得(未設定は除外)
 function emailsFor(userIds) {
   if (!userIds || userIds.length === 0) return [];
@@ -143,13 +158,19 @@ function notifyTaskUpdate({ task, actorUserId, changeLines }) {
   mailer.sendMail({ to, subject, text, html }).catch((err) => console.error('[tasks] メール通知エラー:', err));
 }
 
+// 担当者選択チェックリストなどで使う、アイコン付きのユーザー一覧
+function listUsersWithAvatar() {
+  const rows = db.prepare('SELECT user_id, display_name, avatar_emoji, avatar_color FROM users ORDER BY display_name').all();
+  return rows.map((u) => ({ ...u, avatar: avatarFor(u) }));
+}
+
 function attachAssignees(tasks) {
   if (tasks.length === 0) return tasks;
   const ids = tasks.map((t) => t.id);
   const placeholders = ids.map(() => '?').join(',');
   const rows = db
     .prepare(
-      `SELECT task_assignees.task_id, users.user_id, users.display_name
+      `SELECT task_assignees.task_id, users.user_id, users.display_name, users.avatar_emoji, users.avatar_color
        FROM task_assignees
        LEFT JOIN users ON users.user_id = task_assignees.user_id
        WHERE task_assignees.task_id IN (${placeholders})`
@@ -158,7 +179,11 @@ function attachAssignees(tasks) {
   const byTask = {};
   rows.forEach((r) => {
     if (!byTask[r.task_id]) byTask[r.task_id] = [];
-    byTask[r.task_id].push({ user_id: r.user_id, display_name: r.display_name || r.user_id });
+    byTask[r.task_id].push({
+      user_id: r.user_id,
+      display_name: r.display_name || r.user_id,
+      avatar: avatarFor({ user_id: r.user_id, display_name: r.display_name, avatar_emoji: r.avatar_emoji, avatar_color: r.avatar_color }),
+    });
   });
   tasks.forEach((t) => {
     t.assignees = byTask[t.id] || [];
@@ -182,7 +207,7 @@ router.get('/tasks', requireLogin, (req, res) => {
     }
   });
 
-  const users = db.prepare('SELECT user_id, display_name FROM users ORDER BY display_name').all();
+  const users = listUsersWithAvatar();
 
   const today = new Date();
   const year = parseInt(req.query.year, 10) || today.getFullYear();
@@ -254,7 +279,7 @@ router.get('/tasks/day/:date', requireLogin, (req, res) => {
 
 // タスク新規作成画面(専用ページ)
 router.get('/tasks/new', requireLogin, (req, res) => {
-  const users = db.prepare('SELECT user_id, display_name FROM users ORDER BY display_name').all();
+  const users = listUsersWithAvatar();
   res.render('tasks/new', { users, statusDefs: STATUS_DEFS, error: req.query.error || null });
 });
 
@@ -297,24 +322,35 @@ function buildTimeline(taskId) {
     byComment[a.comment_id].push(a);
   });
 
+  const involvedIds = [...new Set([
+    ...comments.map((c) => c.user_id),
+    ...standaloneAttachments.map((a) => a.uploaded_by),
+  ])];
+  const usersById = usersMapFor(involvedIds);
+  const userInfo = (uid) => usersById[uid] || { user_id: uid, display_name: uid, avatar: avatarFor({ user_id: uid, display_name: uid }) };
+
   const timeline = [];
   comments.forEach((c) => {
+    const u = userInfo(c.user_id);
     timeline.push({
       type: 'comment',
       id: c.id,
       userId: c.user_id,
-      userName: displayNamesFor([c.user_id])[0] || c.user_id,
+      userName: u.display_name,
+      avatar: u.avatar,
       body: c.body,
       attachments: byComment[c.id] || [],
       createdAt: c.created_at,
     });
   });
   standaloneAttachments.forEach((a) => {
+    const u = userInfo(a.uploaded_by);
     timeline.push({
       type: 'attachment',
       id: a.id,
       userId: a.uploaded_by,
-      userName: displayNamesFor([a.uploaded_by])[0] || a.uploaded_by,
+      userName: u.display_name,
+      avatar: u.avatar,
       body: null,
       attachments: [a],
       createdAt: a.uploaded_at,
@@ -332,9 +368,11 @@ router.get('/tasks/:id', requireLogin, (req, res) => {
 
   const timeline = buildTimeline(task.id);
 
-  const users = db.prepare('SELECT user_id, display_name FROM users ORDER BY display_name').all();
+  const users = listUsersWithAvatar();
   const assignedIds = new Set(task.assignees.map((a) => a.user_id));
-  const updatedByName = task.updated_by ? displayNamesFor([task.updated_by])[0] : null;
+  const updatedByUser = task.updated_by ? usersMapFor([task.updated_by])[task.updated_by] : null;
+  const updatedByName = updatedByUser ? updatedByUser.display_name : null;
+  const updatedByAvatar = updatedByUser ? updatedByUser.avatar : null;
 
   res.render('tasks/show', {
     task,
@@ -342,6 +380,7 @@ router.get('/tasks/:id', requireLogin, (req, res) => {
     users,
     assignedIds,
     updatedByName,
+    updatedByAvatar,
     statusDefs: STATUS_DEFS,
     error: null,
     uploadError: req.query.uploadError || null,

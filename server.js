@@ -15,6 +15,9 @@ const vendorRoutes = require('./routes/vendors');
 const sheetLinkRoutes = require('./routes/sheetLinks');
 const sheetRoutes = require('./routes/sheets');
 const knowledgeRoutes = require('./routes/knowledge');
+const profileRoutes = require('./routes/profile');
+const db = require('./db/connection');
+const { avatarFor } = require('./lib/avatar');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -39,13 +42,24 @@ app.use(
 );
 
 // 全ビューでログインユーザー情報を使えるようにする
+// (アイコン設定はログイン後に変わりうるため、セッションではなくDBから都度取得する)
 app.use((req, res, next) => {
-  res.locals.currentUser = req.session.user || null;
+  if (req.session.user) {
+    const fresh = db
+      .prepare('SELECT id, user_id, display_name, role, avatar_emoji, avatar_color FROM users WHERE user_id = ?')
+      .get(req.session.user.user_id);
+    res.locals.currentUser = fresh || req.session.user;
+    res.locals.currentUserAvatar = avatarFor(res.locals.currentUser);
+  } else {
+    res.locals.currentUser = null;
+    res.locals.currentUserAvatar = null;
+  }
   next();
 });
 
 app.use(authRoutes);
 app.use(userRoutes);
+app.use(profileRoutes);
 app.use(homeRoutes);
 app.use(attendanceRoutes);
 app.use(taskRoutes);

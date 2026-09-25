@@ -14,8 +14,19 @@
           <a href="/tasks/<%= t.id %>" class="kanban-card" data-id="<%= t.id %>">
             <div class="kanban-card-title"><%= t.title %></div>
             <div class="kanban-card-meta">
-              <%= t.assigneeNames || '未割当' %>
-              <% if (t.due_at) { %> ・ <%= t.due_at.replace('T', ' ') %><% } %>
+              <div class="assignee-inline">
+                <% if (t.assignees.length === 0) { %>
+                  <span class="names">未割当</span>
+                <% } else { %>
+                  <span class="avatar-group">
+                    <% t.assignees.forEach(a => { %>
+                      <span class="avatar avatar-xs" style="background: <%= a.avatar.color %>;" title="<%= a.display_name %>"><%= a.avatar.emoji || a.avatar.initial %></span>
+                    <% }) %>
+                  </span>
+                  <span class="names"><%= t.assigneeNames %></span>
+                <% } %>
+              </div>
+              <% if (t.due_at) { %><div><%= t.due_at.replace('T', ' ') %></div><% } %>
             </div>
           </a>
         <% }) %>
@@ -46,7 +57,14 @@
         <div class="calendar-day"><%= day %></div>
         <% if (tasksByDay[day]) { %>
           <% tasksByDay[day].forEach(t => { %>
-            <div class="calendar-task" title="<%= t.assigneeNames %>"><%= t.title %></div>
+            <div class="calendar-task" title="<%= t.assigneeNames %>">
+              <% if (t.assignees.length > 0) { %>
+                <span class="avatar avatar-xs" style="background: <%= t.assignees[0].avatar.color %>; font-size:9px; width:14px; height:14px;">
+                  <%= t.assignees[0].avatar.emoji || t.assignees[0].avatar.initial %>
+                </span>
+              <% } %>
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><%= t.title %></span>
+            </div>
           <% }) %>
         <% } %>
       </a>
