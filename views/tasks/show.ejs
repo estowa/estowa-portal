@@ -1,0 +1,86 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1><%= task.title %></h1>
+  <a href="/tasks" class="mini-btn">← 一覧に戻る</a>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="panel">
+      <h2>タスク内容の編集</h2>
+      <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+      <form method="POST" action="/tasks/<%= task.id %>">
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">タスク内容</label>
+        <input type="text" name="title" value="<%= task.title %>" required
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">ステータス</label>
+        <select name="status" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;">
+          <% statusDefs.forEach(([key, label]) => { %>
+            <option value="<%= key %>" <%= task.status === key ? 'selected' : '' %>><%= label %></option>
+          <% }) %>
+        </select>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">締切日時（必須）</label>
+        <div class="form-inline" style="margin-bottom:10px;">
+          <input type="date" name="due_date" required value="<%= task.due_at ? task.due_at.split('T')[0] : '' %>" style="flex:1;" />
+          <input type="time" name="due_time" value="<%= task.due_at ? task.due_at.split('T')[1] : '18:00' %>" style="width:110px;" />
+        </div>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">開始日（任意）</label>
+        <input type="date" name="start_date" value="<%= task.start_date || '' %>"
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">担当者（メンバー管理・複数選択可）</label>
+        <div class="assignee-checklist" style="margin-bottom:12px;">
+          <% users.forEach(u => { %>
+            <label class="assignee-check">
+              <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" <%= assignedIds.has(u.user_id) ? 'checked' : '' %> />
+              <%= u.display_name %>
+            </label>
+          <% }) %>
+        </div>
+
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">保存する</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>画像添付（参考デザインなど）</h2>
+      <form method="POST" action="/tasks/<%= task.id %>/attachments" enctype="multipart/form-data" class="form-inline" style="margin-bottom:14px;">
+        <input type="file" name="images" accept="image/*" multiple required />
+        <button type="submit">アップロード</button>
+      </form>
+
+      <% if (attachments.length === 0) { %>
+        <div class="empty-note">添付画像はありません</div>
+      <% } else { %>
+        <div class="attachment-grid">
+          <% attachments.forEach(a => { %>
+            <div class="attachment-item">
+              <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener">
+                <img src="/uploads/tasks/<%= a.filename %>" alt="<%= a.original_name %>" />
+              </a>
+              <form method="POST" action="/tasks/<%= task.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('この画像を削除しますか？');">
+                <button type="submit" class="mini-btn">削除</button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>タスクを削除</h2>
+      <p style="font-size:13px; color:var(--text-muted);">このタスクと添付画像を完全に削除します。</p>
+      <form method="POST" action="/tasks/<%= task.id %>/delete" onsubmit="return confirm('このタスクを削除しますか？元に戻せません。');">
+        <button type="submit" class="mini-btn">タスクを削除する</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

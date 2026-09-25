@@ -15,7 +15,10 @@ router.get('/', requireLogin, (req, res) => {
   // 自分の直近タスク（最大5件、未完了優先）
   const myTasks = db
     .prepare(
-      "SELECT * FROM tasks WHERE user_id = ? AND status != 'done' ORDER BY due_date IS NULL, due_date ASC LIMIT 5"
+      `SELECT tasks.* FROM tasks
+       JOIN task_assignees ON task_assignees.task_id = tasks.id
+       WHERE task_assignees.user_id = ? AND tasks.status != 'done'
+       ORDER BY tasks.due_at IS NULL, tasks.due_at ASC LIMIT 5`
     )
     .all(user.user_id);
 

@@ -4,18 +4,31 @@
   <h1>タスク管理</h1>
   <details class="new-toggle">
     <summary>+ 新規タスク</summary>
-    <div class="new-form-panel">
+    <div class="new-form-panel" style="min-width:280px;">
       <h2>新規タスク追加</h2>
       <form method="POST" action="/tasks">
         <input type="text" name="title" placeholder="タスク内容" required />
-        <select name="user_id" required>
-          <option value="">担当者を選択</option>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">締切日時（必須）</label>
+        <div class="form-inline" style="margin-bottom:8px;">
+          <input type="date" name="due_date" required style="flex:1;" />
+          <input type="time" name="due_time" value="18:00" style="width:110px;" />
+        </div>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">開始日（任意）</label>
+        <input type="date" name="start_date" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 2px;">担当者（複数選択可）</label>
+        <div class="assignee-checklist">
           <% users.forEach(u => { %>
-            <option value="<%= u.user_id %>"><%= u.display_name %></option>
+            <label class="assignee-check">
+              <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" />
+              <%= u.display_name %>
+            </label>
           <% }) %>
-        </select>
-        <input type="date" name="due_date" />
-        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
+        </div>
+
+        <button type="submit" style="margin-top:10px; padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
       </form>
     </div>
   </details>
@@ -27,16 +40,13 @@
       <h3><%= label %> <span class="count">(<%= board[key].length %>)</span></h3>
       <div class="kanban-list" data-status="<%= key %>">
         <% board[key].forEach(t => { %>
-          <div class="kanban-card" draggable="true" data-id="<%= t.id %>">
+          <a href="/tasks/<%= t.id %>" class="kanban-card" draggable="true" data-id="<%= t.id %>">
             <div class="kanban-card-title"><%= t.title %></div>
             <div class="kanban-card-meta">
-              <%= t.assignee_name || t.user_id %>
-              <% if (t.due_date) { %> ・ <%= t.due_date %><% } %>
+              <%= t.assigneeNames || '未割当' %>
+              <% if (t.due_at) { %> ・ <%= t.due_at.replace('T', ' ') %><% } %>
             </div>
-            <form method="POST" action="/tasks/<%= t.id %>/delete" style="margin-top:6px;">
-              <button type="submit" class="mini-btn">削除</button>
-            </form>
-          </div>
+          </a>
         <% }) %>
       </div>
     </div>
@@ -60,14 +70,15 @@
     <% } %>
 
     <% for (let day = 1; day <= lastDay; day++) { %>
-      <div class="calendar-cell">
+      <% const dayStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`; %>
+      <a class="calendar-cell" href="/tasks/day/<%= dayStr %>">
         <div class="calendar-day"><%= day %></div>
         <% if (tasksByDay[day]) { %>
           <% tasksByDay[day].forEach(t => { %>
-            <div class="calendar-task" title="<%= t.assignee_name || t.user_id %>"><%= t.title %></div>
+            <div class="calendar-task" title="<%= t.assigneeNames %>"><%= t.title %></div>
           <% }) %>
         <% } %>
-      </div>
+      </a>
     <% } %>
   </div>
 </div>

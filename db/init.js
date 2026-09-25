@@ -47,11 +47,76 @@ db.exec(`
 `);
 
 // 既存DBに created_by 列がない場合は追加(マイグレーション)
-const taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+let taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
 if (!taskColumns.includes('created_by')) {
   db.exec('ALTER TABLE tasks ADD COLUMN created_by TEXT');
   console.log('tasksテーブルに created_by 列を追加しました');
 }
+
+// 開始日・締切日時(時刻まで)列を追加(マイグレーション)
+taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+if (!taskColumns.includes('start_date')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN start_date TEXT');
+  console.log('tasksテーブルに start_date 列を追加しました');
+}
+if (!taskColumns.includes('due_at')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN due_at TEXT');
+  console.log('tasksテーブルに due_at 列を追加しました');
+  // 旧 due_date (日付のみ) が入っていれば 00:00 として引き継ぐ
+  if (taskColumns.includes('due_date')) {
+    db.exec("UPDATE tasks SET due_at = due_date || 'T00:00' WHERE due_at IS NULL AND due_date IS NOT NULL");
+  }
+}
+
+// 担当者(複数人)テーブル
+db.exec(`
+  CREATE TABLE IF NOT EXISTS task_assignees (
+    task_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    PRIMARY KEY (task_id, user_id)
+  );
+`);
+// 旧 user_id(単一担当者)を task_assignees に引き継ぐ
+if (taskColumns.includes('user_id')) {
+  db.exec(`
+    INSERT OR IGNORE INTO task_assignees (task_id, user_id)
+    SELECT id, user_id FROM tasks WHERE user_id IS NOT NULL AND user_id != ''
+  `);
+}
+
+// 旧 tasks.user_id 列は NOT NULL 制約付きで残っており、複数担当者化に伴い不要になったため
+// テーブルを再作成して制約を取り除く(SQLiteは列制約を直接変更できないため)
+if (taskColumns.includes('user_id')) {
+  db.exec(`
+    CREATE TABLE tasks_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'todo',
+      due_date TEXT,
+      due_at TEXT,
+      start_date TEXT,
+      created_by TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO tasks_new (id, title, status, due_date, due_at, start_date, created_by, created_at)
+      SELECT id, title, status, due_date, due_at, start_date, created_by, created_at FROM tasks;
+    DROP TABLE tasks;
+    ALTER TABLE tasks_new RENAME TO tasks;
+  `);
+  console.log('tasksテーブルを再作成し、旧user_id列(NOT NULL制約)を除去しました');
+}
+
+// タスク添付ファイル(画像など)テーブル
+db.exec(`
+  CREATE TABLE IF NOT EXISTS task_attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT,
+    uploaded_by TEXT,
+    uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
 
 // 勤怠打刻テーブル(仮。フェーズ3で本実装)
 db.exec(`

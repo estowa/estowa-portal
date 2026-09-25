@@ -1,0 +1,25 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1><%= date %> のタスク</h1>
+  <a href="/tasks" class="mini-btn">← タスク管理に戻る</a>
+</div>
+
+<div class="panel">
+  <% if (tasks.length === 0) { %>
+    <div class="empty-note">この日のタスクはありません</div>
+  <% } else { %>
+    <% tasks.forEach(t => { %>
+      <a href="/tasks/<%= t.id %>" class="task-item" style="display:block;">
+        <strong><%= t.title %></strong>
+        <div style="color:var(--text-muted); font-size:12px; margin-top:2px;">
+          <%= t.assigneeNames || '未割当' %>
+          <% if (t.start_date) { %> ・ 期間: <%= t.start_date %> 〜 <%= t.due_at.split('T')[0] %><% } %>
+          <% if (t.due_at) { %> ・ 締切: <%= t.due_at.replace('T', ' ') %><% } %>
+        </div>
+      </a>
+    <% }) %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

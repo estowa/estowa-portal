@@ -46,8 +46,8 @@
       <% } else { %>
         <% myTasks.forEach(t => { %>
           <div class="task-item">
-            <%= t.title %>
-            <% if (t.due_date) { %><span style="color:#6b7080; font-size:12px;"> - 期限: <%= t.due_date %></span><% } %>
+            <a href="/tasks/<%= t.id %>" style="color:inherit;"><%= t.title %></a>
+            <% if (t.due_at) { %><span style="color:#6b7080; font-size:12px;"> - 期限: <%= t.due_at.replace('T', ' ') %></span><% } %>
           </div>
         <% }) %>
       <% } %>
