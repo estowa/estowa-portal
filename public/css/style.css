@@ -62,8 +62,33 @@ a { text-decoration: none; color: inherit; }
 .error-text { color: #e0245e; font-size: 13px; margin-bottom: 12px; }
 .success-text { color: var(--green); font-size: 13px; margin-bottom: 12px; }
 
+/* ---- ヘッダー(トップバー) ---- */
+.topbar {
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+}
+.topbar-brand .logo {
+  width: 28px; height: 28px;
+  background: var(--primary);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
 /* ---- アプリ全体レイアウト ---- */
-.app-layout { display: flex; min-height: 100vh; }
+.app-layout { display: flex; min-height: calc(100vh - 56px); }
 
 .sidebar {
   width: var(--sidebar-w);
@@ -74,16 +99,6 @@ a { text-decoration: none; color: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-.sidebar .brand {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-}
-.sidebar .brand .logo {
-  width: 32px; height: 32px;
-  background: var(--primary);
-  border-radius: 9px;
 }
 .nav-item {
   display: flex;
