@@ -25,10 +25,14 @@ router.get('/', requireLogin, (req, res) => {
     .get(user.user_id);
   const isCheckedIn = lastLog && lastLog.type === 'in';
 
-  // 売上サマリー（フェーズ3で本実装。現時点は仮データ）
+  // 売上サマリー（今月の合計。sales_ordersにデータがなければnull表示）
+  const today = new Date();
+  const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const salesRow = db
+    .prepare("SELECT COALESCE(SUM(amount),0) AS total, COUNT(*) AS cnt FROM sales_orders WHERE strftime('%Y-%m', order_date) = ?")
+    .get(monthStr);
   const salesSummary = {
-    monthlyTotal: null, // ROBOTIN CSV連携後に実データへ
-    monthlyChangePct: null,
+    monthlyTotal: salesRow.cnt > 0 ? salesRow.total : null,
   };
 
   res.render('home', {

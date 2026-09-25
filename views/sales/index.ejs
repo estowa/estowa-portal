@@ -1,0 +1,122 @@
+<%- include('../partials/header') %>
+
+<h1 style="font-size:18px; margin-bottom:16px;">売上ダッシュボード</h1>
+
+<div class="panel">
+  <h2>CSVインポート（ROBOTIN出力）</h2>
+  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+  <% if (importResult) { %>
+    <div class="success-text">
+      <%= importResult.imported %>件を取り込みました
+      <% if (importResult.skipped > 0) { %>（<%= importResult.skipped %>件は形式不正のためスキップ）<% } %>
+    </div>
+  <% } %>
+  <form method="POST" action="/sales/import" enctype="multipart/form-data" class="form-inline">
+    <input type="file" name="csvfile" accept=".csv" required />
+    <button type="submit">取り込む</button>
+  </form>
+  <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+    列: 受注日 / 氏名 / モール / 商品名 / 送付先 / 金額
+  </div>
+</div>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+  <a href="/sales?year=<%= prevYear %>&month=<%= prevMonth %>" class="mini-btn">← 前月</a>
+  <h2 style="margin:0; font-size:16px;"><%= year %>年<%= month %>月</h2>
+  <a href="/sales?year=<%= nextYear %>&month=<%= nextMonth %>" class="mini-btn">次月 →</a>
+</div>
+
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+  <div class="kpi-card">
+    <div class="label">今月の売上</div>
+    <div class="value">¥<%= currentTotal.toLocaleString() %></div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">受注件数</div>
+    <div class="value"><%= currentCount %> 件</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">前月比</div>
+    <% if (changePct === null) { %>
+      <div class="value placeholder">前月データなし</div>
+    <% } else { %>
+      <div class="value" style="color: <%= changePct >= 0 ? '#0ca30c' : '#d03b3b' %>;">
+        <%= changePct >= 0 ? '+' : '' %><%= changePct %>%
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="viz-root">
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-8: #e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --gridline: #2c2c2a;
+      --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+      --series-4: #c98500; --series-5: #d55181; --series-6: #008300;
+      --series-7: #9085e9; --series-8: #e66767;
+    }
+  }
+  .viz-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .viz-bar-label { width: 130px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+  .viz-bar-track { flex: 1; background: var(--gridline); border-radius: 4px; height: 14px; overflow: hidden; }
+  .viz-bar-fill { height: 100%; border-radius: 4px; }
+  .viz-bar-value { width: 100px; text-align: right; font-size: 13px; color: var(--text-primary); flex-shrink: 0; }
+</style>
+
+  <div class="panel">
+    <h2>モール別売上（<%= year %>年<%= month %>月）</h2>
+    <% if (mallBreakdown.length === 0) { %>
+      <div class="empty-note">この月のデータはまだありません</div>
+    <% } else { %>
+      <% mallBreakdown.forEach(m => { %>
+        <div class="viz-bar-row">
+          <div class="viz-bar-label"><%= m.mall %></div>
+          <div class="viz-bar-track">
+            <div class="viz-bar-fill" style="width: <%= Math.round((m.total / maxMallTotal) * 100) %>%; background: var(--series-<%= m.colorSlot %>);"></div>
+          </div>
+          <div class="viz-bar-value">¥<%= m.total.toLocaleString() %></div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+
+  <div class="panel">
+    <h2>月別推移（直近6か月）</h2>
+    <% if (trend.length === 0) { %>
+      <div class="empty-note">データがまだありません</div>
+    <% } else { %>
+      <% trend.forEach(t => { %>
+        <div class="viz-bar-row">
+          <div class="viz-bar-label"><%= t.ym %></div>
+          <div class="viz-bar-track">
+            <div class="viz-bar-fill" style="width: <%= Math.round((t.total / maxTrendTotal) * 100) %>%; background: var(--series-1);"></div>
+          </div>
+          <div class="viz-bar-value">¥<%= t.total.toLocaleString() %></div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

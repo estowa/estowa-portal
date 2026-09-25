@@ -63,6 +63,21 @@ db.exec(`
   );
 `);
 
+// 売上データテーブル(ROBOTINのCSV取り込み用)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sales_orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_date TEXT NOT NULL,      -- 受注日 (YYYY-MM-DD)
+    customer_name TEXT,            -- 氏名
+    mall TEXT NOT NULL,            -- モール
+    product_name TEXT,             -- 商品名
+    shipping_address TEXT,         -- 送付先
+    amount INTEGER NOT NULL DEFAULT 0, -- 金額
+    imported_by TEXT,
+    imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 // 初期管理者アカウント（存在しない場合のみ作成）
 const existingAdmin = db.prepare('SELECT * FROM users WHERE user_id = ?').get('admin');
 if (!existingAdmin) {
