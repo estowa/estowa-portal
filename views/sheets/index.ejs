@@ -1,0 +1,38 @@
+<%- include('../partials/header') %>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+  <h1 style="font-size:18px; margin:0;">表計算</h1>
+</div>
+
+<div class="panel">
+  <h2>新規シート作成</h2>
+  <form method="POST" action="/sheets" class="form-inline">
+    <input type="text" name="name" placeholder="シート名（例: 2026年9月経費）" required style="min-width:220px;" />
+    <button type="submit">作成</button>
+  </form>
+</div>
+
+<div class="panel">
+  <% if (sheets.length === 0) { %>
+    <div class="empty-note">シートはまだありません</div>
+  <% } else { %>
+    <table class="user-table">
+      <thead><tr><th>シート名</th><th>最終更新</th><th></th></tr></thead>
+      <tbody>
+        <% sheets.forEach(s => { %>
+          <tr>
+            <td><a href="/sheets/<%= s.id %>" style="color:var(--primary); font-weight:600;"><%= s.name %></a></td>
+            <td><%= s.updated_at %></td>
+            <td>
+              <form method="POST" action="/sheets/<%= s.id %>/delete" onsubmit="return confirm('このシートを削除しますか？');">
+                <button type="submit" class="mini-btn">削除</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

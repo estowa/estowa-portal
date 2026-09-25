@@ -23,6 +23,9 @@
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "multer": "^2.4.0"
+    "hot-formula-parser": "^4.0.0",
+    "marked": "^18.0.14",
+    "multer": "^2.4.0",
+    "sanitize-html": "^2.17.7"
   }
 }

@@ -10,6 +10,10 @@ const attendanceRoutes = require('./routes/attendance');
 const taskRoutes = require('./routes/tasks');
 const announcementRoutes = require('./routes/announcements');
 const salesRoutes = require('./routes/sales');
+const vendorRoutes = require('./routes/vendors');
+const sheetLinkRoutes = require('./routes/sheetLinks');
+const sheetRoutes = require('./routes/sheets');
+const knowledgeRoutes = require('./routes/knowledge');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,6 +50,10 @@ app.use(attendanceRoutes);
 app.use(taskRoutes);
 app.use(announcementRoutes);
 app.use(salesRoutes);
+app.use(vendorRoutes);
+app.use(sheetLinkRoutes);
+app.use(sheetRoutes);
+app.use(knowledgeRoutes);
 
 app.use((req, res) => {
   res.status(404).render('error', { message: 'ページが見つかりません', user: req.session.user });

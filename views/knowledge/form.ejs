@@ -1,0 +1,19 @@
+<%- include('../partials/header') %>
+
+<h1 style="font-size:18px; margin-bottom:16px;"><%= article && article.id ? '記事を編集' : '新規記事作成' %></h1>
+
+<div class="panel">
+  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+  <form method="POST" action="<%= article && article.id ? '/knowledge/' + article.id : '/knowledge' %>">
+    <input type="text" name="title" placeholder="タイトル" required value="<%= article ? article.title : '' %>"
+      style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px;" />
+    <input type="text" name="category" placeholder="カテゴリ（例: 業務マニュアル）" value="<%= article ? article.category : '' %>"
+      style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px;" />
+    <textarea name="body" placeholder="本文（Markdown記法が使えます）" rows="16"
+      style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px; font-family:monospace; font-size:13px;"><%= article ? article.body : '' %></textarea>
+    <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">保存</button>
+    <a href="/knowledge" style="margin-left:10px; font-size:13px; color:var(--text-muted);">キャンセル</a>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

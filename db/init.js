@@ -78,6 +78,55 @@ db.exec(`
   );
 `);
 
+// 外注先リスト
+db.exec(`
+  CREATE TABLE IF NOT EXISTS vendors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT,
+    name TEXT NOT NULL,
+    contact_info TEXT,
+    notes TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// 共有シートリンク集
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sheet_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    tags TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// 表計算（シンプルな自由表 + 計算式）
+db.exec(`
+  CREATE TABLE IF NOT EXISTS spreadsheets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    data TEXT NOT NULL DEFAULT '{}',
+    created_by TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// ナレッジ共有（Markdown記事）
+db.exec(`
+  CREATE TABLE IF NOT EXISTS knowledge_articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT,
+    title TEXT NOT NULL,
+    body TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 // 初期管理者アカウント（存在しない場合のみ作成）
 const existingAdmin = db.prepare('SELECT * FROM users WHERE user_id = ?').get('admin');
 if (!existingAdmin) {
