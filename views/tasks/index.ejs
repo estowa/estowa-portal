@@ -11,7 +11,7 @@
       <h3><%= label %> <span class="count">(<%= board[key].length %>)</span></h3>
       <div class="kanban-list" data-status="<%= key %>">
         <% board[key].forEach(t => { %>
-          <a href="/tasks/<%= t.id %>" class="kanban-card" draggable="true" data-id="<%= t.id %>">
+          <a href="/tasks/<%= t.id %>" class="kanban-card" data-id="<%= t.id %>">
             <div class="kanban-card-title"><%= t.title %></div>
             <div class="kanban-card-meta">
               <%= t.assigneeNames || '未割当' %>
@@ -56,29 +56,112 @@
 
 <script>
   // カンバンのドラッグ&ドロップでステータス変更
-  document.querySelectorAll('.kanban-card').forEach(card => {
-    card.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', card.dataset.id);
-    });
-  });
+  // (HTML5のネイティブDrag&Dropはリンク要素とiOS Safariの相性が悪く、
+  //  タッチ操作でうまく動作しないためPointer Eventsで自前実装している)
+  (function () {
+    const THRESHOLD = 8; // これ以上動いたらドラッグとみなす(px)
 
-  document.querySelectorAll('.kanban-list').forEach(list => {
-    list.addEventListener('dragover', (e) => e.preventDefault());
-    list.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      const id = e.dataTransfer.getData('text/plain');
-      const status = list.dataset.status;
-      await fetch('/tasks/' + id + '/status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'fetch',
-        },
-        body: 'status=' + status,
+    function findListUnder(x, y) {
+      const el = document.elementFromPoint(x, y);
+      return el ? el.closest('.kanban-list') : null;
+    }
+
+    function clearDragOver() {
+      document.querySelectorAll('.kanban-list.drag-over').forEach((el) => el.classList.remove('drag-over'));
+    }
+
+    document.querySelectorAll('.kanban-card').forEach((card) => {
+      let downX = 0;
+      let downY = 0;
+      let dragging = false;
+      let justDragged = false;
+      let clone = null;
+      let offsetX = 0;
+      let offsetY = 0;
+      let originalList = null;
+
+      card.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        downX = e.clientX;
+        downY = e.clientY;
+        dragging = false;
+        card.setPointerCapture(e.pointerId);
       });
-      window.location.reload();
+
+      card.addEventListener('pointermove', (e) => {
+        if (!card.hasPointerCapture || !card.hasPointerCapture(e.pointerId)) return;
+
+        if (!dragging) {
+          const dx = e.clientX - downX;
+          const dy = e.clientY - downY;
+          if (Math.hypot(dx, dy) < THRESHOLD) return;
+
+          dragging = true;
+          const rect = card.getBoundingClientRect();
+          offsetX = downX - rect.left;
+          offsetY = downY - rect.top;
+          originalList = card.closest('.kanban-list');
+
+          clone = card.cloneNode(true);
+          clone.classList.add('kanban-card-dragging-clone');
+          clone.style.position = 'fixed';
+          clone.style.left = rect.left + 'px';
+          clone.style.top = rect.top + 'px';
+          clone.style.width = rect.width + 'px';
+          document.body.appendChild(clone);
+          card.classList.add('kanban-card-placeholder');
+        }
+
+        e.preventDefault();
+        clone.style.left = (e.clientX - offsetX) + 'px';
+        clone.style.top = (e.clientY - offsetY) + 'px';
+
+        clearDragOver();
+        const target = findListUnder(e.clientX, e.clientY);
+        if (target) target.classList.add('drag-over');
+      });
+
+      async function finishDrag(e) {
+        if (!dragging) return;
+        e.preventDefault();
+        dragging = false;
+        justDragged = true; // 直後に発火するclickイベントで遷移させないためのフラグ
+        clearDragOver();
+        if (clone) clone.remove();
+        card.classList.remove('kanban-card-placeholder');
+
+        const targetList = findListUnder(e.clientX, e.clientY);
+        if (targetList && targetList !== originalList) {
+          const status = targetList.dataset.status;
+          await fetch('/tasks/' + card.dataset.id + '/status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'fetch',
+            },
+            body: 'status=' + status,
+          });
+          window.location.reload();
+        }
+      }
+
+      card.addEventListener('pointerup', finishDrag);
+      card.addEventListener('pointercancel', () => {
+        if (clone) clone.remove();
+        card.classList.remove('kanban-card-placeholder');
+        clearDragOver();
+        dragging = false;
+      });
+
+      // ドラッグした直後はクリック(詳細ページへの遷移)を打ち消す
+      card.addEventListener('click', (e) => {
+        if (justDragged) {
+          e.preventDefault();
+          justDragged = false;
+        }
+      });
     });
-  });
+  })();
 </script>
 
 <%- include('../partials/footer') %>
