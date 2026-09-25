@@ -7,7 +7,7 @@
       <div class="updated-by-line" style="font-size:12px; color:var(--text-muted); margin-top:4px;">
         最終更新:
         <% if (updatedByAvatar) { %>
-          <span class="avatar avatar-xs" style="background: <%= updatedByAvatar.color %>;"><%= updatedByAvatar.emoji || updatedByAvatar.initial %></span>
+          <%- include('../partials/avatar', { avatar: updatedByAvatar, size: 'xs' }) %>
         <% } %>
         <%= updatedByName %>（<%= task.updated_at.slice(0, 16).replace('T', ' ') %>）
       </div>
@@ -54,7 +54,7 @@
           <% users.forEach(u => { %>
             <label class="assignee-check assignee-check-icon">
               <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" <%= assignedIds.has(u.user_id) ? 'checked' : '' %> />
-              <span class="avatar avatar-xs" style="background: <%= u.avatar.color %>;"><%= u.avatar.emoji || u.avatar.initial %></span>
+              <%- include('../partials/avatar', { avatar: u.avatar, size: 'xs' }) %>
               <%= u.display_name %>
             </label>
           <% }) %>
@@ -76,7 +76,7 @@
             <div class="timeline-item">
               <div class="timeline-item-head">
                 <span class="name">
-                  <span class="avatar avatar-xs" style="background: <%= item.avatar.color %>;"><%= item.avatar.emoji || item.avatar.initial %></span>
+                  <%- include('../partials/avatar', { avatar: item.avatar, size: 'xs' }) %>
                   <%= item.userName %>
                 </span>
                 <span><%= item.createdAt.slice(0, 16).replace('T', ' ') %></span>

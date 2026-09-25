@@ -111,7 +111,7 @@ function usersMapFor(userIds) {
   if (!userIds || userIds.length === 0) return {};
   const placeholders = userIds.map(() => '?').join(',');
   const rows = db
-    .prepare(`SELECT user_id, display_name, avatar_emoji, avatar_color FROM users WHERE user_id IN (${placeholders})`)
+    .prepare(`SELECT user_id, display_name, avatar_emoji, avatar_color, avatar_image FROM users WHERE user_id IN (${placeholders})`)
     .all(...userIds);
   const byId = {};
   rows.forEach((r) => {
@@ -160,7 +160,7 @@ function notifyTaskUpdate({ task, actorUserId, changeLines }) {
 
 // 担当者選択チェックリストなどで使う、アイコン付きのユーザー一覧
 function listUsersWithAvatar() {
-  const rows = db.prepare('SELECT user_id, display_name, avatar_emoji, avatar_color FROM users ORDER BY display_name').all();
+  const rows = db.prepare('SELECT user_id, display_name, avatar_emoji, avatar_color, avatar_image FROM users ORDER BY display_name').all();
   return rows.map((u) => ({ ...u, avatar: avatarFor(u) }));
 }
 
@@ -170,7 +170,7 @@ function attachAssignees(tasks) {
   const placeholders = ids.map(() => '?').join(',');
   const rows = db
     .prepare(
-      `SELECT task_assignees.task_id, users.user_id, users.display_name, users.avatar_emoji, users.avatar_color
+      `SELECT task_assignees.task_id, users.user_id, users.display_name, users.avatar_emoji, users.avatar_color, users.avatar_image
        FROM task_assignees
        LEFT JOIN users ON users.user_id = task_assignees.user_id
        WHERE task_assignees.task_id IN (${placeholders})`
@@ -182,7 +182,13 @@ function attachAssignees(tasks) {
     byTask[r.task_id].push({
       user_id: r.user_id,
       display_name: r.display_name || r.user_id,
-      avatar: avatarFor({ user_id: r.user_id, display_name: r.display_name, avatar_emoji: r.avatar_emoji, avatar_color: r.avatar_color }),
+      avatar: avatarFor({
+        user_id: r.user_id,
+        display_name: r.display_name,
+        avatar_emoji: r.avatar_emoji,
+        avatar_color: r.avatar_color,
+        avatar_image: r.avatar_image,
+      }),
     });
   });
   tasks.forEach((t) => {

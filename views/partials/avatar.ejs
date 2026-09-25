@@ -1,0 +1,10 @@
+<%
+// 使い方: include('partials/avatar', { avatar: someAvatar, size: 'xs'|'sm'|'md'|'lg' })
+// avatar = { emoji, color, initial, image } (lib/avatar.js の avatarFor() が返す形)
+const _size = typeof size !== 'undefined' ? size : 'sm';
+%>
+<% if (avatar.image) { %>
+  <img src="<%= avatar.image %>" class="avatar avatar-<%= _size %> avatar-img" alt="" />
+<% } else { %>
+  <span class="avatar avatar-<%= _size %>" style="background: <%= avatar.color %>;"><%= avatar.emoji || avatar.initial %></span>
+<% } %>

@@ -46,7 +46,7 @@ app.use(
 app.use((req, res, next) => {
   if (req.session.user) {
     const fresh = db
-      .prepare('SELECT id, user_id, display_name, role, avatar_emoji, avatar_color FROM users WHERE user_id = ?')
+      .prepare('SELECT id, user_id, display_name, role, avatar_emoji, avatar_color, avatar_image FROM users WHERE user_id = ?')
       .get(req.session.user.user_id);
     res.locals.currentUser = fresh || req.session.user;
     res.locals.currentUserAvatar = avatarFor(res.locals.currentUser);

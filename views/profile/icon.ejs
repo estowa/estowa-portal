@@ -9,23 +9,40 @@
   <div>
     <div class="panel">
       <% if (success) { %><div style="color:var(--green); font-size:13px; margin-bottom:10px;"><%= success %></div><% } %>
+      <% if (uploadError) { %><div class="error-text" style="margin-bottom:10px;"><%= uploadError %></div><% } %>
       <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
-        タスク一覧やお知らせで表示されるアイコンです。好きな絵文字と色を選んで保存してください。
+        タスク一覧やお知らせで表示されるアイコンです。画像をアップロードするか、絵文字と色を選んで保存してください。
       </p>
 
       <div class="icon-preview-row">
-        <span class="avatar avatar-lg" id="iconPreview" style="background: <%= avatar.color %>;">
-          <%= avatar.emoji || avatar.initial %>
-        </span>
+        <% if (avatar.image) { %>
+          <img src="<%= avatar.image %>" id="iconPreviewImg" class="avatar avatar-lg avatar-img" alt="" />
+          <span class="avatar avatar-lg" id="iconPreviewEmoji" style="background: <%= avatar.color %>; display:none;"><%= avatar.emoji || avatar.initial %></span>
+        <% } else { %>
+          <img id="iconPreviewImg" class="avatar avatar-lg avatar-img" alt="" style="display:none;" />
+          <span class="avatar avatar-lg" id="iconPreviewEmoji" style="background: <%= avatar.color %>;"><%= avatar.emoji || avatar.initial %></span>
+        <% } %>
         <div>
           <div style="font-weight:600;"><%= profileUser.display_name %></div>
           <div style="font-size:12px; color:var(--text-muted);">プレビュー</div>
         </div>
       </div>
 
-      <form method="POST" action="/profile/icon">
+      <form method="POST" action="/profile/icon" enctype="multipart/form-data">
         <div class="icon-picker-section">
-          <h3>絵文字（未選択の場合は名前の頭文字が表示されます）</h3>
+          <h3>画像をアップロード（設定すると絵文字より優先して表示されます）</h3>
+          <input type="file" name="avatar_image" id="avatarImageInput" accept="image/*" />
+          <div class="dropzone-filelist" id="avatarImageFilename"></div>
+        </div>
+
+        <% if (avatar.image) { %>
+          <div class="icon-picker-section">
+            <button type="submit" formaction="/profile/icon/remove-image" class="mini-btn">画像アイコンを削除する</button>
+          </div>
+        <% } %>
+
+        <div class="icon-picker-section">
+          <h3>絵文字（画像未設定時に使用・未選択の場合は名前の頭文字が表示されます）</h3>
           <div class="icon-picker-grid" id="emojiGrid">
             <label class="icon-option <%= !avatar.emoji ? 'selected' : '' %>" data-emoji-option="">
               <input type="radio" name="avatar_emoji" value="" style="display:none;" <%= !avatar.emoji ? 'checked' : '' %> />
@@ -59,8 +76,22 @@
 
 <script>
   (function () {
-    const preview = document.getElementById('iconPreview');
+    const previewImg = document.getElementById('iconPreviewImg');
+    const previewEmoji = document.getElementById('iconPreviewEmoji');
     const initial = <%- JSON.stringify(avatar.initial) %>;
+
+    document.getElementById('avatarImageInput').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      document.getElementById('avatarImageFilename').textContent = file ? `選択中: ${file.name}` : '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        previewImg.src = reader.result;
+        previewImg.style.display = '';
+        previewEmoji.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
 
     document.getElementById('emojiGrid').addEventListener('click', (e) => {
       const opt = e.target.closest('[data-emoji-option]');
@@ -69,7 +100,7 @@
       opt.classList.add('selected');
       opt.querySelector('input').checked = true;
       const emoji = opt.dataset.emojiOption;
-      preview.textContent = emoji || initial;
+      previewEmoji.textContent = emoji || initial;
     });
 
     document.getElementById('colorGrid').addEventListener('click', (e) => {
@@ -78,7 +109,7 @@
       document.querySelectorAll('#colorGrid .color-option').forEach((el) => el.classList.remove('selected'));
       opt.classList.add('selected');
       opt.querySelector('input').checked = true;
-      preview.style.background = opt.dataset.colorOption;
+      previewEmoji.style.background = opt.dataset.colorOption;
     });
   })();
 </script>

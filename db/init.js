@@ -40,6 +40,11 @@ if (!userColumns.includes('avatar_color')) {
   db.exec('ALTER TABLE users ADD COLUMN avatar_color TEXT');
   console.log('usersテーブルに avatar_color 列を追加しました');
 }
+// 自分でアップロードした画像をアイコンとして使えるように(設定されていれば絵文字より優先表示)
+if (!userColumns.includes('avatar_image')) {
+  db.exec('ALTER TABLE users ADD COLUMN avatar_image TEXT');
+  console.log('usersテーブルに avatar_image 列を追加しました');
+}
 
 // お知らせテーブル(ホーム画面用の先行実装)
 db.exec(`

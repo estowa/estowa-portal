@@ -20,7 +20,7 @@
                 <% } else { %>
                   <span class="avatar-group">
                     <% t.assignees.forEach(a => { %>
-                      <span class="avatar avatar-xs" style="background: <%= a.avatar.color %>;" title="<%= a.display_name %>"><%= a.avatar.emoji || a.avatar.initial %></span>
+                      <span title="<%= a.display_name %>"><%- include('../partials/avatar', { avatar: a.avatar, size: 'xs' }) %></span>
                     <% }) %>
                   </span>
                   <span class="names"><%= t.assigneeNames %></span>
@@ -59,9 +59,7 @@
           <% tasksByDay[day].forEach(t => { %>
             <div class="calendar-task" title="<%= t.assigneeNames %>">
               <% if (t.assignees.length > 0) { %>
-                <span class="avatar avatar-xs" style="background: <%= t.assignees[0].avatar.color %>; font-size:9px; width:14px; height:14px;">
-                  <%= t.assignees[0].avatar.emoji || t.assignees[0].avatar.initial %>
-                </span>
+                <span style="font-size:9px;"><%- include('../partials/avatar', { avatar: t.assignees[0].avatar, size: 'xs' }) %></span>
               <% } %>
               <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><%= t.title %></span>
             </div>

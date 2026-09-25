@@ -18,7 +18,7 @@
           <% } else { %>
             <span class="avatar-group">
               <% t.assignees.forEach(a => { %>
-                <span class="avatar avatar-xs" style="background: <%= a.avatar.color %>;" title="<%= a.display_name %>"><%= a.avatar.emoji || a.avatar.initial %></span>
+                <span title="<%= a.display_name %>"><%- include('../partials/avatar', { avatar: a.avatar, size: 'xs' }) %></span>
               <% }) %>
             </span>
             <span class="names" style="color:var(--text-muted); font-size:12px;"><%= t.assigneeNames %></span>

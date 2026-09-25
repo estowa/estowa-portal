@@ -42,7 +42,7 @@
           <% users.forEach(u => { %>
             <label class="assignee-check assignee-check-icon">
               <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" />
-              <span class="avatar avatar-xs" style="background: <%= u.avatar.color %>;"><%= u.avatar.emoji || u.avatar.initial %></span>
+              <%- include('../partials/avatar', { avatar: u.avatar, size: 'xs' }) %>
               <%= u.display_name %>
             </label>
           <% }) %>

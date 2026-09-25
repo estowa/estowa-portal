@@ -6,7 +6,8 @@ const { avatarFor } = require('../lib/avatar');
 const router = express.Router();
 
 const ANNOUNCEMENT_SELECT = `SELECT announcements.*, users.display_name AS author_name,
-    users.avatar_emoji AS author_avatar_emoji, users.avatar_color AS author_avatar_color
+    users.avatar_emoji AS author_avatar_emoji, users.avatar_color AS author_avatar_color,
+    users.avatar_image AS author_avatar_image
    FROM announcements
    LEFT JOIN users ON users.user_id = announcements.created_by
    ORDER BY announcements.created_at DESC`;
@@ -19,6 +20,7 @@ function withAuthorAvatar(rows) {
       display_name: a.author_name,
       avatar_emoji: a.author_avatar_emoji,
       avatar_color: a.author_avatar_color,
+      avatar_image: a.author_avatar_image,
     }),
   }));
 }

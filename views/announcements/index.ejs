@@ -33,7 +33,7 @@
         <% } %>
         <div class="announcement-author" style="color:var(--text-muted); font-size:12px; margin-top:6px;">
           投稿者:
-          <span class="avatar avatar-xs" style="background: <%= a.authorAvatar.color %>;"><%= a.authorAvatar.emoji || a.authorAvatar.initial %></span>
+          <%- include('../partials/avatar', { avatar: a.authorAvatar, size: 'xs' }) %>
           <%= a.author_name || a.created_by %>
         </div>
         <% if (currentUser && currentUser.role === 'admin') { %>

@@ -762,3 +762,13 @@ table.sheet-table.readonly td {
   border-radius: 10px;
   background: var(--bg);
 }
+
+.avatar-img {
+  object-fit: cover;
+  background: var(--bg);
+}
+
+.user-chip-link {
+  display: inline-flex;
+  text-decoration: none;
+}
