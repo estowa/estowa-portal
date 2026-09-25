@@ -60,36 +60,65 @@
     </div>
 
     <div class="panel">
-      <h2>添付ファイル（画像・参考資料など）</h2>
+      <h2>やり取り（コメント・添付ファイル）</h2>
       <% if (uploadError) { %><div class="error-text"><%= uploadError %></div><% } %>
-      <form method="POST" action="/tasks/<%= task.id %>/attachments" enctype="multipart/form-data" class="form-inline" style="margin-bottom:14px;">
-        <input type="file" name="files" multiple required />
-        <button type="submit">アップロード</button>
-      </form>
 
-      <% if (attachments.length === 0) { %>
-        <div class="empty-note">添付ファイルはありません</div>
+      <% if (timeline.length === 0) { %>
+        <div class="empty-note">まだコメントや添付ファイルはありません</div>
       <% } else { %>
-        <div class="attachment-grid">
-          <% attachments.forEach(a => { %>
-            <div class="attachment-item">
-              <% if (a.mime_type && a.mime_type.startsWith('image/')) { %>
-                <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener">
-                  <img src="/uploads/tasks/<%= a.filename %>" alt="<%= a.original_name %>" />
-                </a>
-              <% } else { %>
-                <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener" class="attachment-file-link">
-                  <div class="attachment-file-icon">📄</div>
-                </a>
+        <div class="timeline">
+          <% timeline.forEach(item => { %>
+            <div class="timeline-item">
+              <div class="timeline-item-head">
+                <span class="name"><%= item.userName %></span>
+                <span><%= item.createdAt.slice(0, 16).replace('T', ' ') %></span>
+              </div>
+              <% if (item.body) { %>
+                <div class="timeline-item-body"><%= item.body %></div>
               <% } %>
-              <div class="attachment-name" title="<%= a.original_name %>"><%= a.original_name %></div>
-              <form method="POST" action="/tasks/<%= task.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
-                <button type="submit" class="mini-btn">削除</button>
-              </form>
+              <% if (item.attachments.length > 0) { %>
+                <div class="attachment-grid">
+                  <% item.attachments.forEach(a => { %>
+                    <div class="attachment-item">
+                      <% if (a.mime_type && a.mime_type.startsWith('image/')) { %>
+                        <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener">
+                          <img src="/uploads/tasks/<%= a.filename %>" alt="<%= a.original_name %>" />
+                        </a>
+                      <% } else { %>
+                        <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener" class="attachment-file-link">
+                          <div class="attachment-file-icon">📄</div>
+                        </a>
+                      <% } %>
+                      <div class="attachment-name" title="<%= a.original_name %>"><%= a.original_name %></div>
+                      <form method="POST" action="/tasks/<%= task.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
+                        <button type="submit" class="mini-btn">削除</button>
+                      </form>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } %>
+              <% if (item.type === 'comment') { %>
+                <form method="POST" action="/tasks/<%= task.id %>/comments/<%= item.id %>/delete" onsubmit="return confirm('このコメントを削除しますか？');">
+                  <button type="submit" class="mini-btn">削除</button>
+                </form>
+              <% } %>
             </div>
           <% }) %>
         </div>
       <% } %>
+
+      <form method="POST" action="/tasks/<%= task.id %>/comments" enctype="multipart/form-data" class="comment-composer">
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">コメントを追加</label>
+        <textarea name="body" rows="3" placeholder="やり取りの内容を入力"></textarea>
+
+        <div class="dropzone" style="margin-bottom:12px;">
+          <input type="file" name="files" multiple />
+          <div>ここにファイルをドラッグ&ドロップ<br />またはクリックして選択</div>
+          <div class="dropzone-filelist"></div>
+        </div>
+
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">送信する</button>
+      </form>
     </div>
   </div>
 
@@ -104,4 +133,5 @@
   </div>
 </div>
 
+<script src="/js/dropzone.js"></script>
 <%- include('../partials/footer') %>

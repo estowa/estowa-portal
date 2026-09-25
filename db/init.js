@@ -153,10 +153,29 @@ db.exec(`
   );
 `);
 // 既存DBに mime_type 列がない場合は追加(マイグレーション)
-const attachmentColumns = db.prepare("PRAGMA table_info(task_attachments)").all().map((c) => c.name);
+let attachmentColumns = db.prepare("PRAGMA table_info(task_attachments)").all().map((c) => c.name);
 if (!attachmentColumns.includes('mime_type')) {
   db.exec('ALTER TABLE task_attachments ADD COLUMN mime_type TEXT');
   console.log('task_attachmentsテーブルに mime_type 列を追加しました');
+}
+
+// タスクのコメント(やり取り)テーブル - コメント本文・添付ファイルを時系列で表示するため
+db.exec(`
+  CREATE TABLE IF NOT EXISTS task_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL,
+    user_id TEXT,
+    body TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// 添付ファイルをコメントに紐付けるための comment_id 列を追加(マイグレーション)
+// (紐付けがない既存の添付ファイルはタイムライン上で単独の「ファイル追加」として表示する)
+attachmentColumns = db.prepare("PRAGMA table_info(task_attachments)").all().map((c) => c.name);
+if (!attachmentColumns.includes('comment_id')) {
+  db.exec('ALTER TABLE task_attachments ADD COLUMN comment_id INTEGER');
+  console.log('task_attachmentsテーブルに comment_id 列を追加しました');
 }
 
 // 勤怠打刻テーブル(仮。フェーズ3で本実装)

@@ -571,3 +571,67 @@ table.sheet-table.readonly td {
     min-width: 0;
   }
 }
+
+/* ---- ファイル添付のドラッグ&ドロップ欄 ---- */
+.dropzone {
+  position: relative;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone.dragover {
+  border-color: var(--primary);
+  background: #eef0ff;
+  color: var(--primary-dark);
+}
+.dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.dropzone-filelist {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+/* ---- タスクのやり取り(コメント+添付ファイル)タイムライン ---- */
+.timeline { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+.timeline-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--bg);
+}
+.timeline-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.timeline-item-head .name { font-weight: 600; color: var(--text); }
+.timeline-item-body { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+.timeline-item .attachment-grid { margin-top: 10px; }
+.timeline-item .mini-btn { margin-top: 8px; }
+.comment-composer textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 10px;
+}
