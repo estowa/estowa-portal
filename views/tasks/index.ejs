@@ -9,6 +9,10 @@
       <form method="POST" action="/tasks">
         <input type="text" name="title" placeholder="タスク内容" required />
 
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">概要（任意）</label>
+        <textarea name="description" rows="3" placeholder="詳細・背景・メモなど"
+          style="width:100%; margin-bottom:8px; padding:8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; font-size:13px; resize:vertical;"></textarea>
+
         <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">締切日時（必須）</label>
         <div class="form-inline" style="margin-bottom:8px;">
           <input type="date" name="due_date" required style="flex:1;" />

@@ -15,6 +15,10 @@
         <input type="text" name="title" value="<%= task.title %>" required
           style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
 
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">概要</label>
+        <textarea name="description" rows="5" placeholder="タスクの詳細・背景・メモなど"
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; resize:vertical;"><%= task.description || '' %></textarea>
+
         <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">ステータス</label>
         <select name="status" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;">
           <% statusDefs.forEach(([key, label]) => { %>
@@ -47,22 +51,30 @@
     </div>
 
     <div class="panel">
-      <h2>画像添付（参考デザインなど）</h2>
+      <h2>添付ファイル（画像・参考資料など）</h2>
+      <% if (uploadError) { %><div class="error-text"><%= uploadError %></div><% } %>
       <form method="POST" action="/tasks/<%= task.id %>/attachments" enctype="multipart/form-data" class="form-inline" style="margin-bottom:14px;">
-        <input type="file" name="images" accept="image/*" multiple required />
+        <input type="file" name="files" multiple required />
         <button type="submit">アップロード</button>
       </form>
 
       <% if (attachments.length === 0) { %>
-        <div class="empty-note">添付画像はありません</div>
+        <div class="empty-note">添付ファイルはありません</div>
       <% } else { %>
         <div class="attachment-grid">
           <% attachments.forEach(a => { %>
             <div class="attachment-item">
-              <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener">
-                <img src="/uploads/tasks/<%= a.filename %>" alt="<%= a.original_name %>" />
-              </a>
-              <form method="POST" action="/tasks/<%= task.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('この画像を削除しますか？');">
+              <% if (a.mime_type && a.mime_type.startsWith('image/')) { %>
+                <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener">
+                  <img src="/uploads/tasks/<%= a.filename %>" alt="<%= a.original_name %>" />
+                </a>
+              <% } else { %>
+                <a href="/uploads/tasks/<%= a.filename %>" target="_blank" rel="noopener" class="attachment-file-link">
+                  <div class="attachment-file-icon">📄</div>
+                </a>
+              <% } %>
+              <div class="attachment-name" title="<%= a.original_name %>"><%= a.original_name %></div>
+              <form method="POST" action="/tasks/<%= task.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
                 <button type="submit" class="mini-btn">削除</button>
               </form>
             </div>
@@ -75,7 +87,7 @@
   <div>
     <div class="panel">
       <h2>タスクを削除</h2>
-      <p style="font-size:13px; color:var(--text-muted);">このタスクと添付画像を完全に削除します。</p>
+      <p style="font-size:13px; color:var(--text-muted);">このタスクと添付ファイルを完全に削除します。</p>
       <form method="POST" action="/tasks/<%= task.id %>/delete" onsubmit="return confirm('このタスクを削除しますか？元に戻せません。');">
         <button type="submit" class="mini-btn">タスクを削除する</button>
       </form>

@@ -106,17 +106,31 @@ if (taskColumns.includes('user_id')) {
   console.log('tasksテーブルを再作成し、旧user_id列(NOT NULL制約)を除去しました');
 }
 
-// タスク添付ファイル(画像など)テーブル
+// 概要(詳細説明)列を追加(マイグレーション) - Asanaのようなタスク概要欄
+taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+if (!taskColumns.includes('description')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN description TEXT');
+  console.log('tasksテーブルに description 列を追加しました');
+}
+
+// タスク添付ファイル(画像・各種ファイル)テーブル
 db.exec(`
   CREATE TABLE IF NOT EXISTS task_attachments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL,
     filename TEXT NOT NULL,
     original_name TEXT,
+    mime_type TEXT,
     uploaded_by TEXT,
     uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+// 既存DBに mime_type 列がない場合は追加(マイグレーション)
+const attachmentColumns = db.prepare("PRAGMA table_info(task_attachments)").all().map((c) => c.name);
+if (!attachmentColumns.includes('mime_type')) {
+  db.exec('ALTER TABLE task_attachments ADD COLUMN mime_type TEXT');
+  console.log('task_attachmentsテーブルに mime_type 列を追加しました');
+}
 
 // 勤怠打刻テーブル(仮。フェーズ3で本実装)
 db.exec(`

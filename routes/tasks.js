@@ -21,6 +21,10 @@ const STATUSES = STATUS_DEFS.map(([key]) => key);
 const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'tasks');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
+// 実行ファイルなど危険な拡張子のみ拒否し、それ以外の画像・PDF・Office文書・
+// 圧縮ファイルなどは幅広く添付できるようにする(Asanaのような添付イメージ)
+const BLOCKED_EXT = ['.exe', '.bat', '.cmd', '.sh', '.msi', '.com', '.php', '.js', '.jar', '.app'];
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOAD_DIR),
@@ -30,9 +34,13 @@ const upload = multer({
       cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
     },
   }),
-  limits: { fileSize: 8 * 1024 * 1024, files: 10 },
+  limits: { fileSize: 15 * 1024 * 1024, files: 10 },
   fileFilter: (req, file, cb) => {
-    cb(null, /^image\//.test(file.mimetype));
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (BLOCKED_EXT.includes(ext)) {
+      return cb(null, false);
+    }
+    cb(null, true);
   },
 });
 
@@ -158,14 +166,14 @@ router.get('/tasks/day/:date', requireLogin, (req, res) => {
 
 // タスク新規作成
 router.post('/tasks', requireLogin, (req, res) => {
-  const { title, due_date, due_time, start_date, assignee_ids } = req.body;
+  const { title, description, due_date, due_time, start_date, assignee_ids } = req.body;
   if (!title || !due_date) {
     return res.redirect('/tasks');
   }
   const dueAt = `${due_date}T${due_time || '18:00'}`;
   const result = db
-    .prepare('INSERT INTO tasks (title, due_at, start_date, created_by) VALUES (?, ?, ?, ?)')
-    .run(title, dueAt, start_date || null, req.session.user.user_id);
+    .prepare('INSERT INTO tasks (title, description, due_at, start_date, created_by) VALUES (?, ?, ?, ?, ?)')
+    .run(title, description || null, dueAt, start_date || null, req.session.user.user_id);
 
   const assignees = Array.isArray(assignee_ids) ? assignee_ids : (assignee_ids ? [assignee_ids] : []);
   const insertAssignee = db.prepare('INSERT OR IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)');
@@ -194,20 +202,21 @@ router.get('/tasks/:id', requireLogin, (req, res) => {
     assignedIds,
     statusDefs: STATUS_DEFS,
     error: null,
+    uploadError: req.query.uploadError || null,
   });
 });
 
 // タスク更新（内容・担当者・ステータス）
 router.post('/tasks/:id', requireLogin, (req, res) => {
-  const { title, status, due_date, due_time, start_date, assignee_ids } = req.body;
+  const { title, description, status, due_date, due_time, start_date, assignee_ids } = req.body;
   if (!title || !due_date) {
     return res.redirect('/tasks/' + req.params.id);
   }
   const dueAt = `${due_date}T${due_time || '18:00'}`;
 
   db.prepare(
-    'UPDATE tasks SET title = ?, status = ?, due_at = ?, start_date = ? WHERE id = ?'
-  ).run(title, STATUSES.includes(status) ? status : 'todo', dueAt, start_date || null, req.params.id);
+    'UPDATE tasks SET title = ?, description = ?, status = ?, due_at = ?, start_date = ? WHERE id = ?'
+  ).run(title, description || null, STATUSES.includes(status) ? status : 'todo', dueAt, start_date || null, req.params.id);
 
   const assignees = Array.isArray(assignee_ids) ? assignee_ids : (assignee_ids ? [assignee_ids] : []);
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(req.params.id);
@@ -217,18 +226,31 @@ router.post('/tasks/:id', requireLogin, (req, res) => {
   res.redirect('/tasks/' + req.params.id);
 });
 
-// 画像添付のアップロード
-router.post('/tasks/:id/attachments', requireLogin, upload.array('images', 10), (req, res) => {
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
-  if (!task) return res.status(404).render('error', { message: 'タスクが見つかりません', user: req.session.user });
+// 添付ファイル(画像・各種ファイル)のアップロード
+router.post('/tasks/:id/attachments', requireLogin, (req, res) => {
+  upload.array('files', 10)(req, res, (err) => {
+    if (err) {
+      let message = 'アップロードに失敗しました';
+      if (err.code === 'LIMIT_FILE_SIZE') message = 'ファイルサイズが大きすぎます(1ファイル15MBまで)';
+      if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') message = '一度にアップロードできるファイル数を超えています(最大10件)';
+      return res.redirect('/tasks/' + req.params.id + '?uploadError=' + encodeURIComponent(message));
+    }
 
-  const insert = db.prepare(
-    'INSERT INTO task_attachments (task_id, filename, original_name, uploaded_by) VALUES (?, ?, ?, ?)'
-  );
-  (req.files || []).forEach((f) => {
-    insert.run(task.id, f.filename, f.originalname, req.session.user.user_id);
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    if (!task) return res.status(404).render('error', { message: 'タスクが見つかりません', user: req.session.user });
+
+    if (!req.files || req.files.length === 0) {
+      return res.redirect('/tasks/' + req.params.id + '?uploadError=' + encodeURIComponent('この形式のファイルはアップロードできません'));
+    }
+
+    const insert = db.prepare(
+      'INSERT INTO task_attachments (task_id, filename, original_name, mime_type, uploaded_by) VALUES (?, ?, ?, ?, ?)'
+    );
+    req.files.forEach((f) => {
+      insert.run(task.id, f.filename, f.originalname, f.mimetype, req.session.user.user_id);
+    });
+    res.redirect('/tasks/' + req.params.id);
   });
-  res.redirect('/tasks/' + req.params.id);
 });
 
 // 添付画像の削除
