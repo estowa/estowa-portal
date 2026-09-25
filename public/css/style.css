@@ -253,15 +253,19 @@ table.user-table th, table.user-table td {
 /* ---- タスク管理(カンバン) ---- */
 .kanban-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(160px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 .kanban-column {
   background: var(--card-bg);
   border-radius: 14px;
   border: 1px solid var(--border);
-  padding: 14px;
+  padding: 12px;
   min-height: 200px;
+  min-width: 160px;
 }
 .kanban-column h3 {
   font-size: 14px;
@@ -325,7 +329,8 @@ table.user-table th, table.user-table td {
 }
 
 @media (max-width: 900px) {
-  .kanban-grid { grid-template-columns: 1fr; }
+  .kanban-grid { grid-auto-flow: row; grid-auto-columns: unset; }
+  .kanban-column { min-width: unset; }
 }
 
 .mini-btn.active-filter {

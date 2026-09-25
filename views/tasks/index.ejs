@@ -22,8 +22,7 @@
 </div>
 
 <div class="kanban-grid">
-  <% const columns = [['todo', '未着手'], ['doing', '対応中'], ['done', '完了']]; %>
-  <% columns.forEach(([key, label]) => { %>
+  <% statusDefs.forEach(([key, label]) => { %>
     <div class="kanban-column" data-status="<%= key %>">
       <h3><%= label %> <span class="count">(<%= board[key].length %>)</span></h3>
       <div class="kanban-list" data-status="<%= key %>">

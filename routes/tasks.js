@@ -4,7 +4,16 @@ const { requireLogin } = require('../middleware/auth');
 
 const router = express.Router();
 
-const STATUSES = ['todo', 'doing', 'done'];
+const STATUS_DEFS = [
+  ['internal', '社内用'],
+  ['todo', '未着手'],
+  ['doing', '進行中'],
+  ['internal_check', '社内確認'],
+  ['client_check', 'クライアント確認'],
+  ['fix', '修正対応'],
+  ['done', '完了'],
+];
+const STATUSES = STATUS_DEFS.map(([key]) => key);
 
 function getMonthRange(year, month) {
   // month: 1-12
@@ -25,9 +34,15 @@ router.get('/tasks', requireLogin, (req, res) => {
     )
     .all();
 
-  const board = { todo: [], doing: [], done: [] };
+  const board = {};
+  STATUSES.forEach((s) => { board[s] = []; });
   allTasks.forEach((t) => {
-    if (board[t.status]) board[t.status].push(t);
+    if (board[t.status]) {
+      board[t.status].push(t);
+    } else {
+      // 未知のステータス(旧データ等)は未着手として扱う
+      board.todo.push(t);
+    }
   });
 
   const users = db.prepare('SELECT user_id, display_name FROM users ORDER BY display_name').all();
@@ -63,6 +78,7 @@ router.get('/tasks', requireLogin, (req, res) => {
 
   res.render('tasks/index', {
     board,
+    statusDefs: STATUS_DEFS,
     users,
     year,
     month,
