@@ -2,40 +2,7 @@
 
 <div class="page-header">
   <h1>タスク管理</h1>
-  <details class="new-toggle">
-    <summary>+ 新規タスク</summary>
-    <div class="new-form-panel" style="min-width:280px;">
-      <h2>新規タスク追加</h2>
-      <form method="POST" action="/tasks">
-        <input type="text" name="title" placeholder="タスク内容" required />
-
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">概要（任意）</label>
-        <textarea name="description" rows="3" placeholder="詳細・背景・メモなど"
-          style="width:100%; margin-bottom:8px; padding:8px; border:1px solid var(--border); border-radius:6px; font-family:inherit; font-size:13px; resize:vertical;"></textarea>
-
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">締切日時（必須）</label>
-        <div class="form-inline" style="margin-bottom:8px;">
-          <input type="date" name="due_date" required style="flex:1;" />
-          <input type="time" name="due_time" value="18:00" style="width:110px;" />
-        </div>
-
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">開始日（任意）</label>
-        <input type="date" name="start_date" />
-
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 2px;">担当者（複数選択可）</label>
-        <div class="assignee-checklist">
-          <% users.forEach(u => { %>
-            <label class="assignee-check">
-              <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" />
-              <%= u.display_name %>
-            </label>
-          <% }) %>
-        </div>
-
-        <button type="submit" style="margin-top:10px; padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
-      </form>
-    </div>
-  </details>
+  <a href="/tasks/new" class="new-toggle-btn">+ 新規タスク</a>
 </div>
 
 <div class="kanban-grid">

@@ -132,6 +132,14 @@ if (!taskColumns.includes('updated_at')) {
   console.log('tasksテーブルに updated_at 列を追加しました');
 }
 
+// 開始日の時刻列を追加(マイグレーション) - 開始日にも時刻を指定できるように
+// (旧user_id列除去のテーブル再作成より後段に置き、再作成時に列が消えないようにする)
+taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+if (!taskColumns.includes('start_time')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN start_time TEXT');
+  console.log('tasksテーブルに start_time 列を追加しました');
+}
+
 // タスク添付ファイル(画像・各種ファイル)テーブル
 db.exec(`
   CREATE TABLE IF NOT EXISTS task_attachments (

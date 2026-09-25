@@ -1,0 +1,56 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1>新規タスク登録</h1>
+  <a href="/tasks" class="mini-btn">← 一覧に戻る</a>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="panel">
+      <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+      <form method="POST" action="/tasks">
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">タスク内容</label>
+        <input type="text" name="title" required
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">概要</label>
+        <textarea name="description" rows="5" placeholder="タスクの詳細・背景・メモなど"
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; resize:vertical;"></textarea>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">ステータス</label>
+        <select name="status" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;">
+          <% statusDefs.forEach(([key, label]) => { %>
+            <option value="<%= key %>" <%= key === 'todo' ? 'selected' : '' %>><%= label %></option>
+          <% }) %>
+        </select>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">締切日時（任意）</label>
+        <div class="form-inline" style="margin-bottom:10px;">
+          <input type="date" name="due_date" style="flex:1;" />
+          <input type="time" name="due_time" value="18:00" style="width:110px;" />
+        </div>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">開始日時（任意）</label>
+        <div class="form-inline" style="margin-bottom:10px;">
+          <input type="date" name="start_date" style="flex:1;" />
+          <input type="time" name="start_time" value="09:00" style="width:110px;" />
+        </div>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">担当者（メンバー管理・複数選択可）</label>
+        <div class="assignee-checklist" style="margin-bottom:12px;">
+          <% users.forEach(u => { %>
+            <label class="assignee-check">
+              <input type="checkbox" name="assignee_ids" value="<%= u.user_id %>" />
+              <%= u.display_name %>
+            </label>
+          <% }) %>
+        </div>
+
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">保存する</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

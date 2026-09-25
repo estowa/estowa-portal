@@ -14,7 +14,7 @@
         <strong><%= t.title %></strong>
         <div style="color:var(--text-muted); font-size:12px; margin-top:2px;">
           <%= t.assigneeNames || '未割当' %>
-          <% if (t.start_date) { %> ・ 期間: <%= t.start_date %> 〜 <%= t.due_at.split('T')[0] %><% } %>
+          <% if (t.start_date) { %> ・ 期間: <%= t.start_date %><%= t.start_time ? ' ' + t.start_time : '' %> 〜 <%= t.due_at.split('T')[0] %><% } %>
           <% if (t.due_at) { %> ・ 締切: <%= t.due_at.replace('T', ' ') %><% } %>
         </div>
       </a>

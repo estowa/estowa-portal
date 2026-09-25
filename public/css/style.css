@@ -529,6 +529,19 @@ table.sheet-table.readonly td {
 .new-toggle summary::-webkit-details-marker { display: none; }
 .new-toggle summary::marker { content: ''; }
 .new-toggle[open] summary { background: var(--primary-dark); }
+.new-toggle-btn {
+  display: inline-block;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  user-select: none;
+}
+.new-toggle-btn:hover { background: var(--primary-dark); }
 .new-form-panel {
   position: absolute;
   right: 0;

@@ -56,6 +56,18 @@ function dueDateOnly(dueAt) {
   return dueAt ? dueAt.split('T')[0] : null;
 }
 
+// 締切日時(任意)を組み立てる。日付が未入力ならnull
+function buildDueAt(dueDate, dueTime) {
+  if (!dueDate) return null;
+  return `${dueDate}T${dueTime || '18:00'}`;
+}
+
+// 開始日+開始時刻の表示用テキスト
+function formatStart(startDate, startTime) {
+  if (!startDate) return 'なし';
+  return startTime ? `${startDate} ${startTime}` : startDate;
+}
+
 const STATUS_LABELS = Object.fromEntries(STATUS_DEFS);
 
 function statusLabel(key) {
@@ -217,22 +229,29 @@ router.get('/tasks/day/:date', requireLogin, (req, res) => {
   res.render('tasks/day', { date, tasks, statusDefs: STATUS_DEFS });
 });
 
+// タスク新規作成画面(専用ページ)
+router.get('/tasks/new', requireLogin, (req, res) => {
+  const users = db.prepare('SELECT user_id, display_name FROM users ORDER BY display_name').all();
+  res.render('tasks/new', { users, statusDefs: STATUS_DEFS, error: null });
+});
+
 // タスク新規作成
 router.post('/tasks', requireLogin, (req, res) => {
-  const { title, description, due_date, due_time, start_date, assignee_ids } = req.body;
-  if (!title || !due_date) {
-    return res.redirect('/tasks');
+  const { title, description, status, due_date, due_time, start_date, start_time, assignee_ids } = req.body;
+  if (!title) {
+    return res.redirect('/tasks/new');
   }
-  const dueAt = `${due_date}T${due_time || '18:00'}`;
+  const dueAt = buildDueAt(due_date, due_time);
+  const newStatus = STATUSES.includes(status) ? status : 'todo';
   const result = db
-    .prepare('INSERT INTO tasks (title, description, due_at, start_date, created_by) VALUES (?, ?, ?, ?, ?)')
-    .run(title, description || null, dueAt, start_date || null, req.session.user.user_id);
+    .prepare('INSERT INTO tasks (title, description, status, due_at, start_date, start_time, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(title, description || null, newStatus, dueAt, start_date || null, start_date ? (start_time || null) : null, req.session.user.user_id);
 
   const assignees = Array.isArray(assignee_ids) ? assignee_ids : (assignee_ids ? [assignee_ids] : []);
   const insertAssignee = db.prepare('INSERT OR IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)');
   assignees.forEach((uid) => insertAssignee.run(result.lastInsertRowid, uid));
 
-  res.redirect('/tasks/' + result.lastInsertRowid);
+  res.redirect('/tasks');
 });
 
 // タスク詳細・編集画面
@@ -263,21 +282,22 @@ router.get('/tasks/:id', requireLogin, (req, res) => {
 
 // タスク更新（内容・担当者・ステータス）
 router.post('/tasks/:id', requireLogin, (req, res) => {
-  const { title, description, status, due_date, due_time, start_date, assignee_ids } = req.body;
-  if (!title || !due_date) {
+  const { title, description, status, due_date, due_time, start_date, start_time, assignee_ids } = req.body;
+  if (!title) {
     return res.redirect('/tasks/' + req.params.id);
   }
-  const dueAt = `${due_date}T${due_time || '18:00'}`;
+  const dueAt = buildDueAt(due_date, due_time);
   const newStatus = STATUSES.includes(status) ? status : 'todo';
   const newStartDate = start_date || null;
+  const newStartTime = newStartDate ? (start_time || null) : null;
 
   const before = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
   if (!before) return res.redirect('/tasks');
   const beforeAssigneeIds = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(req.params.id).map((r) => r.user_id);
 
   db.prepare(
-    "UPDATE tasks SET title = ?, description = ?, status = ?, due_at = ?, start_date = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ?"
-  ).run(title, description || null, newStatus, dueAt, newStartDate, req.session.user.user_id, req.params.id);
+    "UPDATE tasks SET title = ?, description = ?, status = ?, due_at = ?, start_date = ?, start_time = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(title, description || null, newStatus, dueAt, newStartDate, newStartTime, req.session.user.user_id, req.params.id);
 
   const assignees = Array.isArray(assignee_ids) ? assignee_ids : (assignee_ids ? [assignee_ids] : []);
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(req.params.id);
@@ -289,11 +309,13 @@ router.post('/tasks/:id', requireLogin, (req, res) => {
   if (before.status !== newStatus) {
     changeLines.push(`ステータス: ${statusLabel(before.status)} → ${statusLabel(newStatus)}`);
   }
-  if (before.due_at !== dueAt) {
-    changeLines.push(`締切日時: ${(before.due_at || '未設定').replace('T', ' ')} → ${dueAt.replace('T', ' ')}`);
+  if ((before.due_at || null) !== dueAt) {
+    const beforeDue = before.due_at ? before.due_at.replace('T', ' ') : 'なし';
+    const afterDue = dueAt ? dueAt.replace('T', ' ') : 'なし';
+    changeLines.push(`締切日時: ${beforeDue} → ${afterDue}`);
   }
-  if ((before.start_date || null) !== newStartDate) {
-    changeLines.push(`開始日: ${before.start_date || 'なし'} → ${newStartDate || 'なし'}`);
+  if ((before.start_date || null) !== newStartDate || (before.start_time || null) !== newStartTime) {
+    changeLines.push(`開始日: ${formatStart(before.start_date, before.start_time)} → ${formatStart(newStartDate, newStartTime)}`);
   }
   const beforeSet = new Set(beforeAssigneeIds);
   const afterSet = new Set(assignees);
