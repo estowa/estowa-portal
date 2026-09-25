@@ -1,20 +1,24 @@
 <%- include('../partials/header') %>
 
-<h1 style="font-size:18px; margin-bottom:16px;">タスク管理</h1>
-
-<div class="panel">
-  <h2>新規タスク追加</h2>
-  <form method="POST" action="/tasks" class="form-inline">
-    <input type="text" name="title" placeholder="タスク内容" required style="min-width:200px;" />
-    <select name="user_id" required>
-      <option value="">担当者を選択</option>
-      <% users.forEach(u => { %>
-        <option value="<%= u.user_id %>"><%= u.display_name %></option>
-      <% }) %>
-    </select>
-    <input type="date" name="due_date" />
-    <button type="submit">追加</button>
-  </form>
+<div class="page-header">
+  <h1>タスク管理</h1>
+  <details class="new-toggle">
+    <summary>+ 新規タスク</summary>
+    <div class="new-form-panel">
+      <h2>新規タスク追加</h2>
+      <form method="POST" action="/tasks">
+        <input type="text" name="title" placeholder="タスク内容" required />
+        <select name="user_id" required>
+          <option value="">担当者を選択</option>
+          <% users.forEach(u => { %>
+            <option value="<%= u.user_id %>"><%= u.display_name %></option>
+          <% }) %>
+        </select>
+        <input type="date" name="due_date" />
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
+      </form>
+    </div>
+  </details>
 </div>
 
 <div class="kanban-grid">

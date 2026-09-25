@@ -1,23 +1,27 @@
 <%- include('../partials/header') %>
 
-<h1 style="font-size:18px; margin-bottom:16px;">売上ダッシュボード</h1>
-
-<div class="panel">
-  <h2>CSVインポート（ROBOTIN出力）</h2>
-  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
-  <% if (importResult) { %>
-    <div class="success-text">
-      <%= importResult.imported %>件を取り込みました
-      <% if (importResult.skipped > 0) { %>（<%= importResult.skipped %>件は形式不正のためスキップ）<% } %>
+<div class="page-header">
+  <h1>売上ダッシュボード</h1>
+  <details class="new-toggle">
+    <summary>+ CSVインポート</summary>
+    <div class="new-form-panel">
+      <h2>CSVインポート（ROBOTIN出力）</h2>
+      <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+      <% if (importResult) { %>
+        <div class="success-text">
+          <%= importResult.imported %>件を取り込みました
+          <% if (importResult.skipped > 0) { %>（<%= importResult.skipped %>件は形式不正のためスキップ）<% } %>
+        </div>
+      <% } %>
+      <form method="POST" action="/sales/import" enctype="multipart/form-data">
+        <input type="file" name="csvfile" accept=".csv" required />
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">取り込む</button>
+      </form>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+        列: 受注日 / 氏名 / モール / 商品名 / 送付先 / 金額
+      </div>
     </div>
-  <% } %>
-  <form method="POST" action="/sales/import" enctype="multipart/form-data" class="form-inline">
-    <input type="file" name="csvfile" accept=".csv" required />
-    <button type="submit">取り込む</button>
-  </form>
-  <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">
-    列: 受注日 / 氏名 / モール / 商品名 / 送付先 / 金額
-  </div>
+  </details>
 </div>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">

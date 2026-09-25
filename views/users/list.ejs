@@ -1,21 +1,25 @@
 <%- include('../partials/header') %>
 
-<h1 style="font-size:18px; margin-bottom:16px;">ユーザー管理</h1>
-
-<div class="panel">
-  <h2>新規ユーザー追加</h2>
-  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
-  <% if (success) { %><div class="success-text"><%= success %></div><% } %>
-  <form method="POST" action="/users" class="form-inline">
-    <input type="text" name="user_id" placeholder="ログインID" required />
-    <input type="password" name="password" placeholder="パスワード" required />
-    <input type="text" name="display_name" placeholder="表示名" required />
-    <select name="role">
-      <option value="member">メンバー</option>
-      <option value="admin">管理者</option>
-    </select>
-    <button type="submit">追加</button>
-  </form>
+<div class="page-header">
+  <h1>ユーザー管理</h1>
+  <details class="new-toggle">
+    <summary>+ 新規ユーザー</summary>
+    <div class="new-form-panel">
+      <h2>新規ユーザー追加</h2>
+      <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+      <% if (success) { %><div class="success-text"><%= success %></div><% } %>
+      <form method="POST" action="/users">
+        <input type="text" name="user_id" placeholder="ログインID" required />
+        <input type="password" name="password" placeholder="パスワード" required />
+        <input type="text" name="display_name" placeholder="表示名" required />
+        <select name="role">
+          <option value="member">メンバー</option>
+          <option value="admin">管理者</option>
+        </select>
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
+      </form>
+    </div>
+  </details>
 </div>
 
 <div class="panel">

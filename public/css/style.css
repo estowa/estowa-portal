@@ -366,3 +366,60 @@ table.sheet-table.readonly td {
   text-align: right;
   font-family: monospace;
 }
+
+/* ---- ページ共通ヘッダー(タイトル + 新規登録ボタン) ---- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+.page-header h1 {
+  font-size: 18px;
+  margin: 0;
+}
+.new-toggle { position: relative; flex-shrink: 0; }
+.new-toggle summary {
+  cursor: pointer;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  list-style: none;
+  white-space: nowrap;
+  user-select: none;
+}
+.new-toggle summary::-webkit-details-marker { display: none; }
+.new-toggle summary::marker { content: ''; }
+.new-toggle[open] summary { background: var(--primary-dark); }
+.new-form-panel {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+  z-index: 20;
+  min-width: 320px;
+}
+.new-form-panel h2 { font-size: 14px; margin: 0 0 12px 0; }
+.new-form-panel .form-inline, .new-form-panel form { flex-wrap: wrap; }
+.new-form-panel input, .new-form-panel select, .new-form-panel textarea {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 640px) {
+  .new-form-panel {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: auto;
+    width: auto;
+    min-width: 0;
+  }
+}

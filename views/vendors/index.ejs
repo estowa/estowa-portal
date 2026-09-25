@@ -1,16 +1,20 @@
 <%- include('../partials/header') %>
 
-<h1 style="font-size:18px; margin-bottom:16px;">外注先リスト</h1>
-
-<div class="panel">
-  <h2>新規登録</h2>
-  <form method="POST" action="/vendors" class="form-inline">
-    <input type="text" name="category" placeholder="カテゴリ（例: 印刷）" style="width:140px;" />
-    <input type="text" name="name" placeholder="外注先名" required style="min-width:160px;" />
-    <input type="text" name="contact_info" placeholder="連絡先（電話・メール等）" style="min-width:200px;" />
-    <input type="text" name="notes" placeholder="備考" style="min-width:160px;" />
-    <button type="submit">追加</button>
-  </form>
+<div class="page-header">
+  <h1>外注先リスト</h1>
+  <details class="new-toggle">
+    <summary>+ 新規登録</summary>
+    <div class="new-form-panel">
+      <h2>新規登録</h2>
+      <form method="POST" action="/vendors">
+        <input type="text" name="category" placeholder="カテゴリ（例: 印刷）" />
+        <input type="text" name="name" placeholder="外注先名" required />
+        <input type="text" name="contact_info" placeholder="連絡先（電話・メール等）" />
+        <input type="text" name="notes" placeholder="備考" />
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
+      </form>
+    </div>
+  </details>
 </div>
 
 <div class="panel">

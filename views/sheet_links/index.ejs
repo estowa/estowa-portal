@@ -1,15 +1,19 @@
 <%- include('../partials/header') %>
 
-<h1 style="font-size:18px; margin-bottom:16px;">共有シートリンク集</h1>
-
-<div class="panel">
-  <h2>新規登録</h2>
-  <form method="POST" action="/sheet-links" class="form-inline">
-    <input type="text" name="title" placeholder="タイトル" required style="min-width:180px;" />
-    <input type="url" name="url" placeholder="https://..." required style="min-width:260px;" />
-    <input type="text" name="tags" placeholder="タグ（カンマ区切り）" style="min-width:160px;" />
-    <button type="submit">追加</button>
-  </form>
+<div class="page-header">
+  <h1>共有シートリンク集</h1>
+  <details class="new-toggle">
+    <summary>+ 新規登録</summary>
+    <div class="new-form-panel">
+      <h2>新規登録</h2>
+      <form method="POST" action="/sheet-links">
+        <input type="text" name="title" placeholder="タイトル" required />
+        <input type="url" name="url" placeholder="https://..." required />
+        <input type="text" name="tags" placeholder="タグ（カンマ区切り）" />
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
+      </form>
+    </div>
+  </details>
 </div>
 
 <div class="panel">

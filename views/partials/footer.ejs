@@ -1,4 +1,12 @@
   </main>
 </div>
+<script>
+  // 「+ 新規登録」系のdetailsを外側クリックで閉じる
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('details.new-toggle[open]').forEach((el) => {
+      if (!el.contains(e.target)) el.removeAttribute('open');
+    });
+  });
+</script>
 </body>
 </html>
