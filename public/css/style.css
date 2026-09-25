@@ -1,0 +1,212 @@
+:root {
+  --primary: #5b5bf0;
+  --primary-dark: #4444d6;
+  --bg: #f4f5f9;
+  --card-bg: #ffffff;
+  --text: #1f2233;
+  --text-muted: #6b7080;
+  --border: #e6e7ee;
+  --green: #16a34a;
+  --sidebar-w: 240px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ---- ログイン画面 ---- */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-card {
+  background: var(--card-bg);
+  padding: 40px;
+  border-radius: 16px;
+  width: 340px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+.login-card h1 {
+  font-size: 20px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.login-card input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.login-card button {
+  width: 100%;
+  padding: 10px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.login-card button:hover { background: var(--primary-dark); }
+.error-text { color: #e0245e; font-size: 13px; margin-bottom: 12px; }
+.success-text { color: var(--green); font-size: 13px; margin-bottom: 12px; }
+
+/* ---- アプリ全体レイアウト ---- */
+.app-layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar .brand {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sidebar .brand .logo {
+  width: 28px; height: 28px;
+  background: var(--primary);
+  border-radius: 8px;
+}
+.nav-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.nav-item.active {
+  background: var(--primary);
+  color: white;
+}
+.sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  font-size: 13px;
+}
+.sidebar-footer form { margin-top: 8px; }
+.sidebar-footer button {
+  width: 100%;
+  padding: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.main {
+  flex: 1;
+  padding: 24px 32px;
+}
+
+/* ---- 数値カード ---- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.kpi-card {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+}
+.kpi-card .label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+.kpi-card .value { font-size: 24px; font-weight: 700; }
+.kpi-card .value.placeholder { color: var(--text-muted); font-size: 15px; font-weight: 400; }
+
+/* ---- コンテンツグリッド ---- */
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+.panel {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.panel h2 {
+  font-size: 15px;
+  margin: 0 0 14px 0;
+}
+.announcement-item, .task-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.announcement-item:last-child, .task-item:last-child { border-bottom: none; }
+.empty-note { color: var(--text-muted); font-size: 13px; }
+
+.attendance-box {
+  text-align: center;
+  padding: 20px 0;
+}
+.attendance-status { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+.attendance-btn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+}
+.attendance-btn.checkin { background: var(--primary); }
+.attendance-btn.checkout { background: #444a5e; }
+
+/* ---- ユーザー管理 ---- */
+table.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+table.user-table th, table.user-table td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.form-inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.form-inline input, .form-inline select {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.form-inline button {
+  padding: 8px 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.badge { padding: 2px 8px; border-radius: 20px; font-size: 12px; }
+.badge.admin { background: #fde68a; color: #92400e; }
+.badge.member { background: #e6e7ee; color: var(--text-muted); }

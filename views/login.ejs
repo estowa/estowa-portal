@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ログイン | estowa社内ポータル</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <h1>estowa社内ポータル</h1>
+      <% if (error) { %>
+        <div class="error-text"><%= error %></div>
+      <% } %>
+      <form method="POST" action="/login">
+        <input type="text" name="user_id" placeholder="ID" required autofocus />
+        <input type="password" name="password" placeholder="パスワード" required />
+        <button type="submit">ログイン</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

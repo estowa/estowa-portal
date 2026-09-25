@@ -1,0 +1,72 @@
+<%- include('partials/header') %>
+
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="label">今月の売上</div>
+    <% if (salesSummary.monthlyTotal === null) { %>
+      <div class="value placeholder">売上ダッシュボード実装後に表示</div>
+    <% } else { %>
+      <div class="value">¥<%= salesSummary.monthlyTotal.toLocaleString() %></div>
+    <% } %>
+  </div>
+  <div class="kpi-card">
+    <div class="label">未読お知らせ</div>
+    <div class="value"><%= announcements.length %> 件</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">自分の未完了タスク</div>
+    <div class="value"><%= myTasks.length %> 件</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">本日の勤怠</div>
+    <div class="value" style="font-size:16px;"><%= isCheckedIn ? '出勤中' : '未出勤 / 退勤済' %></div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="panel">
+      <h2>お知らせ</h2>
+      <% if (announcements.length === 0) { %>
+        <div class="empty-note">現在お知らせはありません</div>
+      <% } else { %>
+        <% announcements.forEach(a => { %>
+          <div class="announcement-item">
+            <strong><%= a.title %></strong>
+            <div style="color:#6b7080; font-size:13px;"><%= a.body %></div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+
+    <div class="panel">
+      <h2>直近の個人タスク</h2>
+      <% if (myTasks.length === 0) { %>
+        <div class="empty-note">未完了のタスクはありません</div>
+      <% } else { %>
+        <% myTasks.forEach(t => { %>
+          <div class="task-item">
+            <%= t.title %>
+            <% if (t.due_date) { %><span style="color:#6b7080; font-size:12px;"> - 期限: <%= t.due_date %></span><% } %>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>勤怠</h2>
+      <div class="attendance-box">
+        <div class="attendance-status"><%= isCheckedIn ? '現在: 出勤中' : '現在: 未出勤' %></div>
+        <form method="POST" action="/attendance/punch">
+          <button type="submit" class="attendance-btn <%= isCheckedIn ? 'checkout' : 'checkin' %>">
+            <%= isCheckedIn ? '退勤する' : '出勤する' %>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

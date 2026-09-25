@@ -1,0 +1,72 @@
+// データベース初期化スクリプト
+// ユーザーテーブルを作成し、初期管理者アカウントを1件登録する
+
+const path = require('path');
+const bcrypt = require('bcryptjs');
+const Database = require('better-sqlite3');
+
+const dbPath = path.join(__dirname, 'estowa.db');
+const db = new Database(dbPath);
+
+db.pragma('journal_mode = WAL');
+
+// ユーザーテーブル
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT UNIQUE NOT NULL,       -- ログインID
+    password_hash TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'member', -- 'admin' or 'member'
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// お知らせテーブル(ホーム画面用の先行実装)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS announcements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    body TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// 個人タスクテーブル(仮。フェーズ3で本実装)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'todo', -- todo / doing / done
+    due_date TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// 勤怠打刻テーブル(仮。フェーズ3で本実装)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS attendance_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'in' or 'out'
+    logged_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// 初期管理者アカウント（存在しない場合のみ作成）
+const existingAdmin = db.prepare('SELECT * FROM users WHERE user_id = ?').get('admin');
+if (!existingAdmin) {
+  const hash = bcrypt.hashSync('estowa2026', 10);
+  db.prepare(
+    'INSERT INTO users (user_id, password_hash, display_name, role) VALUES (?, ?, ?, ?)'
+  ).run('admin', hash, '管理者', 'admin');
+  console.log('初期管理者アカウントを作成しました → ID: admin / パスワード: estowa2026');
+  console.log('※ ログイン後、必ずパスワードを変更してください');
+} else {
+  console.log('管理者アカウントは既に存在します（作成をスキップ）');
+}
+
+console.log('データベース初期化が完了しました:', dbPath);
+db.close();

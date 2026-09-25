@@ -1,0 +1,65 @@
+<%- include('../partials/header') %>
+
+<h1 style="font-size:18px; margin-bottom:16px;">ユーザー管理</h1>
+
+<div class="panel">
+  <h2>新規ユーザー追加</h2>
+  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+  <% if (success) { %><div class="success-text"><%= success %></div><% } %>
+  <form method="POST" action="/users" class="form-inline">
+    <input type="text" name="user_id" placeholder="ログインID" required />
+    <input type="password" name="password" placeholder="パスワード" required />
+    <input type="text" name="display_name" placeholder="表示名" required />
+    <select name="role">
+      <option value="member">メンバー</option>
+      <option value="admin">管理者</option>
+    </select>
+    <button type="submit">追加</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>ユーザー一覧</h2>
+  <table class="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>表示名</th>
+        <th>権限</th>
+        <th>権限変更</th>
+        <th>パスワード再設定</th>
+        <th>削除</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach(u => { %>
+        <tr>
+          <td><%= u.user_id %></td>
+          <td><%= u.display_name %></td>
+          <td><span class="badge <%= u.role %>"><%= u.role === 'admin' ? '管理者' : 'メンバー' %></span></td>
+          <td>
+            <form method="POST" action="/users/<%= u.id %>/role" class="form-inline">
+              <select name="role" onchange="this.form.submit()">
+                <option value="member" <%= u.role === 'member' ? 'selected' : '' %>>メンバー</option>
+                <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>管理者</option>
+              </select>
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="/users/<%= u.id %>/password" class="form-inline">
+              <input type="password" name="password" placeholder="新パスワード" required style="width:120px;" />
+              <button type="submit">更新</button>
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="/users/<%= u.id %>/delete" onsubmit="return confirm('<%= u.display_name %>さんを削除しますか？');">
+              <button type="submit" style="background:none;border:1px solid #e6e7ee;border-radius:6px;padding:6px 10px;cursor:pointer;color:#e0245e;">削除</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('../partials/footer') %>
