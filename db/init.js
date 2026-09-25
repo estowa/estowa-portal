@@ -33,17 +33,25 @@ db.exec(`
   );
 `);
 
-// 個人タスクテーブル(仮。フェーズ3で本実装)
+// タスクテーブル(カンバンボード用)
 db.exec(`
   CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,       -- 担当者のログインID
     title TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'todo', -- todo / doing / done
     due_date TEXT,
+    created_by TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// 既存DBに created_by 列がない場合は追加(マイグレーション)
+const taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+if (!taskColumns.includes('created_by')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN created_by TEXT');
+  console.log('tasksテーブルに created_by 列を追加しました');
+}
 
 // 勤怠打刻テーブル(仮。フェーズ3で本実装)
 db.exec(`

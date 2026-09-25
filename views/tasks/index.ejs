@@ -1,0 +1,99 @@
+<%- include('../partials/header') %>
+
+<h1 style="font-size:18px; margin-bottom:16px;">タスク管理</h1>
+
+<div class="panel">
+  <h2>新規タスク追加</h2>
+  <form method="POST" action="/tasks" class="form-inline">
+    <input type="text" name="title" placeholder="タスク内容" required style="min-width:200px;" />
+    <select name="user_id" required>
+      <option value="">担当者を選択</option>
+      <% users.forEach(u => { %>
+        <option value="<%= u.user_id %>"><%= u.display_name %></option>
+      <% }) %>
+    </select>
+    <input type="date" name="due_date" />
+    <button type="submit">追加</button>
+  </form>
+</div>
+
+<div class="kanban-grid">
+  <% const columns = [['todo', '未着手'], ['doing', '対応中'], ['done', '完了']]; %>
+  <% columns.forEach(([key, label]) => { %>
+    <div class="kanban-column" data-status="<%= key %>">
+      <h3><%= label %> <span class="count">(<%= board[key].length %>)</span></h3>
+      <div class="kanban-list" data-status="<%= key %>">
+        <% board[key].forEach(t => { %>
+          <div class="kanban-card" draggable="true" data-id="<%= t.id %>">
+            <div class="kanban-card-title"><%= t.title %></div>
+            <div class="kanban-card-meta">
+              <%= t.assignee_name || t.user_id %>
+              <% if (t.due_date) { %> ・ <%= t.due_date %><% } %>
+            </div>
+            <form method="POST" action="/tasks/<%= t.id %>/delete" style="margin-top:6px;">
+              <button type="submit" class="mini-btn">削除</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<div class="panel" style="margin-top:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <a href="/tasks?year=<%= prevYear %>&month=<%= prevMonth %>" class="mini-btn">← 前月</a>
+    <h2 style="margin:0;"><%= year %>年<%= month %>月</h2>
+    <a href="/tasks?year=<%= nextYear %>&month=<%= nextMonth %>" class="mini-btn">次月 →</a>
+  </div>
+
+  <div class="calendar-grid">
+    <% ['日','月','火','水','木','金','土'].forEach(d => { %>
+      <div class="calendar-weekday"><%= d %></div>
+    <% }) %>
+
+    <% for (let i = 0; i < firstWeekday; i++) { %>
+      <div class="calendar-cell empty"></div>
+    <% } %>
+
+    <% for (let day = 1; day <= lastDay; day++) { %>
+      <div class="calendar-cell">
+        <div class="calendar-day"><%= day %></div>
+        <% if (tasksByDay[day]) { %>
+          <% tasksByDay[day].forEach(t => { %>
+            <div class="calendar-task" title="<%= t.assignee_name || t.user_id %>"><%= t.title %></div>
+          <% }) %>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  // カンバンのドラッグ&ドロップでステータス変更
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+    });
+  });
+
+  document.querySelectorAll('.kanban-list').forEach(list => {
+    list.addEventListener('dragover', (e) => e.preventDefault());
+    list.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const id = e.dataTransfer.getData('text/plain');
+      const status = list.dataset.status;
+      await fetch('/tasks/' + id + '/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'fetch',
+        },
+        body: 'status=' + status,
+      });
+      window.location.reload();
+    });
+  });
+</script>
+
+<%- include('../partials/footer') %>

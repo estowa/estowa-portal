@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const homeRoutes = require('./routes/home');
 const attendanceRoutes = require('./routes/attendance');
+const taskRoutes = require('./routes/tasks');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +41,7 @@ app.use(authRoutes);
 app.use(userRoutes);
 app.use(homeRoutes);
 app.use(attendanceRoutes);
+app.use(taskRoutes);
 
 app.use((req, res) => {
   res.status(404).render('error', { message: 'ページが見つかりません', user: req.session.user });
