@@ -4,6 +4,7 @@ const express = require('express');
 const multer = require('multer');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
+const mailer = require('../lib/mailer');
 
 const router = express.Router();
 
@@ -53,6 +54,58 @@ function getMonthRange(year, month) {
 
 function dueDateOnly(dueAt) {
   return dueAt ? dueAt.split('T')[0] : null;
+}
+
+const STATUS_LABELS = Object.fromEntries(STATUS_DEFS);
+
+function statusLabel(key) {
+  return STATUS_LABELS[key] || key;
+}
+
+function displayNamesFor(userIds) {
+  if (!userIds || userIds.length === 0) return [];
+  const placeholders = userIds.map(() => '?').join(',');
+  const rows = db.prepare(`SELECT user_id, display_name FROM users WHERE user_id IN (${placeholders})`).all(...userIds);
+  const byId = Object.fromEntries(rows.map((r) => [r.user_id, r.display_name]));
+  return userIds.map((id) => byId[id] || id);
+}
+
+// 指定したユーザーIDのメールアドレス一覧を取得(未設定は除外)
+function emailsFor(userIds) {
+  if (!userIds || userIds.length === 0) return [];
+  const placeholders = userIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(`SELECT email FROM users WHERE user_id IN (${placeholders}) AND email IS NOT NULL AND email != ''`)
+    .all(...userIds);
+  return rows.map((r) => r.email);
+}
+
+// タスクの主要な変更(ステータス・締切・担当者)を通知メールで送信する
+// 変更した本人には送らず、担当者+作成者にのみ送信する
+function notifyTaskUpdate({ task, actorUserId, changeLines }) {
+  if (changeLines.length === 0) return;
+
+  const assigneeRows = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(task.id);
+  const recipientIds = new Set(assigneeRows.map((r) => r.user_id));
+  if (task.created_by) recipientIds.add(task.created_by);
+  recipientIds.delete(actorUserId);
+
+  const to = emailsFor(Array.from(recipientIds));
+  if (to.length === 0) return;
+
+  const actorName = displayNamesFor([actorUserId])[0] || actorUserId;
+  const url = `${mailer.getBaseUrl()}/tasks/${task.id}`;
+  const subject = `[estowa社内ポータル] タスク更新: ${task.title}`;
+  const text =
+    `${actorName} さんがタスク「${task.title}」を更新しました。\n\n` +
+    changeLines.join('\n') +
+    `\n\n詳細はこちら:\n${url}`;
+  const html =
+    `<p>${actorName} さんがタスク「<strong>${task.title}</strong>」を更新しました。</p>` +
+    `<ul>${changeLines.map((l) => `<li>${l}</li>`).join('')}</ul>` +
+    `<p><a href="${url}">詳細を見る</a></p>`;
+
+  mailer.sendMail({ to, subject, text, html }).catch((err) => console.error('[tasks] メール通知エラー:', err));
 }
 
 function attachAssignees(tasks) {
@@ -194,12 +247,14 @@ router.get('/tasks/:id', requireLogin, (req, res) => {
 
   const users = db.prepare('SELECT user_id, display_name FROM users ORDER BY display_name').all();
   const assignedIds = new Set(task.assignees.map((a) => a.user_id));
+  const updatedByName = task.updated_by ? displayNamesFor([task.updated_by])[0] : null;
 
   res.render('tasks/show', {
     task,
     attachments,
     users,
     assignedIds,
+    updatedByName,
     statusDefs: STATUS_DEFS,
     error: null,
     uploadError: req.query.uploadError || null,
@@ -213,15 +268,42 @@ router.post('/tasks/:id', requireLogin, (req, res) => {
     return res.redirect('/tasks/' + req.params.id);
   }
   const dueAt = `${due_date}T${due_time || '18:00'}`;
+  const newStatus = STATUSES.includes(status) ? status : 'todo';
+  const newStartDate = start_date || null;
+
+  const before = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+  if (!before) return res.redirect('/tasks');
+  const beforeAssigneeIds = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(req.params.id).map((r) => r.user_id);
 
   db.prepare(
-    'UPDATE tasks SET title = ?, description = ?, status = ?, due_at = ?, start_date = ? WHERE id = ?'
-  ).run(title, description || null, STATUSES.includes(status) ? status : 'todo', dueAt, start_date || null, req.params.id);
+    "UPDATE tasks SET title = ?, description = ?, status = ?, due_at = ?, start_date = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(title, description || null, newStatus, dueAt, newStartDate, req.session.user.user_id, req.params.id);
 
   const assignees = Array.isArray(assignee_ids) ? assignee_ids : (assignee_ids ? [assignee_ids] : []);
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(req.params.id);
   const insertAssignee = db.prepare('INSERT OR IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)');
   assignees.forEach((uid) => insertAssignee.run(req.params.id, uid));
+
+  // 主要な変更(ステータス・締切・開始日・担当者)のみ通知メールを送る
+  const changeLines = [];
+  if (before.status !== newStatus) {
+    changeLines.push(`ステータス: ${statusLabel(before.status)} → ${statusLabel(newStatus)}`);
+  }
+  if (before.due_at !== dueAt) {
+    changeLines.push(`締切日時: ${(before.due_at || '未設定').replace('T', ' ')} → ${dueAt.replace('T', ' ')}`);
+  }
+  if ((before.start_date || null) !== newStartDate) {
+    changeLines.push(`開始日: ${before.start_date || 'なし'} → ${newStartDate || 'なし'}`);
+  }
+  const beforeSet = new Set(beforeAssigneeIds);
+  const afterSet = new Set(assignees);
+  const assigneesChanged = beforeSet.size !== afterSet.size || [...beforeSet].some((id) => !afterSet.has(id));
+  if (assigneesChanged) {
+    changeLines.push(`担当者: ${displayNamesFor(beforeAssigneeIds).join('、') || 'なし'} → ${displayNamesFor(assignees).join('、') || 'なし'}`);
+  }
+
+  const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+  notifyTaskUpdate({ task: updatedTask, actorUserId: req.session.user.user_id, changeLines });
 
   res.redirect('/tasks/' + req.params.id);
 });
@@ -270,7 +352,20 @@ router.post('/tasks/:id/status', requireLogin, (req, res) => {
   if (!STATUSES.includes(status)) {
     return res.status(400).json({ error: '不正なステータスです' });
   }
-  db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(status, req.params.id);
+  const before = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+  if (!before) return res.status(404).json({ error: 'タスクが見つかりません' });
+
+  db.prepare("UPDATE tasks SET status = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(status, req.session.user.user_id, req.params.id);
+
+  if (before.status !== status) {
+    const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    notifyTaskUpdate({
+      task: updatedTask,
+      actorUserId: req.session.user.user_id,
+      changeLines: [`ステータス: ${statusLabel(before.status)} → ${statusLabel(status)}`],
+    });
+  }
 
   if (req.headers['x-requested-with'] === 'fetch') {
     return res.json({ ok: true });

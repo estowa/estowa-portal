@@ -12,6 +12,7 @@
         <input type="text" name="user_id" placeholder="ログインID" required />
         <input type="password" name="password" placeholder="パスワード" required />
         <input type="text" name="display_name" placeholder="表示名" required />
+        <input type="email" name="email" placeholder="メールアドレス（通知の送信先・任意）" />
         <select name="role">
           <option value="member">メンバー</option>
           <option value="admin">管理者</option>
@@ -29,6 +30,7 @@
       <tr>
         <th>ID</th>
         <th>表示名</th>
+        <th>メールアドレス</th>
         <th>権限</th>
         <th>権限変更</th>
         <th>パスワード再設定</th>
@@ -40,6 +42,12 @@
         <tr>
           <td><%= u.user_id %></td>
           <td><%= u.display_name %></td>
+          <td>
+            <form method="POST" action="/users/<%= u.id %>/email" class="form-inline">
+              <input type="email" name="email" value="<%= u.email || '' %>" placeholder="未設定" style="width:170px;" />
+              <button type="submit" class="mini-btn">保存</button>
+            </form>
+          </td>
           <td><span class="badge <%= u.role %>"><%= u.role === 'admin' ? '管理者' : 'メンバー' %></span></td>
           <td>
             <form method="POST" action="/users/<%= u.id %>/role" class="form-inline">

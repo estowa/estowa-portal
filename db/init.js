@@ -18,9 +18,17 @@ db.exec(`
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'member', -- 'admin' or 'member'
+    email TEXT,                          -- 通知メール送信先
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// 既存DBに email 列がない場合は追加(マイグレーション)
+const userColumns = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name);
+if (!userColumns.includes('email')) {
+  db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+  console.log('usersテーブルに email 列を追加しました');
+}
 
 // お知らせテーブル(ホーム画面用の先行実装)
 db.exec(`
@@ -111,6 +119,17 @@ taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
 if (!taskColumns.includes('description')) {
   db.exec('ALTER TABLE tasks ADD COLUMN description TEXT');
   console.log('tasksテーブルに description 列を追加しました');
+}
+
+// 最終更新者・最終更新日時列を追加(マイグレーション) - 更新通知メールの表示用
+taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+if (!taskColumns.includes('updated_by')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN updated_by TEXT');
+  console.log('tasksテーブルに updated_by 列を追加しました');
+}
+if (!taskColumns.includes('updated_at')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN updated_at TEXT');
+  console.log('tasksテーブルに updated_at 列を追加しました');
 }
 
 // タスク添付ファイル(画像・各種ファイル)テーブル

@@ -1,7 +1,14 @@
 <%- include('../partials/header') %>
 
 <div class="page-header">
-  <h1><%= task.title %></h1>
+  <div>
+    <h1><%= task.title %></h1>
+    <% if (updatedByName && task.updated_at) { %>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+        最終更新: <%= updatedByName %>（<%= task.updated_at.slice(0, 16).replace('T', ' ') %>）
+      </div>
+    <% } %>
+  </div>
   <a href="/tasks" class="mini-btn">← 一覧に戻る</a>
 </div>
 
