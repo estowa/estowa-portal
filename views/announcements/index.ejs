@@ -1,0 +1,43 @@
+<%- include('../partials/header') %>
+
+<h1 style="font-size:18px; margin-bottom:16px;">お知らせ</h1>
+
+<% if (currentUser && currentUser.role === 'admin') { %>
+  <div class="panel">
+    <h2>新規お知らせ投稿</h2>
+    <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+    <form method="POST" action="/announcements">
+      <input type="text" name="title" placeholder="タイトル" required style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px;" />
+      <textarea name="body" placeholder="本文（任意）" rows="3" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px; font-family:inherit;"></textarea>
+      <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">投稿する</button>
+    </form>
+  </div>
+<% } %>
+
+<div class="panel">
+  <% if (announcements.length === 0) { %>
+    <div class="empty-note">お知らせはまだありません</div>
+  <% } else { %>
+    <% announcements.forEach(a => { %>
+      <div class="announcement-item">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <strong><%= a.title %></strong>
+          <span style="color:#b0b3c0; font-size:12px; white-space:nowrap; margin-left:12px;"><%= a.created_at %></span>
+        </div>
+        <% if (a.body) { %>
+          <div style="color:#444a5e; font-size:14px; margin-top:6px; white-space:pre-wrap;"><%= a.body %></div>
+        <% } %>
+        <div style="color:var(--text-muted); font-size:12px; margin-top:6px;">
+          投稿者: <%= a.author_name || a.created_by %>
+        </div>
+        <% if (currentUser && currentUser.role === 'admin') { %>
+          <form method="POST" action="/announcements/<%= a.id %>/delete" style="margin-top:8px;" onsubmit="return confirm('このお知らせを削除しますか？');">
+            <button type="submit" class="mini-btn">削除</button>
+          </form>
+        <% } %>
+      </div>
+    <% }) %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>
