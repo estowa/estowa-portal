@@ -7,6 +7,17 @@
       if (!el.contains(e.target)) el.removeAttribute('open');
     });
   });
+
+  // 現在のページに応じてサイドバーのハイライトを切り替え
+  (function () {
+    const path = window.location.pathname;
+    document.querySelectorAll('.sidebar .nav-item').forEach((link) => {
+      const href = link.getAttribute('href');
+      if (!href || href === '#') return;
+      const isMatch = href === '/' ? path === '/' : path.startsWith(href);
+      link.classList.toggle('active', isMatch);
+    });
+  })();
 </script>
 </body>
 </html>
