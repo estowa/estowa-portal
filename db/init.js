@@ -57,6 +57,19 @@ db.exec(`
   );
 `);
 
+// お知らせの添付ファイル
+db.exec(`
+  CREATE TABLE IF NOT EXISTS announcement_attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    announcement_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    mime_type TEXT,
+    uploaded_by TEXT,
+    uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 // タスクテーブル(カンバンボード用)
 db.exec(`
   CREATE TABLE IF NOT EXISTS tasks (

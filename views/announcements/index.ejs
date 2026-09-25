@@ -3,18 +3,7 @@
 <div class="page-header">
   <h1>お知らせ</h1>
   <% if (currentUser && currentUser.role === 'admin') { %>
-    <details class="new-toggle">
-      <summary>+ 新規お知らせ</summary>
-      <div class="new-form-panel">
-        <h2>新規お知らせ投稿</h2>
-        <% if (error) { %><div class="error-text"><%= error %></div><% } %>
-        <form method="POST" action="/announcements">
-          <input type="text" name="title" placeholder="タイトル" required />
-          <textarea name="body" placeholder="本文（任意）" rows="3" style="font-family:inherit;"></textarea>
-          <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">投稿する</button>
-        </form>
-      </div>
-    </details>
+    <a href="/announcements/new" class="new-toggle-btn">+ 新規お知らせ</a>
   <% } %>
 </div>
 
@@ -31,15 +20,30 @@
         <% if (a.body) { %>
           <div style="color:#444a5e; font-size:14px; margin-top:6px; white-space:pre-wrap;"><%= a.body %></div>
         <% } %>
+
+        <% if (a.attachments && a.attachments.length > 0) { %>
+          <div class="file-list" style="margin-top:10px; margin-bottom:0;">
+            <% a.attachments.forEach(att => { %>
+              <div class="file-list-item">
+                <span class="file-icon">📄</span>
+                <a href="/uploads/announcements/<%= att.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= att.original_name %>"><%= att.original_name %></a>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+
         <div class="announcement-author" style="color:var(--text-muted); font-size:12px; margin-top:6px;">
           投稿者:
           <%- include('../partials/avatar', { avatar: a.authorAvatar, size: 'xs' }) %>
           <%= a.author_name || a.created_by %>
         </div>
         <% if (currentUser && currentUser.role === 'admin') { %>
-          <form method="POST" action="/announcements/<%= a.id %>/delete" style="margin-top:8px;" onsubmit="return confirm('このお知らせを削除しますか？');">
-            <button type="submit" class="mini-btn">削除</button>
-          </form>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <a href="/announcements/<%= a.id %>/edit" class="mini-btn">編集</a>
+            <form method="POST" action="/announcements/<%= a.id %>/delete" onsubmit="return confirm('このお知らせを削除しますか？');">
+              <button type="submit" class="mini-btn">削除</button>
+            </form>
+          </div>
         <% } %>
       </div>
     <% }) %>

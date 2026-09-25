@@ -1,0 +1,68 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1>お知らせを編集</h1>
+  <a href="/announcements" class="mini-btn">← 一覧に戻る</a>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="panel">
+      <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+      <% if (uploadError) { %><div class="error-text"><%= uploadError %></div><% } %>
+      <form method="POST" action="/announcements/<%= announcement.id %>" enctype="multipart/form-data">
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">タイトル</label>
+        <input type="text" name="title" value="<%= announcement.title %>" required
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">本文（任意）</label>
+        <textarea name="body" rows="6" placeholder="お知らせの内容"
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; resize:vertical;"><%= announcement.body || '' %></textarea>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">投稿者</label>
+        <select name="created_by" style="width:100%; padding:10px; margin-bottom:14px; border:1px solid var(--border); border-radius:8px;">
+          <% users.forEach(u => { %>
+            <option value="<%= u.user_id %>" <%= announcement.created_by === u.user_id ? 'selected' : '' %>><%= u.display_name %></option>
+          <% }) %>
+        </select>
+
+        <% if (attachments.length > 0) { %>
+          <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
+          <div class="file-list">
+            <% attachments.forEach(a => { %>
+              <div class="file-list-item">
+                <span class="file-icon">📄</span>
+                <a href="/uploads/announcements/<%= a.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= a.original_name %>"><%= a.original_name %></a>
+                <form method="POST" action="/announcements/<%= announcement.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
+                  <button type="submit" class="mini-btn">削除</button>
+                </form>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
+        <div class="dropzone" style="margin-bottom:16px;">
+          <input type="file" name="files" multiple />
+          <div>ここにファイルをドラッグ&ドロップ<br />またはクリックして選択</div>
+          <div class="dropzone-filelist"></div>
+        </div>
+
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">保存する</button>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>お知らせを削除</h2>
+      <p style="font-size:13px; color:var(--text-muted);">このお知らせと添付ファイルを完全に削除します。</p>
+      <form method="POST" action="/announcements/<%= announcement.id %>/delete" onsubmit="return confirm('このお知らせを削除しますか？元に戻せません。');">
+        <button type="submit" class="mini-btn">お知らせを削除する</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="/js/dropzone.js"></script>
+<%- include('../partials/footer') %>

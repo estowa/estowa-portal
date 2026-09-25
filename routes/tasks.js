@@ -1,11 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const multer = require('multer');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
 const mailer = require('../lib/mailer');
 const { avatarFor } = require('../lib/avatar');
+const { createUploader } = require('../lib/uploads');
 
 const router = express.Router();
 
@@ -21,43 +21,7 @@ const STATUS_DEFS = [
 const STATUSES = STATUS_DEFS.map(([key]) => key);
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'tasks');
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-// 実行ファイルなど危険な拡張子のみ拒否し、それ以外の画像・PDF・Office文書・
-// 圧縮ファイルなどは幅広く添付できるようにする(Asanaのような添付イメージ)
-const BLOCKED_EXT = ['.exe', '.bat', '.cmd', '.sh', '.msi', '.com', '.php', '.js', '.jar', '.app'];
-
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname).slice(0, 10);
-      const safeExt = /^[a-zA-Z0-9.]*$/.test(ext) ? ext : '';
-      cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
-    },
-  }),
-  limits: { fileSize: 15 * 1024 * 1024, files: 10 },
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (BLOCKED_EXT.includes(ext)) {
-      return cb(null, false);
-    }
-    cb(null, true);
-  },
-});
-
-// multerのアップロード処理を実行し、エラーを日本語メッセージに変換して返す
-function runUpload(req, res, callback) {
-  upload.array('files', 10)(req, res, (err) => {
-    if (err) {
-      let message = 'アップロードに失敗しました';
-      if (err.code === 'LIMIT_FILE_SIZE') message = 'ファイルサイズが大きすぎます(1ファイル15MBまで)';
-      if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') message = '一度にアップロードできるファイル数を超えています(最大10件)';
-      return callback(message);
-    }
-    callback(null);
-  });
-}
+const { runUpload } = createUploader(UPLOAD_DIR, { maxFiles: 10, maxFileSize: 15 * 1024 * 1024 });
 
 function insertAttachments(taskId, files, uploadedBy, commentId) {
   if (!files || files.length === 0) return;
