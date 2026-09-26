@@ -245,6 +245,13 @@ db.exec(`
   );
 `);
 
+// 既存DBに url 列がない場合は追加(マイグレーション。用途欄と合わせてNotionの一覧を再現)
+const vendorColumns = db.prepare("PRAGMA table_info(vendors)").all().map((c) => c.name);
+if (!vendorColumns.includes('url')) {
+  db.exec('ALTER TABLE vendors ADD COLUMN url TEXT');
+  console.log('vendorsテーブルに url 列を追加しました');
+}
+
 // 共有シートリンク集
 db.exec(`
   CREATE TABLE IF NOT EXISTS sheet_links (

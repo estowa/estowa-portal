@@ -799,3 +799,17 @@ table.sheet-table.readonly td {
 }
 .file-list-item .file-name:hover { color: var(--primary); }
 .file-list-item form { margin: 0; }
+
+/* ---- 外注先リスト(カテゴリごとにグルーピング表示) ---- */
+.vendor-category-panel { margin-bottom: 20px; }
+.vendor-category-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.vendor-category-head .badge {
+  font-weight: 600;
+  padding: 4px 12px;
+}
+.vendor-category-count { color: var(--text-muted); font-size: 13px; }

@@ -2,59 +2,52 @@
 
 <div class="page-header">
   <h1>外注先リスト</h1>
-  <details class="new-toggle">
-    <summary>+ 新規登録</summary>
-    <div class="new-form-panel">
-      <h2>新規登録</h2>
-      <form method="POST" action="/vendors">
-        <input type="text" name="category" placeholder="カテゴリ（例: 印刷）" />
-        <input type="text" name="name" placeholder="外注先名" required />
-        <input type="text" name="contact_info" placeholder="連絡先（電話・メール等）" />
-        <input type="text" name="notes" placeholder="備考" />
-        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
-      </form>
+  <a href="/vendors/new" class="new-toggle-btn">+ 新規登録</a>
+</div>
+
+<% groups.forEach(group => { %>
+  <div class="panel vendor-category-panel">
+    <div class="vendor-category-head">
+      <span class="badge" style="background: <%= group.color %>; color: white;"><%= group.name %></span>
+      <span class="vendor-category-count">(<%= group.vendors.length %>)</span>
+      <a href="/vendors/new?category=<%= encodeURIComponent(group.name) %>" class="mini-btn" style="margin-left:auto;">+ 追加</a>
     </div>
-  </details>
-</div>
 
-<div class="panel">
-  <div class="form-inline" style="margin-bottom:14px;">
-    <span style="font-size:13px; color:var(--text-muted);">カテゴリで絞り込み:</span>
-    <a href="/vendors" class="mini-btn <%= !categoryFilter ? 'active-filter' : '' %>">すべて</a>
-    <% categories.forEach(c => { %>
-      <a href="/vendors?category=<%= encodeURIComponent(c) %>" class="mini-btn <%= categoryFilter === c ? 'active-filter' : '' %>"><%= c %></a>
-    <% }) %>
+    <% if (group.vendors.length === 0) { %>
+      <div class="empty-note">登録されている外注先はありません</div>
+    <% } else { %>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>社名</th>
+            <th>URL</th>
+            <th>用途</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% group.vendors.forEach(v => { %>
+            <tr>
+              <td><%= v.name %></td>
+              <td>
+                <% if (v.url) { %>
+                  <a href="<%= /^https?:\/\//.test(v.url) ? v.url : 'https://' + v.url %>" target="_blank" rel="noopener"><%= v.url %></a>
+                <% } else { %>
+                  -
+                <% } %>
+              </td>
+              <td><%= v.notes || '-' %></td>
+              <td>
+                <form method="POST" action="/vendors/<%= v.id %>/delete" onsubmit="return confirm('削除しますか？');">
+                  <button type="submit" class="mini-btn">削除</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
   </div>
-
-  <table class="user-table">
-    <thead>
-      <tr>
-        <th>カテゴリ</th>
-        <th>外注先名</th>
-        <th>連絡先</th>
-        <th>備考</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% vendors.forEach(v => { %>
-        <tr>
-          <td><%= v.category || '-' %></td>
-          <td><%= v.name %></td>
-          <td><%= v.contact_info || '-' %></td>
-          <td><%= v.notes || '-' %></td>
-          <td>
-            <form method="POST" action="/vendors/<%= v.id %>/delete" onsubmit="return confirm('削除しますか？');">
-              <button type="submit" class="mini-btn">削除</button>
-            </form>
-          </td>
-        </tr>
-      <% }) %>
-      <% if (vendors.length === 0) { %>
-        <tr><td colspan="5" class="empty-note">登録されている外注先はありません</td></tr>
-      <% } %>
-    </tbody>
-  </table>
-</div>
+<% }) %>
 
 <%- include('../partials/footer') %>
