@@ -86,6 +86,15 @@
       document.querySelectorAll('.kanban-list.drag-over').forEach((el) => el.classList.remove('drag-over'));
     }
 
+    // 列見出しの件数(◯件)を、実際に表示されているカード数に合わせて更新する
+    function updateColumnCount(list) {
+      if (!list) return;
+      const column = list.closest('.kanban-column');
+      if (!column) return;
+      const countEl = column.querySelector('.count');
+      if (countEl) countEl.textContent = '(' + list.querySelectorAll('.kanban-card').length + ')';
+    }
+
     document.querySelectorAll('.kanban-card').forEach((card) => {
       let downX = 0;
       let downY = 0;
@@ -149,15 +158,29 @@
         const targetList = findListUnder(e.clientX, e.clientY);
         if (targetList && targetList !== originalList) {
           const status = targetList.dataset.status;
-          await fetch('/tasks/' + card.dataset.id + '/status', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'X-Requested-With': 'fetch',
-            },
-            body: 'status=' + status,
-          });
-          window.location.reload();
+
+          // ページ全体をリロードせず、カード自体を移動先の列にすぐ移す
+          // (体感を良くするため。失敗した場合は元の列に戻す)
+          targetList.appendChild(card);
+          updateColumnCount(originalList);
+          updateColumnCount(targetList);
+
+          try {
+            const res = await fetch('/tasks/' + card.dataset.id + '/status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'fetch',
+              },
+              body: 'status=' + status,
+            });
+            if (!res.ok) throw new Error('status update failed');
+          } catch (err) {
+            // 失敗時は元の列に戻す
+            originalList.appendChild(card);
+            updateColumnCount(originalList);
+            updateColumnCount(targetList);
+          }
         }
       }
 
