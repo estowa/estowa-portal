@@ -185,12 +185,13 @@ router.get('/tasks', requireLogin, (req, res) => {
   const { start, end, lastDay } = getMonthRange(year, month);
 
   // 月内に少しでも重なるタスク(開始日〜締切日の範囲)を取得
+  // 締切日時が未設定でも、開始日時だけは設定されていればカレンダーに表示する
   const overlapping = db
     .prepare(
       `SELECT * FROM tasks
-       WHERE due_at IS NOT NULL
+       WHERE (due_at IS NOT NULL OR start_date IS NOT NULL)
          AND COALESCE(start_date, date(due_at)) <= ?
-         AND date(due_at) >= ?`
+         AND COALESCE(date(due_at), start_date) >= ?`
     )
     .all(end, start);
   attachAssignees(overlapping);
@@ -198,7 +199,7 @@ router.get('/tasks', requireLogin, (req, res) => {
   const tasksByDay = {};
   overlapping.forEach((t) => {
     const rangeStart = t.start_date || dueDateOnly(t.due_at);
-    const rangeEnd = dueDateOnly(t.due_at);
+    const rangeEnd = t.due_at ? dueDateOnly(t.due_at) : t.start_date;
     for (let day = 1; day <= lastDay; day++) {
       const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       if (dayStr >= rangeStart && dayStr <= rangeEnd) {
@@ -238,9 +239,9 @@ router.get('/tasks/day/:date', requireLogin, (req, res) => {
   const tasks = db
     .prepare(
       `SELECT * FROM tasks
-       WHERE due_at IS NOT NULL
+       WHERE (due_at IS NOT NULL OR start_date IS NOT NULL)
          AND COALESCE(start_date, date(due_at)) <= ?
-         AND date(due_at) >= ?`
+         AND COALESCE(date(due_at), start_date) >= ?`
     )
     .all(date, date);
   attachAssignees(tasks);
