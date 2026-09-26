@@ -716,6 +716,54 @@ table.sheet-table.readonly td {
   gap: 6px;
 }
 
+/* ---- お知らせ一覧(タイトルのみ表示、既読/未読) ---- */
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+}
+.announcement-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+}
+.announcement-row:last-child { border-bottom: none; }
+.announcement-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.announcement-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.announcement-row.is-unread .announcement-row-title { font-weight: 700; }
+.announcement-row.is-read .announcement-row-title { color: var(--text-muted); font-weight: 400; }
+.unread-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.announcement-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.announcement-row-date {
+  color: #b0b3c0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 /* ---- アイコン設定画面 ---- */
 .icon-picker-section { margin-bottom: 20px; }
 .icon-picker-section h3 { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }

@@ -8,10 +8,16 @@ const router = express.Router();
 router.get('/', requireLogin, (req, res) => {
   const user = req.session.user;
 
-  // お知らせ（最新3件）
+  // お知らせ（最新3件。KPIカードの件数は「未読」の実件数を別途集計する）
   const announcements = db
     .prepare('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 3')
     .all();
+  const unreadAnnouncementCount = db
+    .prepare(
+      `SELECT COUNT(*) AS cnt FROM announcements
+       WHERE id NOT IN (SELECT announcement_id FROM announcement_reads WHERE user_id = ?)`
+    )
+    .get(user.user_id).cnt;
 
   // 自分の直近タスク（最大5件、未完了優先）
   const myTasks = db
@@ -66,6 +72,7 @@ router.get('/', requireLogin, (req, res) => {
   res.render('home', {
     user,
     announcements,
+    unreadAnnouncementCount,
     myTasks,
     isCheckedIn,
     salesSummary,

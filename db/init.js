@@ -70,6 +70,17 @@ db.exec(`
   );
 `);
 
+// お知らせの既読管理(ユーザーごとに読んだかどうかを記録し、未読件数表示に使う)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS announcement_reads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    announcement_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    read_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(announcement_id, user_id)
+  );
+`);
+
 // タスクテーブル(カンバンボード用)
 db.exec(`
   CREATE TABLE IF NOT EXISTS tasks (

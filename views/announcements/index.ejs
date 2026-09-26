@@ -11,42 +11,20 @@
   <% if (announcements.length === 0) { %>
     <div class="empty-note">お知らせはまだありません</div>
   <% } else { %>
-    <% announcements.forEach(a => { %>
-      <div class="announcement-item">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <strong><%= a.title %></strong>
-          <span style="color:#b0b3c0; font-size:12px; white-space:nowrap; margin-left:12px;"><%= a.created_at %></span>
-        </div>
-        <% if (a.body) { %>
-          <div style="color:#444a5e; font-size:14px; margin-top:6px; white-space:pre-wrap;"><%= a.body %></div>
-        <% } %>
-
-        <% if (a.attachments && a.attachments.length > 0) { %>
-          <div class="file-list" style="margin-top:10px; margin-bottom:0;">
-            <% a.attachments.forEach(att => { %>
-              <div class="file-list-item">
-                <span class="file-icon">📄</span>
-                <a href="/uploads/announcements/<%= att.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= att.original_name %>"><%= att.original_name %></a>
-              </div>
-            <% }) %>
-          </div>
-        <% } %>
-
-        <div class="announcement-author" style="color:var(--text-muted); font-size:12px; margin-top:6px;">
-          投稿者:
-          <%- include('../partials/avatar', { avatar: a.authorAvatar, size: 'xs' }) %>
-          <%= a.author_name || a.created_by %>
-        </div>
-        <% if (currentUser && currentUser.role === 'admin') { %>
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <a href="/announcements/<%= a.id %>/edit" class="mini-btn">編集</a>
-            <form method="POST" action="/announcements/<%= a.id %>/delete" onsubmit="return confirm('このお知らせを削除しますか？');">
-              <button type="submit" class="mini-btn">削除</button>
-            </form>
-          </div>
-        <% } %>
-      </div>
-    <% }) %>
+    <div class="announcement-list">
+      <% announcements.forEach(a => { %>
+        <a href="/announcements/<%= a.id %>" class="announcement-row <%= a.is_read ? 'is-read' : 'is-unread' %>">
+          <span class="announcement-row-main">
+            <% if (!a.is_read) { %><span class="unread-dot" title="未読"></span><% } %>
+            <span class="announcement-row-title"><%= a.title %></span>
+          </span>
+          <span class="announcement-row-meta">
+            <%- include('../partials/avatar', { avatar: a.authorAvatar, size: 'xs' }) %>
+            <span class="announcement-row-date"><%= a.created_at %></span>
+          </span>
+        </a>
+      <% }) %>
+    </div>
   <% } %>
 </div>
 

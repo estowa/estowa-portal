@@ -11,7 +11,7 @@
   </div>
   <div class="kpi-card">
     <div class="label">未読お知らせ</div>
-    <div class="value"><%= announcements.length %> 件</div>
+    <div class="value"><%= unreadAnnouncementCount %> 件</div>
   </div>
   <div class="kpi-card">
     <div class="label">自分の未完了タスク</div>
@@ -40,7 +40,7 @@
       <% } else { %>
         <% announcements.forEach(a => { %>
           <div class="announcement-item">
-            <strong><%= a.title %></strong>
+            <a href="/announcements/<%= a.id %>" style="color:inherit; font-weight:600;"><%= a.title %></a>
             <div style="color:#6b7080; font-size:13px;"><%= a.body %></div>
           </div>
         <% }) %>

@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1>お知らせ詳細</h1>
+  <a href="/announcements" class="mini-btn">← 一覧に戻る</a>
+</div>
+
+<div class="panel">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+    <h2 style="margin:0;"><%= announcement.title %></h2>
+    <span style="color:#b0b3c0; font-size:12px; white-space:nowrap; margin-left:12px;"><%= announcement.created_at %></span>
+  </div>
+
+  <% if (announcement.body) { %>
+    <div style="color:#444a5e; font-size:14px; margin-top:14px; white-space:pre-wrap;"><%= announcement.body %></div>
+  <% } %>
+
+  <% if (announcement.attachments && announcement.attachments.length > 0) { %>
+    <div class="file-list" style="margin-top:14px; margin-bottom:0;">
+      <% announcement.attachments.forEach(att => { %>
+        <div class="file-list-item">
+          <span class="file-icon">📄</span>
+          <a href="/uploads/announcements/<%= att.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= att.original_name %>"><%= att.original_name %></a>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <div class="announcement-author" style="color:var(--text-muted); font-size:12px; margin-top:14px;">
+    投稿者:
+    <%- include('../partials/avatar', { avatar: announcement.authorAvatar, size: 'xs' }) %>
+    <%= announcement.author_name || announcement.created_by %>
+  </div>
+
+  <% if (currentUser && currentUser.role === 'admin') { %>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <a href="/announcements/<%= announcement.id %>/edit" class="mini-btn">編集</a>
+      <form method="POST" action="/announcements/<%= announcement.id %>/delete" onsubmit="return confirm('このお知らせを削除しますか？');">
+        <button type="submit" class="mini-btn">削除</button>
+      </form>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>
