@@ -56,6 +56,11 @@ function formatStart(startDate, startTime) {
   return startTime ? `${startDate} ${startTime}` : startDate;
 }
 
+// クエリ・フォームの値から board('company' or 'project')を安全に取り出す
+function boardFrom(value) {
+  return value === 'project' ? 'project' : 'company';
+}
+
 const STATUS_LABELS = Object.fromEntries(STATUS_DEFS);
 
 function statusLabel(key) {
@@ -162,9 +167,12 @@ function attachAssignees(tasks) {
   return tasks;
 }
 
-// タスク管理画面（カンバン + カレンダー）
+// タスク管理画面（カンバン + カレンダー）。社内全体タスクとプロジェクトはデータを分けて扱う
 router.get('/tasks', requireLogin, (req, res) => {
-  const allTasks = db.prepare('SELECT * FROM tasks ORDER BY due_at IS NULL, due_at ASC, id DESC').all();
+  const taskBoard = boardFrom(req.query.board);
+  const allTasks = db
+    .prepare('SELECT * FROM tasks WHERE board = ? ORDER BY due_at IS NULL, due_at ASC, id DESC')
+    .all(taskBoard);
   attachAssignees(allTasks);
 
   const board = {};
@@ -190,11 +198,12 @@ router.get('/tasks', requireLogin, (req, res) => {
   const overlapping = db
     .prepare(
       `SELECT * FROM tasks
-       WHERE (due_at IS NOT NULL OR start_date IS NOT NULL)
+       WHERE board = ?
+         AND (due_at IS NOT NULL OR start_date IS NOT NULL)
          AND COALESCE(start_date, date(due_at)) <= ?
          AND COALESCE(date(due_at), start_date) >= ?`
     )
-    .all(end, start);
+    .all(taskBoard, end, start);
   attachAssignees(overlapping);
 
   const tasksByDay = {};
@@ -219,6 +228,7 @@ router.get('/tasks', requireLogin, (req, res) => {
 
   res.render('tasks/index', {
     board,
+    taskBoard,
     statusDefs: STATUS_DEFS,
     users,
     view,
@@ -238,22 +248,25 @@ router.get('/tasks', requireLogin, (req, res) => {
 // 指定日のタスク一覧
 router.get('/tasks/day/:date', requireLogin, (req, res) => {
   const { date } = req.params;
+  const taskBoard = boardFrom(req.query.board);
   const tasks = db
     .prepare(
       `SELECT * FROM tasks
-       WHERE (due_at IS NOT NULL OR start_date IS NOT NULL)
+       WHERE board = ?
+         AND (due_at IS NOT NULL OR start_date IS NOT NULL)
          AND COALESCE(start_date, date(due_at)) <= ?
          AND COALESCE(date(due_at), start_date) >= ?`
     )
-    .all(date, date);
+    .all(taskBoard, date, date);
   attachAssignees(tasks);
-  res.render('tasks/day', { date, tasks, statusDefs: STATUS_DEFS });
+  res.render('tasks/day', { date, tasks, taskBoard, statusDefs: STATUS_DEFS });
 });
 
 // タスク新規作成画面(専用ページ)
 router.get('/tasks/new', requireLogin, (req, res) => {
   const users = listUsersWithAvatar();
-  res.render('tasks/new', { users, statusDefs: STATUS_DEFS, error: req.query.error || null });
+  const taskBoard = boardFrom(req.query.board);
+  res.render('tasks/new', { users, taskBoard, statusDefs: STATUS_DEFS, error: req.query.error || null });
 });
 
 // タスク新規作成(画像・ファイルの添付も同時に受け付ける)
@@ -263,15 +276,16 @@ router.post('/tasks', requireLogin, (req, res) => {
       return res.redirect('/tasks/new?error=' + encodeURIComponent(uploadError));
     }
 
-    const { title, description, status, due_date, due_time, start_date, start_time, assignee_ids } = req.body;
+    const { title, description, status, due_date, due_time, start_date, start_time, assignee_ids, board } = req.body;
+    const taskBoard = boardFrom(board);
     if (!title) {
-      return res.redirect('/tasks/new');
+      return res.redirect('/tasks/new?board=' + taskBoard);
     }
     const dueAt = buildDueAt(due_date, due_time);
     const newStatus = STATUSES.includes(status) ? status : 'todo';
     const result = db
-      .prepare('INSERT INTO tasks (title, description, status, due_at, start_date, start_time, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .run(title, description || null, newStatus, dueAt, start_date || null, start_date ? (start_time || null) : null, req.session.user.user_id);
+      .prepare('INSERT INTO tasks (title, description, status, due_at, start_date, start_time, created_by, board) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(title, description || null, newStatus, dueAt, start_date || null, start_date ? (start_time || null) : null, req.session.user.user_id, taskBoard);
 
     const assignees = Array.isArray(assignee_ids) ? assignee_ids : (assignee_ids ? [assignee_ids] : []);
     const insertAssignee = db.prepare('INSERT OR IGNORE INTO task_assignees (task_id, user_id) VALUES (?, ?)');
@@ -279,7 +293,7 @@ router.post('/tasks', requireLogin, (req, res) => {
 
     insertAttachments(result.lastInsertRowid, req.files, req.session.user.user_id, null);
 
-    res.redirect('/tasks');
+    res.redirect('/tasks?board=' + taskBoard);
   });
 });
 
@@ -488,13 +502,14 @@ router.post('/tasks/:id/status', requireLogin, (req, res) => {
 
 // タスク削除
 router.post('/tasks/:id/delete', requireLogin, (req, res) => {
+  const target = db.prepare('SELECT board FROM tasks WHERE id = ?').get(req.params.id);
   const attachments = db.prepare('SELECT * FROM task_attachments WHERE task_id = ?').all(req.params.id);
   attachments.forEach((att) => fs.unlink(path.join(UPLOAD_DIR, att.filename), () => {}));
   db.prepare('DELETE FROM task_attachments WHERE task_id = ?').run(req.params.id);
   db.prepare('DELETE FROM task_comments WHERE task_id = ?').run(req.params.id);
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(req.params.id);
   db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
-  res.redirect('/tasks');
+  res.redirect('/tasks' + (target ? '?board=' + boardFrom(target.board) : ''));
 });
 
 module.exports = router;

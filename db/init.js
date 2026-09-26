@@ -180,6 +180,13 @@ if (!taskColumns.includes('start_time')) {
   console.log('tasksテーブルに start_time 列を追加しました');
 }
 
+// タスクの区分(社内全体タスク / プロジェクト)。既存タスクは全て社内全体タスク扱いにする
+taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+if (!taskColumns.includes('board')) {
+  db.exec("ALTER TABLE tasks ADD COLUMN board TEXT NOT NULL DEFAULT 'company'");
+  console.log('tasksテーブルに board 列を追加しました');
+}
+
 // タスク添付ファイル(画像・各種ファイル)テーブル
 db.exec(`
   CREATE TABLE IF NOT EXISTS task_attachments (

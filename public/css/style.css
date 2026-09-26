@@ -585,6 +585,26 @@ table.sheet-table.readonly td {
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
+
+/* ---- タスク管理: プロジェクト/社内全体タスクの切り替えボタン ---- */
+.project-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 7px 16px;
+  background: #ffd9e6;
+  color: #b3235a;
+  border: 1px solid #f5a8c4;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+}
+.project-toggle-btn:hover {
+  background: #ffc4da;
+}
 .new-form-panel {
   position: absolute;
   right: 0;

@@ -7,8 +7,13 @@
       <button type="button" class="task-view-tab <%= view !== 'calendar' ? 'active' : '' %>" data-view="board">ボード</button>
       <button type="button" class="task-view-tab <%= view === 'calendar' ? 'active' : '' %>" data-view="calendar">カレンダー</button>
     </div>
+    <% if (taskBoard === 'project') { %>
+      <a href="/tasks?view=<%= view %>" class="project-toggle-btn" style="margin-left:10px;">社内全体タスク</a>
+    <% } else { %>
+      <a href="/tasks?board=project&view=<%= view %>" class="project-toggle-btn" style="margin-left:10px;">プロジェクト</a>
+    <% } %>
   </div>
-  <a href="/tasks/new" class="new-toggle-btn">+ 新規タスク</a>
+  <a href="/tasks/new?board=<%= taskBoard %>" class="new-toggle-btn">+ 新規タスク</a>
 </div>
 
 <div id="board-view" style="<%= view === 'calendar' ? 'display:none;' : '' %>">
@@ -47,9 +52,9 @@
 <div id="calendar-view" style="<%= view === 'calendar' ? '' : 'display:none;' %>">
 <div class="panel">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <a href="/tasks?year=<%= prevYear %>&month=<%= prevMonth %>&view=calendar" class="mini-btn">← 前月</a>
+    <a href="/tasks?year=<%= prevYear %>&month=<%= prevMonth %>&view=calendar&board=<%= taskBoard %>" class="mini-btn">← 前月</a>
     <h2 style="margin:0;"><%= year %>年<%= month %>月</h2>
-    <a href="/tasks?year=<%= nextYear %>&month=<%= nextMonth %>&view=calendar" class="mini-btn">次月 →</a>
+    <a href="/tasks?year=<%= nextYear %>&month=<%= nextMonth %>&view=calendar&board=<%= taskBoard %>" class="mini-btn">次月 →</a>
   </div>
 
   <div class="calendar-grid">
@@ -63,7 +68,7 @@
 
     <% for (let day = 1; day <= lastDay; day++) { %>
       <% const dayStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`; %>
-      <a class="calendar-cell" href="/tasks/day/<%= dayStr %>">
+      <a class="calendar-cell" href="/tasks/day/<%= dayStr %>?board=<%= taskBoard %>">
         <div class="calendar-day"><%= day %></div>
         <% if (tasksByDay[day]) { %>
           <% tasksByDay[day].forEach(t => { %>

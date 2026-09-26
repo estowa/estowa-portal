@@ -24,7 +24,7 @@ router.get('/', requireLogin, (req, res) => {
     .prepare(
       `SELECT tasks.* FROM tasks
        JOIN task_assignees ON task_assignees.task_id = tasks.id
-       WHERE task_assignees.user_id = ? AND tasks.status != 'done'
+       WHERE task_assignees.user_id = ? AND tasks.status != 'done' AND tasks.board = 'company'
        ORDER BY tasks.due_at IS NULL, tasks.due_at ASC LIMIT 5`
     )
     .all(user.user_id);
