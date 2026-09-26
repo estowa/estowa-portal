@@ -5,22 +5,17 @@ const { CATEGORY_DEFS, CATEGORIES, colorForCategory } = require('../lib/vendorCa
 
 const router = express.Router();
 
-// カテゴリ別にグルーピングする。定義済みカテゴリを常に表示順に並べ、
-// 想定外のカテゴリ(未設定・過去データなど)は「その他」としてまとめる
+// カテゴリ別にグルーピングする。定義済みカテゴリ(「その他」含む)を常に表示順に並べ、
+// 想定外のカテゴリ(未設定・過去データなど)も「その他」に含める
 function groupVendors(vendors) {
   const groups = CATEGORIES.map((name) => ({ name, color: colorForCategory(name), vendors: [] }));
-  const others = { name: 'その他', color: colorForCategory(null), vendors: [] };
+  const fallback = groups.find((g) => g.name === 'その他');
 
   vendors.forEach((v) => {
-    const group = groups.find((g) => g.name === v.category);
-    if (group) {
-      group.vendors.push(v);
-    } else {
-      others.vendors.push(v);
-    }
+    const group = groups.find((g) => g.name === v.category) || fallback;
+    group.vendors.push(v);
   });
 
-  if (others.vendors.length > 0) groups.push(others);
   return groups;
 }
 
@@ -39,7 +34,7 @@ router.get('/vendors/new', requireLogin, (req, res) => {
 
 // 新規登録
 router.post('/vendors', requireLogin, (req, res) => {
-  const { category, name, url, notes } = req.body;
+  const { category, name, url, notes, remarks } = req.body;
   if (!name) {
     return res.render('vendors/new', {
       categoryDefs: CATEGORY_DEFS,
@@ -48,11 +43,11 @@ router.post('/vendors', requireLogin, (req, res) => {
     });
   }
 
-  const safeCategory = CATEGORIES.includes(category) ? category : '';
+  const safeCategory = CATEGORIES.includes(category) ? category : 'その他';
 
   db.prepare(
-    'INSERT INTO vendors (category, name, url, notes, created_by) VALUES (?, ?, ?, ?, ?)'
-  ).run(safeCategory, name, url || '', notes || '', req.session.user.user_id);
+    'INSERT INTO vendors (category, name, url, notes, remarks, created_by) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(safeCategory, name, url || '', notes || '', remarks || '', req.session.user.user_id);
 
   res.redirect('/vendors');
 });

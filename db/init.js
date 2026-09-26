@@ -251,6 +251,11 @@ if (!vendorColumns.includes('url')) {
   db.exec('ALTER TABLE vendors ADD COLUMN url TEXT');
   console.log('vendorsテーブルに url 列を追加しました');
 }
+// 用途(notes)とは別に、一覧の右端に表示する備考欄を追加
+if (!vendorColumns.includes('remarks')) {
+  db.exec('ALTER TABLE vendors ADD COLUMN remarks TEXT');
+  console.log('vendorsテーブルに remarks 列を追加しました');
+}
 
 // 共有シートリンク集
 db.exec(`
