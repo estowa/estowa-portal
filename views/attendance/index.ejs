@@ -1,0 +1,17 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1>勤怠ダウンロード</h1>
+</div>
+
+<div class="panel">
+  <p class="empty-note" style="margin-top:0;">
+    月を選んでCSVをダウンロードすると、メンバーごとの氏名・日別の出勤/退勤時刻が出力されます。打刻がない日は空欄になります。
+  </p>
+  <form method="GET" action="/attendance/export" style="display:flex; align-items:center; gap:10px;">
+    <input type="month" name="month" value="<%= defaultMonth %>" required />
+    <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">CSVダウンロード</button>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>
