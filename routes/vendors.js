@@ -52,6 +52,42 @@ router.post('/vendors', requireLogin, (req, res) => {
   res.redirect('/vendors');
 });
 
+// 編集画面
+router.get('/vendors/:id/edit', requireLogin, (req, res) => {
+  const vendor = db.prepare('SELECT * FROM vendors WHERE id = ?').get(req.params.id);
+  if (!vendor) return res.status(404).render('error', { message: '外注先が見つかりません', user: req.session.user });
+
+  res.render('vendors/edit', { vendor, categoryDefs: CATEGORY_DEFS, error: null });
+});
+
+// 更新
+router.post('/vendors/:id', requireLogin, (req, res) => {
+  const vendor = db.prepare('SELECT * FROM vendors WHERE id = ?').get(req.params.id);
+  if (!vendor) return res.status(404).render('error', { message: '外注先が見つかりません', user: req.session.user });
+
+  const { category, name, url, notes, remarks } = req.body;
+  if (!name) {
+    return res.render('vendors/edit', {
+      vendor: { ...vendor, category, name, url, notes, remarks },
+      categoryDefs: CATEGORY_DEFS,
+      error: '外注先名を入力してください',
+    });
+  }
+
+  const safeCategory = CATEGORIES.includes(category) ? category : 'その他';
+
+  db.prepare('UPDATE vendors SET category = ?, name = ?, url = ?, notes = ?, remarks = ? WHERE id = ?').run(
+    safeCategory,
+    name,
+    url || '',
+    notes || '',
+    remarks || '',
+    req.params.id
+  );
+
+  res.redirect('/vendors');
+});
+
 router.post('/vendors/:id/delete', requireLogin, (req, res) => {
   db.prepare('DELETE FROM vendors WHERE id = ?').run(req.params.id);
   res.redirect('/vendors');

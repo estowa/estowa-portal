@@ -40,9 +40,12 @@
               <td><%= v.notes || '-' %></td>
               <td><%= v.remarks || '-' %></td>
               <td>
-                <form method="POST" action="/vendors/<%= v.id %>/delete" onsubmit="return confirm('削除しますか？');">
-                  <button type="submit" class="mini-btn">削除</button>
-                </form>
+                <div style="display:flex; gap:6px;">
+                  <a href="/vendors/<%= v.id %>/edit" class="mini-btn">編集</a>
+                  <form method="POST" action="/vendors/<%= v.id %>/delete" onsubmit="return confirm('削除しますか？');">
+                    <button type="submit" class="mini-btn">削除</button>
+                  </form>
+                </div>
               </td>
             </tr>
           <% }) %>

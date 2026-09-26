@@ -1,0 +1,52 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1>外注先を編集</h1>
+  <a href="/vendors" class="mini-btn">← 一覧に戻る</a>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="panel">
+      <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+      <form method="POST" action="/vendors/<%= vendor.id %>">
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">外注先名</label>
+        <input type="text" name="name" value="<%= vendor.name %>" required
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">カテゴリ</label>
+        <select name="category" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;">
+          <% categoryDefs.forEach(([name, color]) => { %>
+            <option value="<%= name %>" <%= vendor.category === name ? 'selected' : '' %>><%= name %></option>
+          <% }) %>
+        </select>
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">URL</label>
+        <input type="text" name="url" value="<%= vendor.url || '' %>" placeholder="例: example.co.jp/"
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">用途</label>
+        <input type="text" name="notes" value="<%= vendor.notes || '' %>" placeholder="例: チラシ、ポスター印刷"
+          style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">備考</label>
+        <textarea name="remarks" rows="3" placeholder="納期の目安、担当者名など"
+          style="width:100%; padding:10px; margin-bottom:16px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; resize:vertical;"><%= vendor.remarks || '' %></textarea>
+
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">保存する</button>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>外注先を削除</h2>
+      <p style="font-size:13px; color:var(--text-muted);">この外注先を完全に削除します。</p>
+      <form method="POST" action="/vendors/<%= vendor.id %>/delete" onsubmit="return confirm('この外注先を削除しますか？元に戻せません。');">
+        <button type="submit" class="mini-btn">削除する</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
