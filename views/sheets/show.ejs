@@ -5,6 +5,11 @@
   <div class="form-inline">
     <form method="POST" action="/sheets/<%= sheet.id %>/add-row"><button type="submit" class="mini-btn">+ 行を追加</button></form>
     <form method="POST" action="/sheets/<%= sheet.id %>/add-col"><button type="submit" class="mini-btn">+ 列を追加</button></form>
+    <a href="/sheets/<%= sheet.id %>/export" class="mini-btn">エクセルをエクスポート</a>
+    <form method="POST" action="/sheets/<%= sheet.id %>/import" enctype="multipart/form-data" onsubmit="return confirm('現在のシート内容をエクセルの内容で上書きします。よろしいですか？');" style="display:flex; align-items:center; gap:6px;">
+      <input type="file" name="excel_file" accept=".xlsx,.xls" required style="max-width:180px;" />
+      <button type="submit" class="mini-btn">インポート</button>
+    </form>
     <a href="/sheets" class="mini-btn">一覧に戻る</a>
   </div>
 </div>
