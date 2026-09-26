@@ -564,6 +564,7 @@ table.sheet-table.readonly td {
 .task-view-tabs {
   display: inline-flex;
   background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 3px;
   gap: 2px;
