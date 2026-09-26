@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
+const { toJstParts, nowJstDateStr } = require('../lib/jst');
 
 const router = express.Router();
 
@@ -38,12 +39,37 @@ router.get('/', requireLogin, (req, res) => {
     monthlyTotal: salesRow.cnt > 0 ? salesRow.total : null,
   };
 
+  // 管理者向け: 本日のメンバー出勤状況（管理者は打刻不要なため代わりに表示）
+  let teamAttendanceToday = null;
+  if (user.role === 'admin') {
+    const members = db
+      .prepare("SELECT user_id, display_name FROM users WHERE role != 'admin' ORDER BY id")
+      .all();
+    const todayStr = nowJstDateStr();
+    // UTC保存のため、直近2日分を広めに取得してJST変換後に本日分だけ絞り込む
+    const recentLogs = db
+      .prepare("SELECT * FROM attendance_logs WHERE datetime(logged_at) >= datetime('now', '-2 day') ORDER BY logged_at ASC")
+      .all();
+    const lastTypeToday = {};
+    recentLogs.forEach((log) => {
+      const { dateStr } = toJstParts(log.logged_at);
+      if (dateStr !== todayStr) return;
+      lastTypeToday[log.user_id] = log.type; // 昇順なのでその日最後の打刻が残る
+    });
+    teamAttendanceToday = members.map((m) => {
+      const status = lastTypeToday[m.user_id] || 'none';
+      const label = status === 'in' ? '出勤中' : status === 'out' ? '退勤済' : '未出勤';
+      return { name: m.display_name, status, label };
+    });
+  }
+
   res.render('home', {
     user,
     announcements,
     myTasks,
     isCheckedIn,
     salesSummary,
+    teamAttendanceToday,
   });
 });
 

@@ -18,8 +18,16 @@
     <div class="value"><%= myTasks.length %> 件</div>
   </div>
   <div class="kpi-card">
-    <div class="label">本日の勤怠</div>
-    <div class="value" style="font-size:16px;"><%= isCheckedIn ? '出勤中' : '未出勤 / 退勤済' %></div>
+    <% if (user.role === 'admin') { %>
+      <div class="label">本日の出勤状況</div>
+      <div class="value" style="font-size:16px;">
+        出勤中 <%= teamAttendanceToday.filter(t => t.status === 'in').length %>名 /
+        未出勤 <%= teamAttendanceToday.filter(t => t.status === 'none').length %>名
+      </div>
+    <% } else { %>
+      <div class="label">本日の勤怠</div>
+      <div class="value" style="font-size:16px;"><%= isCheckedIn ? '出勤中' : '未出勤 / 退勤済' %></div>
+    <% } %>
   </div>
 </div>
 
@@ -56,15 +64,31 @@
 
   <div>
     <div class="panel">
-      <h2>勤怠</h2>
-      <div class="attendance-box">
-        <div class="attendance-status"><%= isCheckedIn ? '現在: 出勤中' : '現在: 未出勤' %></div>
-        <form method="POST" action="/attendance/punch">
-          <button type="submit" class="attendance-btn <%= isCheckedIn ? 'checkout' : 'checkin' %>">
-            <%= isCheckedIn ? '退勤する' : '出勤する' %>
-          </button>
-        </form>
-      </div>
+      <% if (user.role === 'admin') { %>
+        <h2>本日のメンバー出勤状況</h2>
+        <% if (teamAttendanceToday.length === 0) { %>
+          <div class="empty-note">メンバーが登録されていません</div>
+        <% } else { %>
+          <div class="team-attendance-list">
+            <% teamAttendanceToday.forEach(t => { %>
+              <div class="team-attendance-row">
+                <span><%= t.name %></span>
+                <span class="badge attendance-badge-<%= t.status %>"><%= t.label %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      <% } else { %>
+        <h2>勤怠</h2>
+        <div class="attendance-box">
+          <div class="attendance-status"><%= isCheckedIn ? '現在: 出勤中' : '現在: 未出勤' %></div>
+          <form method="POST" action="/attendance/punch">
+            <button type="submit" class="attendance-btn <%= isCheckedIn ? 'checkout' : 'checkin' %>">
+              <%= isCheckedIn ? '退勤する' : '出勤する' %>
+            </button>
+          </form>
+        </div>
+      <% } %>
     </div>
   </div>
 </div>

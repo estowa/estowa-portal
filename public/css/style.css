@@ -837,3 +837,21 @@ table.sheet-table.readonly td {
 }
 .link-card-title:hover { text-decoration: underline; }
 .link-card-delete { flex-shrink: 0; margin-left: 16px; }
+
+/* ---- ホーム画面(管理者向け)本日のメンバー出勤状況 ---- */
+.team-attendance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.team-attendance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg);
+}
+.attendance-badge-in { background: #3fae5c; color: white; }
+.attendance-badge-out { background: #9aa0ae; color: white; }
+.attendance-badge-none { background: #f0ad4e; color: white; }
