@@ -592,13 +592,11 @@ table.sheet-table.readonly td {
   align-items: center;
   flex-shrink: 0;
   cursor: pointer;
-  padding: 7px 16px;
+  padding: 6px 16px;
   background: #ffd9e6;
-  color: #b3235a;
-  border: 1px solid #f5a8c4;
+  color: var(--text);
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 600;
   white-space: nowrap;
   user-select: none;
 }
