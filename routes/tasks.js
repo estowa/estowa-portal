@@ -178,6 +178,7 @@ router.get('/tasks', requireLogin, (req, res) => {
   });
 
   const users = listUsersWithAvatar();
+  const view = req.query.view === 'calendar' ? 'calendar' : 'board';
 
   const today = new Date();
   const year = parseInt(req.query.year, 10) || today.getFullYear();
@@ -220,6 +221,7 @@ router.get('/tasks', requireLogin, (req, res) => {
     board,
     statusDefs: STATUS_DEFS,
     users,
+    view,
     year,
     month,
     lastDay,

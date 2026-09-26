@@ -1,10 +1,17 @@
 <%- include('../partials/header') %>
 
 <div class="page-header">
-  <h1>タスク管理</h1>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <h1>タスク管理</h1>
+    <div class="task-view-tabs">
+      <button type="button" class="task-view-tab <%= view !== 'calendar' ? 'active' : '' %>" data-view="board">ボード</button>
+      <button type="button" class="task-view-tab <%= view === 'calendar' ? 'active' : '' %>" data-view="calendar">カレンダー</button>
+    </div>
+  </div>
   <a href="/tasks/new" class="new-toggle-btn">+ 新規タスク</a>
 </div>
 
+<div id="board-view" style="<%= view === 'calendar' ? 'display:none;' : '' %>">
 <div class="kanban-grid">
   <% statusDefs.forEach(([key, label]) => { %>
     <div class="kanban-column" data-status="<%= key %>">
@@ -34,12 +41,15 @@
     </div>
   <% }) %>
 </div>
+</div>
+<!-- /#board-view -->
 
-<div class="panel" style="margin-top:20px;">
+<div id="calendar-view" style="<%= view === 'calendar' ? '' : 'display:none;' %>">
+<div class="panel">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <a href="/tasks?year=<%= prevYear %>&month=<%= prevMonth %>" class="mini-btn">← 前月</a>
+    <a href="/tasks?year=<%= prevYear %>&month=<%= prevMonth %>&view=calendar" class="mini-btn">← 前月</a>
     <h2 style="margin:0;"><%= year %>年<%= month %>月</h2>
-    <a href="/tasks?year=<%= nextYear %>&month=<%= nextMonth %>" class="mini-btn">次月 →</a>
+    <a href="/tasks?year=<%= nextYear %>&month=<%= nextMonth %>&view=calendar" class="mini-btn">次月 →</a>
   </div>
 
   <div class="calendar-grid">
@@ -69,8 +79,30 @@
     <% } %>
   </div>
 </div>
+</div>
+<!-- /#calendar-view -->
 
 <script>
+  // タブでボード/カレンダー表示を切り替える(デフォルトはボード)
+  (function () {
+    const tabs = document.querySelectorAll('.task-view-tab');
+    const boardView = document.getElementById('board-view');
+    const calendarView = document.getElementById('calendar-view');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        const view = tab.dataset.view;
+        boardView.style.display = view === 'calendar' ? 'none' : '';
+        calendarView.style.display = view === 'calendar' ? '' : 'none';
+
+        const url = new URL(window.location);
+        url.searchParams.set('view', view);
+        window.history.replaceState({}, '', url);
+      });
+    });
+  })();
+
   // カンバンのドラッグ&ドロップでステータス変更
   // (HTML5のネイティブDrag&Dropはリンク要素とiOS Safariの相性が悪く、
   //  タッチ操作でうまく動作しないためPointer Eventsで自前実装している)
