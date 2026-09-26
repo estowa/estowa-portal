@@ -9,7 +9,6 @@
       <form method="POST" action="/sheet-links">
         <input type="text" name="title" placeholder="タイトル" required />
         <input type="url" name="url" placeholder="https://..." required />
-        <input type="text" name="tags" placeholder="タグ（カンマ区切り）" />
         <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">追加</button>
       </form>
     </div>
@@ -17,35 +16,19 @@
 </div>
 
 <div class="panel">
-  <div class="form-inline" style="margin-bottom:14px;">
-    <span style="font-size:13px; color:var(--text-muted);">タグで絞り込み:</span>
-    <a href="/sheet-links" class="mini-btn <%= !tagFilter ? 'active-filter' : '' %>">すべて</a>
-    <% tags.forEach(t => { %>
-      <a href="/sheet-links?tag=<%= encodeURIComponent(t) %>" class="mini-btn <%= tagFilter === t ? 'active-filter' : '' %>"><%= t %></a>
-    <% }) %>
-  </div>
-
   <% if (links.length === 0) { %>
     <div class="empty-note">登録されているリンクはありません</div>
   <% } else { %>
-    <% links.forEach(l => { %>
-      <div class="announcement-item">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <a href="<%= l.url %>" target="_blank" rel="noopener" style="font-weight:600; color:var(--primary);"><%= l.title %></a>
+    <div class="link-card-grid">
+      <% links.forEach(l => { %>
+        <div class="link-card">
+          <a href="<%= l.url %>" target="_blank" rel="noopener" class="link-card-title"><%= l.title %></a>
+          <form method="POST" action="/sheet-links/<%= l.id %>/delete" class="link-card-delete" onsubmit="return confirm('削除しますか？');">
+            <button type="submit" class="mini-btn">削除</button>
+          </form>
         </div>
-        <div style="font-size:12px; color:var(--text-muted); margin-top:4px; word-break:break-all;"><%= l.url %></div>
-        <% if (l.tags) { %>
-          <div style="margin-top:6px;">
-            <% l.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => { %>
-              <span class="badge member" style="margin-right:4px;"><%= t %></span>
-            <% }) %>
-          </div>
-        <% } %>
-        <form method="POST" action="/sheet-links/<%= l.id %>/delete" style="margin-top:8px;" onsubmit="return confirm('削除しますか？');">
-          <button type="submit" class="mini-btn">削除</button>
-        </form>
-      </div>
-    <% }) %>
+      <% }) %>
+    </div>
   <% } %>
 </div>
 

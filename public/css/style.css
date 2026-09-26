@@ -813,3 +813,31 @@ table.sheet-table.readonly td {
   padding: 4px 12px;
 }
 .vendor-category-count { color: var(--text-muted); font-size: 13px; }
+
+/* ---- 共有シート(タイトルのみのカード表示) ---- */
+.link-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.link-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 96px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--bg);
+}
+.link-card-title {
+  font-weight: 600;
+  color: var(--primary);
+  word-break: break-word;
+  text-decoration: none;
+}
+.link-card-title:hover { text-decoration: underline; }
+.link-card-delete {
+  margin-top: 16px;
+  align-self: flex-end;
+}
