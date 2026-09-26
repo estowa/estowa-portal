@@ -90,6 +90,39 @@
         </div>
       <% } %>
     </div>
+
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h2 style="margin:0;">イベントカレンダー</h2>
+        <div style="display:flex; gap:6px;">
+          <a href="/?cal_year=<%= calPrevYear %>&cal_month=<%= calPrevMonth %>" class="mini-btn">←</a>
+          <a href="/?cal_year=<%= calNextYear %>&cal_month=<%= calNextMonth %>" class="mini-btn">→</a>
+        </div>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;"><%= calYear %>年<%= calMonth %>月</div>
+
+      <div class="calendar-grid calendar-grid-mini">
+        <% ['日','月','火','水','木','金','土'].forEach(d => { %>
+          <div class="calendar-weekday"><%= d %></div>
+        <% }) %>
+
+        <% for (let i = 0; i < calFirstWeekday; i++) { %>
+          <div class="calendar-cell empty"></div>
+        <% } %>
+
+        <% for (let day = 1; day <= calLastDay; day++) { %>
+          <div class="calendar-cell">
+            <div class="calendar-day"><%= day %></div>
+            <% if (calEventsByDay[day]) { %>
+              <% calEventsByDay[day].forEach(ev => { %>
+                <div class="event-chip" title="<%= ev.title %>"><%= ev.title %></div>
+              <% }) %>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">追加・編集は<a href="/sales#events" style="color:var(--primary);">EC売上ページ</a>から行えます。</div>
+    </div>
   </div>
 </div>
 

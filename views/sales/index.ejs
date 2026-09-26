@@ -123,4 +123,69 @@
   </div>
 </div>
 
+<div class="panel" id="events">
+  <h2>イベントカレンダー</h2>
+  <div style="font-size:12px; color:var(--text-muted); margin:-6px 0 12px;">各モールのセール期間などを記録できます。日付欄の「＋」から追加、登録済みのイベントをタップすると編集・削除できます。</div>
+
+  <div class="calendar-grid">
+    <% ['日','月','火','水','木','金','土'].forEach(d => { %>
+      <div class="calendar-weekday"><%= d %></div>
+    <% }) %>
+
+    <% for (let i = 0; i < calFirstWeekday; i++) { %>
+      <div class="calendar-cell empty"></div>
+    <% } %>
+
+    <% for (let day = 1; day <= calLastDay; day++) { %>
+      <% const dayStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`; %>
+      <div class="calendar-cell event-cell">
+        <div class="event-cell-head">
+          <span class="calendar-day"><%= day %></span>
+          <details class="event-add-toggle">
+            <summary title="イベントを追加">＋</summary>
+            <div class="event-popover">
+              <form method="POST" action="/sales/events">
+                <input type="hidden" name="redirect_year" value="<%= year %>" />
+                <input type="hidden" name="redirect_month" value="<%= month %>" />
+                <label>開始日</label>
+                <input type="date" name="start_date" value="<%= dayStr %>" required />
+                <label>終了日（複数日にまたがる場合）</label>
+                <input type="date" name="end_date" />
+                <label>イベント名</label>
+                <input type="text" name="title" placeholder="例: 楽天スーパーセール" required />
+                <button type="submit">追加する</button>
+              </form>
+            </div>
+          </details>
+        </div>
+        <% if (eventsByDay[day]) { %>
+          <% eventsByDay[day].forEach(ev => { %>
+            <details class="event-chip-toggle">
+              <summary class="event-chip"><%= ev.title %></summary>
+              <div class="event-popover">
+                <form method="POST" action="/sales/events/<%= ev.id %>">
+                  <input type="hidden" name="redirect_year" value="<%= year %>" />
+                  <input type="hidden" name="redirect_month" value="<%= month %>" />
+                  <label>開始日</label>
+                  <input type="date" name="start_date" value="<%= ev.start_date %>" required />
+                  <label>終了日（複数日にまたがる場合）</label>
+                  <input type="date" name="end_date" value="<%= ev.end_date %>" />
+                  <label>イベント名</label>
+                  <input type="text" name="title" value="<%= ev.title %>" required />
+                  <button type="submit">保存する</button>
+                </form>
+                <form method="POST" action="/sales/events/<%= ev.id %>/delete" onsubmit="return confirm('このイベントを削除しますか？');">
+                  <input type="hidden" name="redirect_year" value="<%= year %>" />
+                  <input type="hidden" name="redirect_month" value="<%= month %>" />
+                  <button type="submit" class="event-delete-btn">削除する</button>
+                </form>
+              </div>
+            </details>
+          <% }) %>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
 <%- include('../partials/footer') %>

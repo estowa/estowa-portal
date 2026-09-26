@@ -371,6 +371,111 @@ a.calendar-cell:hover { background: var(--bg); }
   white-space: nowrap;
 }
 
+/* ---- イベントカレンダー(EC売上ページ) ---- */
+.event-cell {
+  position: relative;
+  overflow: visible;
+}
+.event-cell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.event-cell-head .calendar-day { margin-bottom: 0; }
+.event-add-toggle summary,
+.event-chip-toggle summary {
+  cursor: pointer;
+  list-style: none;
+}
+.event-add-toggle summary::-webkit-details-marker,
+.event-chip-toggle summary::-webkit-details-marker { display: none; }
+.event-add-toggle summary::marker,
+.event-chip-toggle summary::marker { content: ''; }
+.event-add-toggle summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+.event-add-toggle[open] summary { background: var(--primary); color: #fff; }
+.event-chip {
+  display: block;
+  background: #ffe3ee;
+  color: #9c3f66;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.event-chip-toggle[open] .event-chip { background: #ffcfe0; }
+.event-popover {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  width: 220px;
+  max-width: 80vw;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  padding: 12px;
+  white-space: normal;
+  font-size: 12px;
+}
+.event-popover label {
+  display: block;
+  color: var(--text-muted);
+  margin: 8px 0 3px;
+}
+.event-popover label:first-of-type { margin-top: 0; }
+.event-popover input[type="date"],
+.event-popover input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+.event-popover button {
+  margin-top: 10px;
+  width: 100%;
+  padding: 7px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.event-popover form + form { margin-top: 8px; }
+.event-delete-btn {
+  background: #fff !important;
+  color: #d03b3b !important;
+  border: 1px solid #f0c4c4 !important;
+}
+
+/* ---- イベントカレンダー(ホーム画面・表示専用のミニ版) ---- */
+.calendar-grid-mini .calendar-cell {
+  min-height: 44px;
+  padding: 4px;
+  font-size: 10px;
+}
+.calendar-grid-mini .calendar-day { font-size: 10px; margin-bottom: 2px; }
+.calendar-grid-mini .event-chip { padding: 1px 3px; }
+
 @media (max-width: 900px) {
   .kanban-grid { grid-auto-flow: row; grid-auto-columns: unset; }
   .kanban-column { min-width: unset; }

@@ -250,6 +250,20 @@ db.exec(`
   );
 `);
 
+// イベントカレンダー（EC売上ページ下部。各モールのセール期間などを記録する）
+db.exec(`
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    start_date TEXT NOT NULL,   -- YYYY-MM-DD
+    end_date TEXT NOT NULL,     -- YYYY-MM-DD（単日の場合はstart_dateと同じ）
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_by TEXT,
+    updated_at TEXT
+  );
+`);
+
 // 外注先リスト
 db.exec(`
   CREATE TABLE IF NOT EXISTS vendors (

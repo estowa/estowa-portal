@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
 const { toJstParts, nowJstDateStr } = require('../lib/jst');
+const { eventsByDayForMonth } = require('../lib/events');
 
 const router = express.Router();
 
@@ -69,6 +70,16 @@ router.get('/', requireLogin, (req, res) => {
     });
   }
 
+  // イベントカレンダー(表示のみ。追加・編集・削除はEC売上ページで行う)
+  const calYear = parseInt(req.query.cal_year, 10) || today.getFullYear();
+  const calMonth = parseInt(req.query.cal_month, 10) || today.getMonth() + 1;
+  const { eventsByDay: calEventsByDay, lastDay: calLastDay, firstWeekday: calFirstWeekday } =
+    eventsByDayForMonth(calYear, calMonth);
+  let calPrevMonth = calMonth - 1, calPrevYear = calYear;
+  if (calPrevMonth < 1) { calPrevMonth = 12; calPrevYear -= 1; }
+  let calNextMonth = calMonth + 1, calNextYear = calYear;
+  if (calNextMonth > 12) { calNextMonth = 1; calNextYear += 1; }
+
   res.render('home', {
     user,
     announcements,
@@ -77,6 +88,15 @@ router.get('/', requireLogin, (req, res) => {
     isCheckedIn,
     salesSummary,
     teamAttendanceToday,
+    calYear,
+    calMonth,
+    calEventsByDay,
+    calLastDay,
+    calFirstWeekday,
+    calPrevYear,
+    calPrevMonth,
+    calNextYear,
+    calNextMonth,
   });
 });
 

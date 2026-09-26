@@ -3,6 +3,7 @@ const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
+const { eventsByDayForMonth } = require('../lib/events');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -80,6 +81,9 @@ router.get('/sales', requireLogin, (req, res) => {
     .reverse();
   const maxTrendTotal = Math.max(1, ...trend.map((t) => t.total));
 
+  // イベントカレンダー(各モールのセール期間などを記録。同じ年月ナビゲーションを共用)
+  const { eventsByDay, lastDay: calLastDay, firstWeekday: calFirstWeekday } = eventsByDayForMonth(year, month);
+
   res.render('sales/index', {
     year,
     month,
@@ -95,6 +99,9 @@ router.get('/sales', requireLogin, (req, res) => {
     maxMallTotal,
     trend,
     maxTrendTotal,
+    eventsByDay,
+    calLastDay,
+    calFirstWeekday,
     importResult: req.query.imported !== undefined
       ? { imported: parseInt(req.query.imported, 10) || 0, skipped: parseInt(req.query.skipped, 10) || 0 }
       : null,
