@@ -1070,6 +1070,14 @@ table.sheet-table.readonly td {
 }
 .file-list-item .file-name:hover { color: var(--primary); }
 .file-list-item form { margin: 0; }
+.file-list-item .file-download-link {
+  flex-shrink: 0;
+  color: var(--primary);
+  text-decoration: underline;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.file-list-item .file-download-link:hover { color: var(--primary-dark); }
 
 /* ---- 外注先リスト(カテゴリごとにグルーピング表示) ---- */
 .vendor-category-panel { margin-bottom: 20px; }

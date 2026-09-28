@@ -325,6 +325,39 @@ db.exec(`
   );
 `);
 
+// 既存の添付ファイル名の文字化け修正
+// (multerがUTF-8のファイル名をlatin1として誤解釈していたため、
+//  過去にアップロードされたファイルの日本語名が文字化けしていた分を復元する)
+function looksMojibake(name) {
+  if (!name) return false;
+  // 元のUTF-8バイト列がlatin1として1文字ずつ解釈された場合、
+  // 文字列中のすべての文字はU+00FF以下になる。
+  // 正しく保存された日本語ファイル名にはU+00FF超の文字(日本語など)が含まれるはずなので、
+  // それが無く、かつASCII範囲外(0x80-0xFF)の文字を含む場合のみ文字化けとみなす。
+  if (/[^\u0000-ÿ]/.test(name)) return false;
+  return /[\u0080-ÿ]/.test(name);
+}
+
+function repairMojibake(table) {
+  const rows = db.prepare(`SELECT id, original_name FROM ${table}`).all();
+  const update = db.prepare(`UPDATE ${table} SET original_name = ? WHERE id = ?`);
+  let fixed = 0;
+  rows.forEach((row) => {
+    if (!looksMojibake(row.original_name)) return;
+    const repaired = Buffer.from(row.original_name, 'latin1').toString('utf8');
+    if (repaired && repaired !== row.original_name && !repaired.includes('�')) {
+      update.run(repaired, row.id);
+      fixed += 1;
+    }
+  });
+  if (fixed > 0) {
+    console.log(`${table}: 文字化けしていたファイル名を${fixed}件修正しました`);
+  }
+}
+
+repairMojibake('task_attachments');
+repairMojibake('announcement_attachments');
+
 // 初期管理者アカウント（存在しない場合のみ作成）
 const existingAdmin = db.prepare('SELECT * FROM users WHERE user_id = ?').get('admin');
 if (!existingAdmin) {

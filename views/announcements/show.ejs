@@ -21,6 +21,7 @@
         <div class="file-list-item">
           <span class="file-icon">📄</span>
           <a href="/uploads/announcements/<%= att.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= att.original_name %>"><%= att.original_name %></a>
+          <a href="/uploads/announcements/<%= att.filename %>" download="<%= att.original_name %>" class="file-download-link">ダウンロード</a>
         </div>
       <% }) %>
     </div>
