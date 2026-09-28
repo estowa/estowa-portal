@@ -1,0 +1,122 @@
+<%- include('../partials/header') %>
+
+<div id="ideas-list-root">
+<%- include('_list_content') %>
+</div>
+
+<!-- アイディアの登録・編集画面(一覧の右側からスライドインするパネル) -->
+<div id="idea-detail-panel" class="task-detail-panel">
+  <button type="button" id="idea-panel-close" class="task-panel-close" aria-label="閉じる">×</button>
+  <div id="idea-panel-body"></div>
+</div>
+
+<script src="/js/dropzone.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('ideas-list-root');
+  const panel = document.getElementById('idea-detail-panel');
+  const panelBody = document.getElementById('idea-panel-body');
+  const closeBtn = document.getElementById('idea-panel-close');
+
+  function openPanelFromUrl(url) {
+    fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
+      .then((res) => res.text())
+      .then((html) => {
+        panelBody.innerHTML = html;
+        panel.classList.add('open');
+        if (window.initDropzones) window.initDropzones(panelBody);
+      });
+  }
+
+  function closePanel() {
+    panel.classList.remove('open');
+  }
+
+  function refreshList() {
+    fetch(window.location.href, { headers: { 'X-Requested-With': 'fetch' } })
+      .then((res) => res.text())
+      .then((html) => {
+        root.innerHTML = html;
+      });
+  }
+
+  // アイディア行・新規登録ボタンのクリックはページ遷移せずパネルを開く
+  root.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return; // 新しいタブで開く操作はブラウザ標準に任せる
+
+    const item = e.target.closest('.idea-row');
+    if (item) {
+      e.preventDefault();
+      openPanelFromUrl(item.getAttribute('href'));
+      return;
+    }
+
+    const newBtn = e.target.closest('.new-toggle-btn');
+    if (newBtn) {
+      e.preventDefault();
+      openPanelFromUrl(newBtn.getAttribute('href'));
+      return;
+    }
+  });
+
+  // 一覧の何もないところ(行・新規登録ボタン・パネル以外)をクリックしたらパネルを閉じる
+  document.addEventListener('click', (e) => {
+    if (!panel.classList.contains('open')) return;
+    if (panel.contains(e.target)) return;
+    if (e.target.closest('.idea-row')) return;
+    if (e.target.closest('.new-toggle-btn')) return;
+    closePanel();
+  });
+
+  closeBtn.addEventListener('click', closePanel);
+
+  // パネル内のフォーム送信をfetchで処理し、ページ遷移させずに結果を反映する
+  panelBody.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (form.tagName !== 'FORM') return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
+      return;
+    }
+
+    const isMultipart = form.enctype === 'multipart/form-data';
+    const formData = new FormData(form);
+    const fetchOptions = {
+      method: form.getAttribute('method') || 'POST',
+      headers: { 'X-Requested-With': 'fetch' },
+    };
+    if (isMultipart) {
+      fetchOptions.body = formData;
+    } else {
+      fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      fetchOptions.body = new URLSearchParams(formData).toString();
+    }
+
+    fetch(form.getAttribute('action'), fetchOptions)
+      .then(async (res) => {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.indexOf('application/json') !== -1) {
+          const data = await res.json();
+          if (data.redirect) {
+            if (/^\/ideas\/\d+/.test(data.redirect)) {
+              openPanelFromUrl(data.redirect);
+            } else {
+              closePanel();
+            }
+            refreshList();
+          }
+        } else {
+          // バリデーションエラーなどはパネルの中身をそのまま差し替える
+          const html = await res.text();
+          panelBody.innerHTML = html;
+          if (window.initDropzones) window.initDropzones(panelBody);
+        }
+      })
+      .catch(() => {});
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

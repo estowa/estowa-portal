@@ -1,0 +1,30 @@
+<div class="page-header">
+  <h1>アイディア</h1>
+  <a href="/ideas/new" class="new-toggle-btn">+ 新規アイディア</a>
+</div>
+
+<div class="panel">
+  <% if (categories.length > 0) { %>
+    <div class="form-inline" style="margin-bottom:14px;">
+      <span style="font-size:13px; color:var(--text-muted);">カテゴリ:</span>
+      <a href="/ideas" class="mini-btn <%= !categoryFilter ? 'active-filter' : '' %>">すべて</a>
+      <% categories.forEach(c => { %>
+        <a href="/ideas?category=<%= encodeURIComponent(c) %>" class="mini-btn <%= categoryFilter === c ? 'active-filter' : '' %>"><%= c %></a>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <% if (ideas.length === 0) { %>
+    <div class="empty-note">該当するアイディアはありません</div>
+  <% } else { %>
+    <% ideas.forEach(i => { %>
+      <a href="/ideas/<%= i.id %>" class="idea-row announcement-item" style="display:block;">
+        <span class="link-title"><%= i.title %></span>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+          <% if (i.category) { %><span class="badge member"><%= i.category %></span> ・ <% } %>
+          <%= i.author_name || i.created_by %> ・ 更新: <%= i.updated_at %>
+        </div>
+      </a>
+    <% }) %>
+  <% } %>
+</div>

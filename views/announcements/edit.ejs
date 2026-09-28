@@ -7,6 +7,24 @@
 
 <div class="content-grid">
   <div>
+    <% if (attachments.length > 0) { %>
+      <div class="panel">
+        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
+        <div class="file-list">
+          <% attachments.forEach(a => { %>
+            <div class="file-list-item">
+              <span class="file-icon">📄</span>
+              <a href="/uploads/announcements/<%= a.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= a.original_name %>"><%= a.original_name %></a>
+              <a href="/uploads/announcements/<%= a.filename %>" download="<%= a.original_name %>" class="file-download-link">ダウンロード</a>
+              <form method="POST" action="/announcements/<%= announcement.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
+                <button type="submit" class="mini-btn">削除</button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+
     <div class="panel">
       <% if (error) { %><div class="error-text"><%= error %></div><% } %>
       <% if (uploadError) { %><div class="error-text"><%= uploadError %></div><% } %>
@@ -25,21 +43,6 @@
             <option value="<%= u.user_id %>" <%= announcement.created_by === u.user_id ? 'selected' : '' %>><%= u.display_name %></option>
           <% }) %>
         </select>
-
-        <% if (attachments.length > 0) { %>
-          <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
-          <div class="file-list">
-            <% attachments.forEach(a => { %>
-              <div class="file-list-item">
-                <span class="file-icon">📄</span>
-                <a href="/uploads/announcements/<%= a.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= a.original_name %>"><%= a.original_name %></a>
-                <form method="POST" action="/announcements/<%= announcement.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
-                  <button type="submit" class="mini-btn">削除</button>
-                </form>
-              </div>
-            <% }) %>
-          </div>
-        <% } %>
 
         <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
         <div class="dropzone" style="margin-bottom:16px;">

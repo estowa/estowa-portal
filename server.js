@@ -16,6 +16,7 @@ const vendorRoutes = require('./routes/vendors');
 const sheetLinkRoutes = require('./routes/sheetLinks');
 const sheetRoutes = require('./routes/sheets');
 const knowledgeRoutes = require('./routes/knowledge');
+const ideaRoutes = require('./routes/ideas');
 const profileRoutes = require('./routes/profile');
 const db = require('./db/connection');
 const { avatarFor } = require('./lib/avatar');
@@ -71,6 +72,7 @@ app.use(vendorRoutes);
 app.use(sheetLinkRoutes);
 app.use(sheetRoutes);
 app.use(knowledgeRoutes);
+app.use(ideaRoutes);
 
 app.use((req, res) => {
   res.status(404).render('error', { message: 'ページが見つかりません', user: req.session.user });

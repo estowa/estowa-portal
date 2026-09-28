@@ -1,0 +1,60 @@
+<div class="page-header">
+  <h1><%= idea && idea.id ? 'アイディアを編集' : '新規アイディア' %></h1>
+</div>
+
+<% if (attachments && attachments.length > 0) { %>
+  <div class="panel">
+    <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
+    <div class="file-list">
+      <% attachments.forEach(a => { %>
+        <div class="file-list-item">
+          <span class="file-icon">📄</span>
+          <a href="/uploads/ideas/<%= a.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= a.original_name %>"><%= a.original_name %></a>
+          <a href="/uploads/ideas/<%= a.filename %>" download="<%= a.original_name %>" class="file-download-link">ダウンロード</a>
+          <form method="POST" action="/ideas/<%= idea.id %>/attachments/<%= a.id %>/delete" data-confirm="このファイルを削除しますか？">
+            <button type="submit" class="mini-btn">削除</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
+<div class="panel">
+  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+  <% if (uploadError) { %><div class="error-text"><%= uploadError %></div><% } %>
+  <form method="POST" action="<%= idea && idea.id ? '/ideas/' + idea.id : '/ideas' %>" enctype="multipart/form-data">
+    <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">タイトル</label>
+    <input type="text" name="title" required autofocus value="<%= idea ? idea.title : '' %>"
+      style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+
+    <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">カテゴリ（自由入力・新しいカテゴリもその場で登録できます）</label>
+    <input type="text" name="category" list="idea-category-list" placeholder="例: 新規事業"
+      value="<%= idea ? (idea.category || '') : '' %>"
+      style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
+    <datalist id="idea-category-list">
+      <% categories.forEach(c => { %><option value="<%= c %>"><% }) %>
+    </datalist>
+
+    <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">メモ（任意）</label>
+    <textarea name="body" rows="8" placeholder="アイディアの内容・きっかけなど"
+      style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; resize:vertical;"><%= idea ? (idea.body || '') : '' %></textarea>
+
+    <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
+    <div class="dropzone" style="margin-bottom:16px;">
+      <input type="file" name="files" multiple />
+      <div>ここにファイルをドラッグ&ドロップ<br />またはクリックして選択</div>
+      <div class="dropzone-filelist"></div>
+    </div>
+
+    <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">保存する</button>
+  </form>
+</div>
+
+<% if (idea && idea.id) { %>
+  <div class="task-delete-row">
+    <form method="POST" action="/ideas/<%= idea.id %>/delete" data-confirm="このアイディアを削除しますか？元に戻せません。">
+      <button type="submit" class="task-delete-btn">アイディアを削除する</button>
+    </form>
+  </div>
+<% } %>

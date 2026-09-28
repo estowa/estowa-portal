@@ -2,6 +2,24 @@
 
 <h1 style="font-size:18px; margin-bottom:16px;"><%= article && article.id ? '記事を編集' : '新規記事作成' %></h1>
 
+<% if (attachments && attachments.length > 0) { %>
+  <div class="panel">
+    <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
+    <div class="file-list">
+      <% attachments.forEach(a => { %>
+        <div class="file-list-item">
+          <span class="file-icon">📄</span>
+          <a href="/uploads/knowledge/<%= a.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= a.original_name %>"><%= a.original_name %></a>
+          <a href="/uploads/knowledge/<%= a.filename %>" download="<%= a.original_name %>" class="file-download-link">ダウンロード</a>
+          <form method="POST" action="/knowledge/<%= article.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
+            <button type="submit" class="mini-btn">削除</button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
 <div class="panel">
   <% if (error) { %><div class="error-text"><%= error %></div><% } %>
   <% if (uploadError) { %><div class="error-text"><%= uploadError %></div><% } %>
@@ -18,22 +36,6 @@
 
     <textarea name="body" placeholder="本文（Markdown記法が使えます）" rows="16"
       style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px; font-family:monospace; font-size:13px;"><%= article ? article.body : '' %></textarea>
-
-    <% if (attachments && attachments.length > 0) { %>
-      <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
-      <div class="file-list">
-        <% attachments.forEach(a => { %>
-          <div class="file-list-item">
-            <span class="file-icon">📄</span>
-            <a href="/uploads/knowledge/<%= a.filename %>" target="_blank" rel="noopener" class="file-name" title="<%= a.original_name %>"><%= a.original_name %></a>
-            <a href="/uploads/knowledge/<%= a.filename %>" download="<%= a.original_name %>" class="file-download-link">ダウンロード</a>
-            <form method="POST" action="/knowledge/<%= article.id %>/attachments/<%= a.id %>/delete" onsubmit="return confirm('このファイルを削除しますか？');">
-              <button type="submit" class="mini-btn">削除</button>
-            </form>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
 
     <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
     <div class="dropzone" style="margin-bottom:16px;">
