@@ -1,5 +1,6 @@
 const express = require('express');
 const multer = require('multer');
+const iconv = require('iconv-lite');
 const { parse } = require('csv-parse/sync');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
@@ -8,7 +9,17 @@ const { eventsByDayForMonth } = require('../lib/events');
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
-const MALL_ORDER = ['楽天', 'Yahoo!ショッピング', 'カウシェ', 'Qoo10', 'メルカリShops'];
+// 店舗ID(ROBOTIN出力の「店舗ID」列)からモール名への対応表
+const STORE_ID_TO_MALL = {
+  296: '楽天',
+  1070: 'ヤフー',
+  4646736: 'Qoo10',
+  7588758: 'カウシェ',
+  15056676: 'メルカリ',
+  8669150: 'ギフトモール',
+};
+
+const MALL_ORDER = ['楽天', 'ヤフー', 'Qoo10', 'カウシェ', 'メルカリ', 'ギフトモール'];
 
 function normalizeDate(raw) {
   if (!raw) return null;
@@ -109,12 +120,41 @@ router.get('/sales', requireLogin, (req, res) => {
   });
 });
 
+// CSVのバイト列から文字コードを判定して文字列にデコードする
+// (ROBOTIN出力はShift_JIS(CP932)、それ以外の手入力CSVなどはUTF-8を想定)
+function decodeCsvBuffer(buffer) {
+  const utf8Text = buffer.toString('utf-8');
+  // UTF-8として解釈できないバイト列は置換文字(U+FFFD)に化けるため、
+  // それが含まれていればShift_JISとして読み直す
+  if (utf8Text.includes('�')) {
+    return iconv.decode(buffer, 'cp932');
+  }
+  return utf8Text;
+}
+
+// 行オブジェクトから、複数の列名候補のうち最初に値が入っているものを取り出す
+// (CSVの出力元によって列名が異なるため)
+function firstNonEmpty(row, keys) {
+  for (const key of keys) {
+    const value = row[key];
+    if (value !== undefined && String(value).trim() !== '') return String(value).trim();
+  }
+  return '';
+}
+
+// 店舗IDからモール名を求める。対応表にない店舗IDの場合はID自体を表示名にする
+function mallFromStoreId(storeId) {
+  const idNum = parseInt(storeId, 10);
+  if (STORE_ID_TO_MALL[idNum]) return STORE_ID_TO_MALL[idNum];
+  return `店舗ID:${storeId}`;
+}
+
 router.post('/sales/import', requireLogin, upload.single('csvfile'), (req, res) => {
   if (!req.file) {
     return res.redirect('/sales');
   }
 
-  const content = req.file.buffer.toString('utf-8');
+  const content = decodeCsvBuffer(req.file.buffer);
   let records;
   try {
     records = parse(content, { columns: true, skip_empty_lines: true, trim: true, bom: true });
@@ -132,9 +172,15 @@ router.post('/sales/import', requireLogin, upload.single('csvfile'), (req, res) 
 
   const insertMany = db.transaction((rows) => {
     rows.forEach((row) => {
-      const orderDate = normalizeDate(row['受注日']);
-      const mall = (row['モール'] || '').trim();
-      const amount = parseInt(String(row['金額'] || '0').replace(/[^\d-]/g, ''), 10) || 0;
+      const orderDate = normalizeDate(firstNonEmpty(row, ['受注日時', '受注日']));
+      const amount = parseInt(firstNonEmpty(row, ['請求金額', '金額']).replace(/[^\d-]/g, ''), 10) || 0;
+
+      // 店舗ID(ROBOTIN出力)があればそれをモール判定に使う。
+      // なければ従来のモール列/店舗名列で判定する(手入力CSVなど)
+      const storeId = firstNonEmpty(row, ['店舗ID']);
+      const mall = storeId
+        ? mallFromStoreId(storeId)
+        : firstNonEmpty(row, ['モール', '店舗名']);
 
       if (!orderDate || !mall) {
         skipped += 1;
@@ -143,10 +189,10 @@ router.post('/sales/import', requireLogin, upload.single('csvfile'), (req, res) 
 
       insert.run(
         orderDate,
-        row['氏名'] || '',
+        firstNonEmpty(row, ['注文者氏名', '配送先氏名', '氏名']),
         mall,
-        row['商品名'] || '',
-        row['送付先'] || '',
+        firstNonEmpty(row, ['商品名', '商品コード']),
+        firstNonEmpty(row, ['配送先住所', '送付先']),
         amount,
         req.session.user.user_id
       );
