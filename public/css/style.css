@@ -212,11 +212,11 @@ a { text-decoration: none; color: inherit; }
   font-size: 14px;
 }
 .announcement-item:last-child, .task-item:last-child { border-bottom: none; }
-.knowledge-title-link {
+.link-title {
   font-weight: 600;
   color: var(--primary);
 }
-.knowledge-title-link:hover { color: var(--primary-dark); text-decoration: underline; }
+.link-title:hover { color: var(--primary-dark); text-decoration: underline; }
 .empty-note { color: var(--text-muted); font-size: 13px; }
 
 .attendance-box {

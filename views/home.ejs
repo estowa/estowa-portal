@@ -40,7 +40,7 @@
       <% } else { %>
         <% announcements.forEach(a => { %>
           <div class="announcement-item">
-            <a href="/announcements/<%= a.id %>" style="color:inherit; font-weight:600;"><%= a.title %></a>
+            <a href="/announcements/<%= a.id %>" class="link-title"><%= a.title %></a>
             <div style="color:#6b7080; font-size:13px;"><%= a.body %></div>
           </div>
         <% }) %>
@@ -54,7 +54,7 @@
       <% } else { %>
         <% myTasks.forEach(t => { %>
           <div class="task-item">
-            <a href="/tasks/<%= t.id %>" style="color:inherit;"><%= t.title %></a>
+            <a href="/tasks/<%= t.id %>" class="link-title"><%= t.title %></a>
             <% if (t.due_at) { %><span style="color:#6b7080; font-size:12px;"> - 期限: <%= t.due_at.replace('T', ' ') %></span><% } %>
           </div>
         <% }) %>

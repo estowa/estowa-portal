@@ -24,7 +24,7 @@
   <% } else { %>
     <% articles.forEach(a => { %>
       <div class="announcement-item">
-        <a href="/knowledge/<%= a.id %>" class="knowledge-title-link"><%= a.title %></a>
+        <a href="/knowledge/<%= a.id %>" class="link-title"><%= a.title %></a>
         <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
           <% if (a.category) { %><span class="badge" style="background: <%= colorForCategory(a.category) %>; color: white;"><%= a.category %></span> ・ <% } %>
           <%= a.author_name || a.created_by %> ・ 更新: <%= a.updated_at %>
