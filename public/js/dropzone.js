@@ -1,7 +1,12 @@
 // ファイル添付欄のドラッグ&ドロップ対応
 // .dropzone 内に <input type="file"> と(任意で) .dropzone-filelist を置くと動作する
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.dropzone').forEach((zone) => {
+// タスクのスライドインパネルなど、後からHTMLを差し込む場合は
+// window.initDropzones(挿入した要素) を呼び出すと同じ処理を適用できる
+function initDropzones(root) {
+  (root || document).querySelectorAll('.dropzone').forEach((zone) => {
+    if (zone.dataset.dropzoneInit === '1') return; // 二重初期化防止
+    zone.dataset.dropzoneInit = '1';
+
     const input = zone.querySelector('input[type=file]');
     if (!input) return;
     const fileListEl = zone.querySelector('.dropzone-filelist');
@@ -43,4 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
       renderFileNames();
     });
   });
-});
+}
+window.initDropzones = initDropzones;
+document.addEventListener('DOMContentLoaded', () => initDropzones(document));

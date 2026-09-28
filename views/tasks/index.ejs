@@ -1,243 +1,266 @@
 <%- include('../partials/header') %>
 
-<div class="page-header">
-  <div style="display:flex; align-items:center; gap:14px;">
-    <h1>タスク管理</h1>
-    <div class="task-view-tabs">
-      <button type="button" class="task-view-tab <%= view !== 'calendar' ? 'active' : '' %>" data-view="board">ボード</button>
-      <button type="button" class="task-view-tab <%= view === 'calendar' ? 'active' : '' %>" data-view="calendar">カレンダー</button>
-    </div>
-    <% if (taskBoard === 'project') { %>
-      <a href="/tasks?view=<%= view %>" class="project-toggle-btn" style="margin-left:10px;">社内全体タスク</a>
-    <% } else { %>
-      <a href="/tasks?board=project&view=<%= view %>" class="project-toggle-btn" style="margin-left:10px;">プロジェクト</a>
-    <% } %>
-  </div>
-  <a href="/tasks/new?board=<%= taskBoard %>" class="new-toggle-btn">+ 新規タスク</a>
+<div id="tasks-board-root">
+<%- include('_board_content') %>
 </div>
 
-<div id="board-view" style="<%= view === 'calendar' ? 'display:none;' : '' %>">
-<div class="kanban-grid">
-  <% statusDefs.forEach(([key, label]) => { %>
-    <div class="kanban-column" data-status="<%= key %>">
-      <h3><%= label %> <span class="count">(<%= board[key].length %>)</span></h3>
-      <div class="kanban-list" data-status="<%= key %>">
-        <% board[key].forEach(t => { %>
-          <a href="/tasks/<%= t.id %>" class="kanban-card" data-id="<%= t.id %>">
-            <div class="kanban-card-title"><%= t.title %></div>
-            <div class="kanban-card-meta">
-              <div class="assignee-inline">
-                <% if (t.assignees.length === 0) { %>
-                  <span class="names">未割当</span>
-                <% } else { %>
-                  <span class="avatar-group">
-                    <% t.assignees.forEach(a => { %>
-                      <span title="<%= a.display_name %>"><%- include('../partials/avatar', { avatar: a.avatar, size: 'xs' }) %></span>
-                    <% }) %>
-                  </span>
-                  <span class="names"><%= t.assigneeNames %></span>
-                <% } %>
-              </div>
-              <% if (t.due_at) { %><div><%= t.due_at.replace('T', ' ') %></div><% } %>
-            </div>
-          </a>
-        <% }) %>
-      </div>
-    </div>
-  <% }) %>
+<!-- タスクの登録・編集画面(一覧の右側からスライドインするパネル) -->
+<div id="task-detail-panel" class="task-detail-panel">
+  <button type="button" id="task-panel-close" class="task-panel-close" aria-label="閉じる">×</button>
+  <div id="task-panel-body"></div>
 </div>
-</div>
-<!-- /#board-view -->
 
-<div id="calendar-view" style="<%= view === 'calendar' ? '' : 'display:none;' %>">
-<div class="panel">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <a href="/tasks?year=<%= prevYear %>&month=<%= prevMonth %>&view=calendar&board=<%= taskBoard %>" class="mini-btn">← 前月</a>
-    <h2 style="margin:0;"><%= year %>年<%= month %>月</h2>
-    <a href="/tasks?year=<%= nextYear %>&month=<%= nextMonth %>&view=calendar&board=<%= taskBoard %>" class="mini-btn">次月 →</a>
-  </div>
-
-  <div class="calendar-grid">
-    <% ['日','月','火','水','木','金','土'].forEach(d => { %>
-      <div class="calendar-weekday"><%= d %></div>
-    <% }) %>
-
-    <% for (let i = 0; i < firstWeekday; i++) { %>
-      <div class="calendar-cell empty"></div>
-    <% } %>
-
-    <% for (let day = 1; day <= lastDay; day++) { %>
-      <% const dayStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`; %>
-      <a class="calendar-cell" href="/tasks/day/<%= dayStr %>?board=<%= taskBoard %>">
-        <div class="calendar-day"><%= day %></div>
-        <% if (tasksByDay[day]) { %>
-          <% tasksByDay[day].forEach(t => { %>
-            <div class="calendar-task" title="<%= t.assigneeNames %>">
-              <% if (t.assignees.length > 0) { %>
-                <span style="font-size:9px;"><%- include('../partials/avatar', { avatar: t.assignees[0].avatar, size: 'xs' }) %></span>
-              <% } %>
-              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><%= t.title %></span>
-            </div>
-          <% }) %>
-        <% } %>
-      </a>
-    <% } %>
-  </div>
-</div>
-</div>
-<!-- /#calendar-view -->
-
+<script src="/js/dropzone.js"></script>
 <script>
-  // タブでボード/カレンダー表示を切り替える(デフォルトはボード)
-  (function () {
-    const tabs = document.querySelectorAll('.task-view-tab');
-    const boardView = document.getElementById('board-view');
-    const calendarView = document.getElementById('calendar-view');
-    tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        tabs.forEach((t) => t.classList.remove('active'));
-        tab.classList.add('active');
-        const view = tab.dataset.view;
-        boardView.style.display = view === 'calendar' ? 'none' : '';
-        calendarView.style.display = view === 'calendar' ? '' : 'none';
+(function () {
+  const root = document.getElementById('tasks-board-root');
+  const panel = document.getElementById('task-detail-panel');
+  const panelBody = document.getElementById('task-panel-body');
+  const closeBtn = document.getElementById('task-panel-close');
 
-        const url = new URL(window.location);
-        url.searchParams.set('view', view);
-        window.history.replaceState({}, '', url);
+  // ---------- スライドインパネル(タスクの登録・編集) ----------
+  function openPanelFromUrl(url) {
+    fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
+      .then((res) => res.text())
+      .then((html) => {
+        panelBody.innerHTML = html;
+        panel.classList.add('open');
+        if (window.initDropzones) window.initDropzones(panelBody);
       });
-    });
-  })();
+  }
 
-  // カンバンのドラッグ&ドロップでステータス変更
-  // (HTML5のネイティブDrag&Dropはリンク要素とiOS Safariの相性が悪く、
-  //  タッチ操作でうまく動作しないためPointer Eventsで自前実装している)
-  (function () {
-    const THRESHOLD = 8; // これ以上動いたらドラッグとみなす(px)
+  function closePanel() {
+    panel.classList.remove('open');
+  }
 
-    function findListUnder(x, y) {
-      const el = document.elementFromPoint(x, y);
-      return el ? el.closest('.kanban-list') : null;
-    }
-
-    function clearDragOver() {
-      document.querySelectorAll('.kanban-list.drag-over').forEach((el) => el.classList.remove('drag-over'));
-    }
-
-    // 列見出しの件数(◯件)を、実際に表示されているカード数に合わせて更新する
-    function updateColumnCount(list) {
-      if (!list) return;
-      const column = list.closest('.kanban-column');
-      if (!column) return;
-      const countEl = column.querySelector('.count');
-      if (countEl) countEl.textContent = '(' + list.querySelectorAll('.kanban-card').length + ')';
-    }
-
-    document.querySelectorAll('.kanban-card').forEach((card) => {
-      let downX = 0;
-      let downY = 0;
-      let dragging = false;
-      let justDragged = false;
-      let clone = null;
-      let offsetX = 0;
-      let offsetY = 0;
-      let originalList = null;
-
-      card.addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        downX = e.clientX;
-        downY = e.clientY;
-        dragging = false;
-        card.setPointerCapture(e.pointerId);
+  function refreshBoard() {
+    fetch(window.location.href, { headers: { 'X-Requested-With': 'fetch' } })
+      .then((res) => res.text())
+      .then((html) => {
+        root.innerHTML = html;
       });
+  }
 
-      card.addEventListener('pointermove', (e) => {
-        if (!card.hasPointerCapture || !card.hasPointerCapture(e.pointerId)) return;
+  // タスクカード・新規タスクボタンのクリックはページ遷移せずパネルを開く
+  // (ボード/カレンダーのタブ切り替えも委譲イベントでここにまとめている)
+  root.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return; // 新しいタブで開く操作はブラウザ標準に任せる
 
-        if (!dragging) {
-          const dx = e.clientX - downX;
-          const dy = e.clientY - downY;
-          if (Math.hypot(dx, dy) < THRESHOLD) return;
-
-          dragging = true;
-          const rect = card.getBoundingClientRect();
-          offsetX = downX - rect.left;
-          offsetY = downY - rect.top;
-          originalList = card.closest('.kanban-list');
-
-          clone = card.cloneNode(true);
-          clone.classList.add('kanban-card-dragging-clone');
-          clone.style.position = 'fixed';
-          clone.style.left = rect.left + 'px';
-          clone.style.top = rect.top + 'px';
-          clone.style.width = rect.width + 'px';
-          document.body.appendChild(clone);
-          card.classList.add('kanban-card-placeholder');
-        }
-
-        e.preventDefault();
-        clone.style.left = (e.clientX - offsetX) + 'px';
-        clone.style.top = (e.clientY - offsetY) + 'px';
-
-        clearDragOver();
-        const target = findListUnder(e.clientX, e.clientY);
-        if (target) target.classList.add('drag-over');
-      });
-
-      async function finishDrag(e) {
-        if (!dragging) return;
-        e.preventDefault();
-        dragging = false;
-        justDragged = true; // 直後に発火するclickイベントで遷移させないためのフラグ
-        clearDragOver();
-        if (clone) clone.remove();
-        card.classList.remove('kanban-card-placeholder');
-
-        const targetList = findListUnder(e.clientX, e.clientY);
-        if (targetList && targetList !== originalList) {
-          const status = targetList.dataset.status;
-
-          // ページ全体をリロードせず、カード自体を移動先の列にすぐ移す
-          // (体感を良くするため。失敗した場合は元の列に戻す)
-          targetList.appendChild(card);
-          updateColumnCount(originalList);
-          updateColumnCount(targetList);
-
-          try {
-            const res = await fetch('/tasks/' + card.dataset.id + '/status', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'fetch',
-              },
-              body: 'status=' + status,
-            });
-            if (!res.ok) throw new Error('status update failed');
-          } catch (err) {
-            // 失敗時は元の列に戻す
-            originalList.appendChild(card);
-            updateColumnCount(originalList);
-            updateColumnCount(targetList);
-          }
-        }
+    const card = e.target.closest('.kanban-card');
+    if (card) {
+      e.preventDefault();
+      if (card.dataset.justDragged === '1') {
+        card.dataset.justDragged = '';
+        return;
       }
+      openPanelFromUrl(card.getAttribute('href'));
+      return;
+    }
 
-      card.addEventListener('pointerup', finishDrag);
-      card.addEventListener('pointercancel', () => {
-        if (clone) clone.remove();
-        card.classList.remove('kanban-card-placeholder');
-        clearDragOver();
-        dragging = false;
-      });
+    const newBtn = e.target.closest('.new-toggle-btn');
+    if (newBtn) {
+      e.preventDefault();
+      openPanelFromUrl(newBtn.getAttribute('href'));
+      return;
+    }
 
-      // ドラッグした直後はクリック(詳細ページへの遷移)を打ち消す
-      card.addEventListener('click', (e) => {
-        if (justDragged) {
-          e.preventDefault();
-          justDragged = false;
+    const tab = e.target.closest('.task-view-tab');
+    if (tab) {
+      const tabs = root.querySelectorAll('.task-view-tab');
+      tabs.forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      const view = tab.dataset.view;
+      const boardView = document.getElementById('board-view');
+      const calendarView = document.getElementById('calendar-view');
+      boardView.style.display = view === 'calendar' ? 'none' : '';
+      calendarView.style.display = view === 'calendar' ? '' : 'none';
+
+      const url = new URL(window.location);
+      url.searchParams.set('view', view);
+      window.history.replaceState({}, '', url);
+      return;
+    }
+  });
+
+  // 一覧の何もないところ(カード・新規タスクボタン・パネル以外)をクリックしたらパネルを閉じる
+  document.addEventListener('click', (e) => {
+    if (!panel.classList.contains('open')) return;
+    if (panel.contains(e.target)) return;
+    if (e.target.closest('.kanban-card')) return;
+    if (e.target.closest('.new-toggle-btn')) return;
+    closePanel();
+  });
+
+  closeBtn.addEventListener('click', closePanel);
+
+  // パネル内のフォーム送信をfetchで処理し、ページ遷移させずに結果を反映する
+  panelBody.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (form.tagName !== 'FORM') return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
+      return;
+    }
+
+    const isMultipart = form.enctype === 'multipart/form-data';
+    const formData = new FormData(form);
+    const fetchOptions = {
+      method: form.getAttribute('method') || 'POST',
+      headers: { 'X-Requested-With': 'fetch' },
+    };
+    if (isMultipart) {
+      fetchOptions.body = formData;
+    } else {
+      // multerを使わないフォーム(タイトル・ステータス編集など)はurlencodedで送る
+      fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      fetchOptions.body = new URLSearchParams(formData).toString();
+    }
+
+    fetch(form.getAttribute('action'), fetchOptions)
+      .then(async (res) => {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.indexOf('application/json') !== -1) {
+          const data = await res.json();
+          if (data.redirect) {
+            if (/^\/tasks\/\d+/.test(data.redirect)) {
+              openPanelFromUrl(data.redirect);
+            } else {
+              closePanel();
+            }
+            refreshBoard();
+          }
+        } else {
+          // バリデーションエラーなどはパネルの中身をそのまま差し替える
+          const html = await res.text();
+          panelBody.innerHTML = html;
+          if (window.initDropzones) window.initDropzones(panelBody);
         }
-      });
-    });
-  })();
+      })
+      .catch(() => {});
+  });
+
+  // ---------- カンバンのドラッグ&ドロップでステータス変更 ----------
+  // (HTML5のネイティブDrag&Dropはリンク要素とiOS Safariの相性が悪く、
+  //  タッチ操作でうまく動作しないためPointer Eventsで自前実装している。
+  //  パネル表示の追加に伴い、一覧の再描画後も動作するよう委譲イベントで実装)
+  const THRESHOLD = 8; // これ以上動いたらドラッグとみなす(px)
+  let downX = 0, downY = 0, dragging = false, activeCard = null;
+  let clone = null, offsetX = 0, offsetY = 0, originalList = null;
+
+  function findListUnder(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el ? el.closest('.kanban-list') : null;
+  }
+
+  function clearDragOver() {
+    document.querySelectorAll('.kanban-list.drag-over').forEach((el) => el.classList.remove('drag-over'));
+  }
+
+  // 列見出しの件数(◯件)を、実際に表示されているカード数に合わせて更新する
+  function updateColumnCount(list) {
+    if (!list) return;
+    const column = list.closest('.kanban-column');
+    if (!column) return;
+    const countEl = column.querySelector('.count');
+    if (countEl) countEl.textContent = '(' + list.querySelectorAll('.kanban-card').length + ')';
+  }
+
+  root.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest('.kanban-card');
+    if (!card) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    activeCard = card;
+    downX = e.clientX;
+    downY = e.clientY;
+    dragging = false;
+    card.setPointerCapture(e.pointerId);
+  });
+
+  root.addEventListener('pointermove', (e) => {
+    if (!activeCard || !activeCard.hasPointerCapture || !activeCard.hasPointerCapture(e.pointerId)) return;
+
+    if (!dragging) {
+      const dx = e.clientX - downX;
+      const dy = e.clientY - downY;
+      if (Math.hypot(dx, dy) < THRESHOLD) return;
+
+      dragging = true;
+      const rect = activeCard.getBoundingClientRect();
+      offsetX = downX - rect.left;
+      offsetY = downY - rect.top;
+      originalList = activeCard.closest('.kanban-list');
+
+      clone = activeCard.cloneNode(true);
+      clone.classList.add('kanban-card-dragging-clone');
+      clone.style.position = 'fixed';
+      clone.style.left = rect.left + 'px';
+      clone.style.top = rect.top + 'px';
+      clone.style.width = rect.width + 'px';
+      document.body.appendChild(clone);
+      activeCard.classList.add('kanban-card-placeholder');
+    }
+
+    e.preventDefault();
+    clone.style.left = (e.clientX - offsetX) + 'px';
+    clone.style.top = (e.clientY - offsetY) + 'px';
+
+    clearDragOver();
+    const target = findListUnder(e.clientX, e.clientY);
+    if (target) target.classList.add('drag-over');
+  });
+
+  async function finishDrag(e) {
+    if (!activeCard || !dragging) { activeCard = null; return; }
+    e.preventDefault();
+    dragging = false;
+    activeCard.dataset.justDragged = '1'; // 直後に発火するclickイベントでパネルを開かせないためのフラグ
+    clearDragOver();
+    if (clone) clone.remove();
+    activeCard.classList.remove('kanban-card-placeholder');
+
+    const targetList = findListUnder(e.clientX, e.clientY);
+    const card = activeCard;
+    activeCard = null;
+
+    if (targetList && targetList !== originalList) {
+      const status = targetList.dataset.status;
+
+      // ページ全体をリロードせず、カード自体を移動先の列にすぐ移す
+      // (体感を良くするため。失敗した場合は元の列に戻す)
+      targetList.appendChild(card);
+      updateColumnCount(originalList);
+      updateColumnCount(targetList);
+
+      try {
+        const res = await fetch('/tasks/' + card.dataset.id + '/status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'fetch',
+          },
+          body: 'status=' + status,
+        });
+        if (!res.ok) throw new Error('status update failed');
+      } catch (err) {
+        // 失敗時は元の列に戻す
+        originalList.appendChild(card);
+        updateColumnCount(originalList);
+        updateColumnCount(targetList);
+      }
+    }
+  }
+
+  root.addEventListener('pointerup', finishDrag);
+  root.addEventListener('pointercancel', () => {
+    if (clone) clone.remove();
+    if (activeCard) activeCard.classList.remove('kanban-card-placeholder');
+    clearDragOver();
+    dragging = false;
+    activeCard = null;
+  });
+})();
 </script>
 
 <%- include('../partials/footer') %>

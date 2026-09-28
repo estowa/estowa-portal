@@ -61,6 +61,12 @@ function boardFrom(value) {
   return value === 'project' ? 'project' : 'company';
 }
 
+// タスク一覧のスライドインパネルからのfetchリクエストかどうか
+// (この場合、ヘッダー・フッターを含まない断片HTML、またはJSONを返す)
+function isFetch(req) {
+  return req.headers['x-requested-with'] === 'fetch';
+}
+
 const STATUS_LABELS = Object.fromEntries(STATUS_DEFS);
 
 function statusLabel(key) {
@@ -226,7 +232,7 @@ router.get('/tasks', requireLogin, (req, res) => {
   let nextMonth = month + 1, nextYear = year;
   if (nextMonth > 12) { nextMonth = 1; nextYear += 1; }
 
-  res.render('tasks/index', {
+  const payload = {
     board,
     taskBoard,
     statusDefs: STATUS_DEFS,
@@ -242,7 +248,8 @@ router.get('/tasks', requireLogin, (req, res) => {
     nextMonth,
     nextYear,
     error: null,
-  });
+  };
+  res.render(isFetch(req) ? 'tasks/_board_content' : 'tasks/index', payload);
 });
 
 // 指定日のタスク一覧
@@ -266,19 +273,29 @@ router.get('/tasks/day/:date', requireLogin, (req, res) => {
 router.get('/tasks/new', requireLogin, (req, res) => {
   const users = listUsersWithAvatar();
   const taskBoard = boardFrom(req.query.board);
-  res.render('tasks/new', { users, taskBoard, statusDefs: STATUS_DEFS, error: req.query.error || null });
+  const payload = { users, taskBoard, statusDefs: STATUS_DEFS, error: req.query.error || null };
+  res.render(isFetch(req) ? 'tasks/_new_content' : 'tasks/new', payload);
 });
 
 // タスク新規作成(画像・ファイルの添付も同時に受け付ける)
 router.post('/tasks', requireLogin, (req, res) => {
   runUpload(req, res, (uploadError) => {
+    const taskBoard = boardFrom(req.body.board);
+
     if (uploadError) {
+      if (isFetch(req)) {
+        const users = listUsersWithAvatar();
+        return res.status(400).render('tasks/_new_content', { users, taskBoard, statusDefs: STATUS_DEFS, error: uploadError });
+      }
       return res.redirect('/tasks/new?error=' + encodeURIComponent(uploadError));
     }
 
-    const { title, description, status, due_date, due_time, start_date, start_time, assignee_ids, board } = req.body;
-    const taskBoard = boardFrom(board);
+    const { title, description, status, due_date, due_time, start_date, start_time, assignee_ids } = req.body;
     if (!title) {
+      if (isFetch(req)) {
+        const users = listUsersWithAvatar();
+        return res.status(400).render('tasks/_new_content', { users, taskBoard, statusDefs: STATUS_DEFS, error: 'タスク内容を入力してください' });
+      }
       return res.redirect('/tasks/new?board=' + taskBoard);
     }
     const dueAt = buildDueAt(due_date, due_time);
@@ -293,6 +310,7 @@ router.post('/tasks', requireLogin, (req, res) => {
 
     insertAttachments(result.lastInsertRowid, req.files, req.session.user.user_id, null);
 
+    if (isFetch(req)) return res.json({ redirect: '/tasks?board=' + taskBoard });
     res.redirect('/tasks?board=' + taskBoard);
   });
 });
@@ -347,37 +365,40 @@ function buildTimeline(taskId) {
   return timeline;
 }
 
-// タスク詳細・編集画面
-router.get('/tasks/:id', requireLogin, (req, res) => {
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
-  if (!task) return res.status(404).render('error', { message: 'タスクが見つかりません', user: req.session.user });
+// タスク詳細・編集画面の表示に必要なデータをまとめて取得する
+// (通常ページ・スライドインパネル・更新後の再表示のいずれからも使う)
+function loadTaskDetailData(taskId) {
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+  if (!task) return null;
   attachAssignees([task]);
 
   const timeline = buildTimeline(task.id);
-
   const users = listUsersWithAvatar();
   const assignedIds = new Set(task.assignees.map((a) => a.user_id));
   const updatedByUser = task.updated_by ? usersMapFor([task.updated_by])[task.updated_by] : null;
   const updatedByName = updatedByUser ? updatedByUser.display_name : null;
   const updatedByAvatar = updatedByUser ? updatedByUser.avatar : null;
 
-  res.render('tasks/show', {
-    task,
-    timeline,
-    users,
-    assignedIds,
-    updatedByName,
-    updatedByAvatar,
-    statusDefs: STATUS_DEFS,
-    error: null,
-    uploadError: req.query.uploadError || null,
-  });
+  return { task, timeline, users, assignedIds, updatedByName, updatedByAvatar, statusDefs: STATUS_DEFS };
+}
+
+function renderTaskDetail(req, res, taskId, { error = null, uploadError = null, status = 200 } = {}) {
+  const data = loadTaskDetailData(taskId);
+  if (!data) return res.status(404).render('error', { message: 'タスクが見つかりません', user: req.session.user });
+  const payload = { ...data, error, uploadError };
+  res.status(status).render(isFetch(req) ? 'tasks/_detail_content' : 'tasks/show', payload);
+}
+
+// タスク詳細・編集画面
+router.get('/tasks/:id', requireLogin, (req, res) => {
+  renderTaskDetail(req, res, req.params.id, { uploadError: req.query.uploadError || null });
 });
 
 // タスク更新（内容・担当者・ステータス）
 router.post('/tasks/:id', requireLogin, (req, res) => {
   const { title, description, status, due_date, due_time, start_date, start_time, assignee_ids } = req.body;
   if (!title) {
+    if (isFetch(req)) return renderTaskDetail(req, res, req.params.id, { error: 'タスク内容を入力してください', status: 400 });
     return res.redirect('/tasks/' + req.params.id);
   }
   const dueAt = buildDueAt(due_date, due_time);
@@ -421,6 +442,7 @@ router.post('/tasks/:id', requireLogin, (req, res) => {
   const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
   notifyTaskUpdate({ task: updatedTask, actorUserId: req.session.user.user_id, changeLines });
 
+  if (isFetch(req)) return res.json({ redirect: '/tasks/' + req.params.id });
   res.redirect('/tasks/' + req.params.id);
 });
 
@@ -428,6 +450,7 @@ router.post('/tasks/:id', requireLogin, (req, res) => {
 router.post('/tasks/:id/comments', requireLogin, (req, res) => {
   runUpload(req, res, (uploadError) => {
     if (uploadError) {
+      if (isFetch(req)) return renderTaskDetail(req, res, req.params.id, { uploadError, status: 400 });
       return res.redirect('/tasks/' + req.params.id + '?uploadError=' + encodeURIComponent(uploadError));
     }
 
@@ -437,6 +460,7 @@ router.post('/tasks/:id/comments', requireLogin, (req, res) => {
     const body = (req.body.body || '').trim();
     const hasFiles = req.files && req.files.length > 0;
     if (!body && !hasFiles) {
+      if (isFetch(req)) return res.json({ redirect: '/tasks/' + req.params.id });
       return res.redirect('/tasks/' + req.params.id);
     }
 
@@ -446,6 +470,7 @@ router.post('/tasks/:id/comments', requireLogin, (req, res) => {
 
     insertAttachments(task.id, req.files, req.session.user.user_id, result.lastInsertRowid);
 
+    if (isFetch(req)) return res.json({ redirect: '/tasks/' + req.params.id });
     res.redirect('/tasks/' + req.params.id);
   });
 });
@@ -459,6 +484,7 @@ router.post('/tasks/:id/comments/:commentId/delete', requireLogin, (req, res) =>
     db.prepare('DELETE FROM task_attachments WHERE comment_id = ?').run(comment.id);
     db.prepare('DELETE FROM task_comments WHERE id = ?').run(comment.id);
   }
+  if (isFetch(req)) return res.json({ redirect: '/tasks/' + req.params.id });
   res.redirect('/tasks/' + req.params.id);
 });
 
@@ -470,6 +496,7 @@ router.post('/tasks/:id/attachments/:attId/delete', requireLogin, (req, res) => 
     fs.unlink(filePath, () => {});
     db.prepare('DELETE FROM task_attachments WHERE id = ?').run(att.id);
   }
+  if (isFetch(req)) return res.json({ redirect: '/tasks/' + req.params.id });
   res.redirect('/tasks/' + req.params.id);
 });
 
@@ -494,7 +521,7 @@ router.post('/tasks/:id/status', requireLogin, (req, res) => {
     });
   }
 
-  if (req.headers['x-requested-with'] === 'fetch') {
+  if (isFetch(req)) {
     return res.json({ ok: true });
   }
   res.redirect('/tasks');
@@ -509,7 +536,9 @@ router.post('/tasks/:id/delete', requireLogin, (req, res) => {
   db.prepare('DELETE FROM task_comments WHERE task_id = ?').run(req.params.id);
   db.prepare('DELETE FROM task_assignees WHERE task_id = ?').run(req.params.id);
   db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
-  res.redirect('/tasks' + (target ? '?board=' + boardFrom(target.board) : ''));
+  const dest = '/tasks' + (target ? '?board=' + boardFrom(target.board) : '');
+  if (isFetch(req)) return res.json({ redirect: dest });
+  res.redirect(dest);
 });
 
 module.exports = router;

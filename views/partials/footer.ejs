@@ -8,6 +8,17 @@
     });
   });
 
+  // data-confirm属性を持つフォームは送信前に確認ダイアログを出す
+  // (タスクのスライドインパネル内では別途fetchで処理されるためここでは扱わない)
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (form && form.dataset && form.dataset.confirm) {
+      if (!window.confirm(form.dataset.confirm)) {
+        e.preventDefault();
+      }
+    }
+  });
+
   // 現在のページに応じてサイドバーのハイライトを切り替え
   (function () {
     const path = window.location.pathname;
