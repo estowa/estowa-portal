@@ -6,10 +6,15 @@
 
 <div class="panel">
   <p class="empty-note" style="margin-top:0;">
-    月を選んでCSVをダウンロードすると、メンバーごとの氏名・日別の出勤/退勤時刻が出力されます。打刻がない日は空欄になります。
+    月とメンバーを選んでCSVをダウンロードすると、日別の出勤/退勤時刻が出力されます。打刻がない日は空欄になります。
   </p>
   <form method="GET" action="/attendance/export" style="display:flex; align-items:center; gap:10px;">
     <input type="month" name="month" value="<%= defaultMonth %>" required />
+    <select name="user_id" required style="padding:8px 10px; border:1px solid var(--border); border-radius:6px;">
+      <% members.forEach(m => { %>
+        <option value="<%= m.user_id %>"><%= m.display_name %></option>
+      <% }) %>
+    </select>
     <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">CSVダウンロード</button>
   </form>
 </div>
