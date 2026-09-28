@@ -36,7 +36,7 @@
                   <span class="names"><%= t.assigneeNames %></span>
                 <% } %>
               </div>
-              <% if (t.due_at) { %><div><%= t.due_at.replace('T', ' ') %></div><% } %>
+              <% if (t.due_at) { %><div class="<%= t.isOverdue ? 'due-overdue' : '' %>"><%= t.due_at.replace('T', ' ') %></div><% } %>
             </div>
           </a>
         <% }) %>

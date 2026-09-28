@@ -6,6 +6,7 @@ const { requireLogin } = require('../middleware/auth');
 const mailer = require('../lib/mailer');
 const { avatarFor } = require('../lib/avatar');
 const { createUploader } = require('../lib/uploads');
+const { formatJst, nowJstDateTimeStr } = require('../lib/jst');
 
 const router = express.Router();
 
@@ -181,6 +182,12 @@ router.get('/tasks', requireLogin, (req, res) => {
     .all(taskBoard);
   attachAssignees(allTasks);
 
+  // 締切日時が過ぎているタスク(完了済みを除く)は一覧で赤字表示する
+  const nowStr = nowJstDateTimeStr();
+  allTasks.forEach((t) => {
+    t.isOverdue = Boolean(t.due_at) && t.status !== 'done' && t.due_at < nowStr;
+  });
+
   const board = {};
   STATUSES.forEach((s) => { board[s] = []; });
   allTasks.forEach((t) => {
@@ -346,6 +353,7 @@ function buildTimeline(taskId) {
       body: c.body,
       attachments: byComment[c.id] || [],
       createdAt: c.created_at,
+      createdAtDisplay: formatJst(c.created_at),
     });
   });
   standaloneAttachments.forEach((a) => {
@@ -359,6 +367,7 @@ function buildTimeline(taskId) {
       body: null,
       attachments: [a],
       createdAt: a.uploaded_at,
+      createdAtDisplay: formatJst(a.uploaded_at),
     });
   });
   timeline.sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
@@ -378,8 +387,9 @@ function loadTaskDetailData(taskId) {
   const updatedByUser = task.updated_by ? usersMapFor([task.updated_by])[task.updated_by] : null;
   const updatedByName = updatedByUser ? updatedByUser.display_name : null;
   const updatedByAvatar = updatedByUser ? updatedByUser.avatar : null;
+  const updatedAtDisplay = task.updated_at ? formatJst(task.updated_at) : null;
 
-  return { task, timeline, users, assignedIds, updatedByName, updatedByAvatar, statusDefs: STATUS_DEFS };
+  return { task, timeline, users, assignedIds, updatedByName, updatedByAvatar, updatedAtDisplay, statusDefs: STATUS_DEFS };
 }
 
 function renderTaskDetail(req, res, taskId, { error = null, uploadError = null, status = 200 } = {}) {

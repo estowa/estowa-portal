@@ -7,7 +7,7 @@
         <% if (updatedByAvatar) { %>
           <%- include('../partials/avatar', { avatar: updatedByAvatar, size: 'xs' }) %>
         <% } %>
-        <%= updatedByName %>（<%= task.updated_at.slice(0, 16).replace('T', ' ') %>）
+        <%= updatedByName %>（<%= updatedAtDisplay %>）
       </div>
     <% } %>
   </div>
@@ -74,7 +74,14 @@
               <%- include('../partials/avatar', { avatar: item.avatar, size: 'xs' }) %>
               <%= item.userName %>
             </span>
-            <span><%= item.createdAt.slice(0, 16).replace('T', ' ') %></span>
+            <div class="timeline-item-meta">
+              <span class="timeline-item-date"><%= item.createdAtDisplay %></span>
+              <% if (item.type === 'comment') { %>
+                <form method="POST" action="/tasks/<%= task.id %>/comments/<%= item.id %>/delete" data-confirm="このコメントを削除しますか？">
+                  <button type="submit" class="timeline-delete-link">削除</button>
+                </form>
+              <% } %>
+            </div>
           </div>
           <% if (item.body) { %>
             <div class="timeline-item-body"><%= item.body %></div>
@@ -93,17 +100,15 @@
                     </a>
                   <% } %>
                   <div class="attachment-name" title="<%= a.original_name %>"><%= a.original_name %></div>
-                  <form method="POST" action="/tasks/<%= task.id %>/attachments/<%= a.id %>/delete" data-confirm="このファイルを削除しますか？">
-                    <button type="submit" class="mini-btn">削除</button>
-                  </form>
+                  <div class="attachment-actions">
+                    <a href="/uploads/tasks/<%= a.filename %>" download="<%= a.original_name %>" class="mini-btn">ダウンロード</a>
+                    <form method="POST" action="/tasks/<%= task.id %>/attachments/<%= a.id %>/delete" data-confirm="このファイルを削除しますか？">
+                      <button type="submit" class="mini-btn">削除</button>
+                    </form>
+                  </div>
                 </div>
               <% }) %>
             </div>
-          <% } %>
-          <% if (item.type === 'comment') { %>
-            <form method="POST" action="/tasks/<%= task.id %>/comments/<%= item.id %>/delete" data-confirm="このコメントを削除しますか？">
-              <button type="submit" class="mini-btn">削除</button>
-            </form>
           <% } %>
         </div>
       <% }) %>

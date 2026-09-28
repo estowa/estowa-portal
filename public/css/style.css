@@ -308,6 +308,7 @@ table.user-table th, table.user-table td {
 }
 .kanban-card-title { font-weight: 600; margin-bottom: 4px; }
 .kanban-card-meta { color: var(--text-muted); font-size: 12px; }
+.kanban-card-meta .due-overdue { color: #d03b3b; font-weight: 600; }
 .kanban-card-placeholder { opacity: 0.35; }
 .kanban-card-dragging-clone {
   pointer-events: none;
@@ -530,6 +531,13 @@ a.calendar-cell:hover { background: var(--bg); }
   margin-bottom: 6px;
 }
 .attachment-file-icon { font-size: 36px; }
+.attachment-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.attachment-actions .mini-btn { text-align: center; }
 .attachment-name {
   font-size: 11px;
   color: var(--text-muted);
@@ -836,9 +844,27 @@ table.sheet-table.readonly td {
   color: var(--text-muted);
 }
 .timeline-item-head .name { font-weight: 600; color: var(--text); }
+.timeline-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.timeline-item-meta form { margin: 0; }
+.timeline-delete-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.timeline-delete-link:hover { color: #d03b3b; }
 .timeline-item-body { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
 .timeline-item .attachment-grid { margin-top: 10px; }
-.timeline-item .mini-btn { margin-top: 8px; }
+.timeline-item .attachment-actions { margin-top: 8px; }
+.timeline-item .attachment-actions .mini-btn { margin-top: 0; }
 .comment-composer textarea {
   width: 100%;
   padding: 10px;
