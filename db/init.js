@@ -325,6 +325,19 @@ db.exec(`
   );
 `);
 
+// ナレッジ記事の添付ファイル
+db.exec(`
+  CREATE TABLE IF NOT EXISTS knowledge_attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    article_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    mime_type TEXT,
+    uploaded_by TEXT,
+    uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 // 既存の添付ファイル名の文字化け修正
 // (multerがUTF-8のファイル名をlatin1として誤解釈していたため、
 //  過去にアップロードされたファイルの日本語名が文字化けしていた分を復元する)
@@ -357,6 +370,7 @@ function repairMojibake(table) {
 
 repairMojibake('task_attachments');
 repairMojibake('announcement_attachments');
+repairMojibake('knowledge_attachments');
 
 // 初期管理者アカウント（存在しない場合のみ作成）
 const existingAdmin = db.prepare('SELECT * FROM users WHERE user_id = ?').get('admin');
