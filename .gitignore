@@ -6,3 +6,4 @@ db/*.db-shm
 db/sessions.db
 .env
 public/uploads/
+.superpowers/

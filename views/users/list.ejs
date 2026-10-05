@@ -33,6 +33,7 @@
         <th>メールアドレス</th>
         <th>権限</th>
         <th>権限変更</th>
+        <th>在宅</th>
         <th>パスワード再設定</th>
         <th>削除</th>
       </tr>
@@ -55,6 +56,18 @@
                 <option value="member" <%= u.role === 'member' ? 'selected' : '' %>>メンバー</option>
                 <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>管理者</option>
               </select>
+            </form>
+          </td>
+          <td>
+            <form method="POST" action="/users/<%= u.id %>/remote" class="form-inline"<% if (!u.is_remote) { %> data-confirm="<%= u.display_name %>さんを在宅に設定します（前の在宅設定は解除されます）"<% } %>>
+              <% if (u.is_remote) { %>
+                <span class="badge member">在宅</span>
+                <input type="hidden" name="remote" value="0" />
+                <button type="submit" class="mini-btn">解除</button>
+              <% } else { %>
+                <input type="hidden" name="remote" value="1" />
+                <button type="submit" class="mini-btn">在宅にする</button>
+              <% } %>
             </form>
           </td>
           <td>

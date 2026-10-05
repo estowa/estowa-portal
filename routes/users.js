@@ -2,10 +2,11 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db/connection');
 const { requireLogin, requireAdmin } = require('../middleware/auth');
+const { setRemoteUser } = require('../lib/chatRules');
 
 const router = express.Router();
 
-const USER_LIST_SELECT = 'SELECT id, user_id, display_name, role, email, created_at FROM users ORDER BY id';
+const USER_LIST_SELECT = 'SELECT id, user_id, display_name, role, email, is_remote, created_at FROM users ORDER BY id';
 
 // ユーザー一覧（管理者のみ）
 router.get('/users', requireLogin, requireAdmin, (req, res) => {
@@ -63,6 +64,14 @@ router.post('/users/:id/password', requireLogin, requireAdmin, (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.params.id);
   res.render('users/list', { users, error: null, success: 'パスワードを更新しました' });
+});
+
+// 在宅フラグの設定／解除（常に1人だけ）
+router.post('/users/:id/remote', requireLogin, requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const turnOn = req.body.remote === '1';
+  setRemoteUser(db, turnOn ? id : null);
+  res.redirect('/users');
 });
 
 // ユーザー削除
