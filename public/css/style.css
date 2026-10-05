@@ -1162,3 +1162,16 @@ table.sheet-table.readonly td {
 .chat-form button { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
 .chat-form button:disabled, .chat-form input:disabled { opacity: 0.5; cursor: not-allowed; }
 .chat-error { color: #e0245e; font-size: 12px; margin-top: 6px; }
+
+/* ---- 音声 ---- */
+.voice-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 13px; }
+.voice-enable { padding: 6px 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+.voice-enable:disabled { background: #9aa0b4; cursor: default; }
+.voice-mute { padding: 6px 14px; background: #fff; color: var(--primary); border: 1px solid var(--primary); border-radius: 8px; cursor: pointer; }
+.voice-mute.on { background: #6b7080; border-color: #6b7080; color: #fff; }
+.voice-note { color: var(--text-muted); font-size: 12px; }
+.voice-speaking { background: #e8f7ec; color: #1d7a34; border-radius: 8px; padding: 6px 12px; font-size: 13px; margin-bottom: 10px; }
+.voice-error { color: #e0245e; font-size: 12px; margin-bottom: 8px; }
+.talk-btn { padding: 6px 12px; border: 1px solid var(--primary); background: #fff; color: var(--primary); border-radius: 8px; cursor: pointer; font-size: 13px; touch-action: none; user-select: none; }
+.talk-btn.talking { background: #e0245e; border-color: #e0245e; color: #fff; }
+.talk-btn:disabled { opacity: 0.4; cursor: not-allowed; }
