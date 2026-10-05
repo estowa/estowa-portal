@@ -254,13 +254,15 @@
         btn.setPointerCapture(e.pointerId);
         startTalk(peerId);
       });
-      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((t) => btn.addEventListener(t, stopTalk));
       btn.addEventListener('contextmenu', (e) => e.preventDefault());
       li.appendChild(btn);
     });
   };
 
-  // 押しっぱなしの事故を防ぐ: タブを離れた・ページを閉じる時は必ず止める
+  // 押しっぱなしの事故を防ぐ: ボタンは一覧の描き直しで作り直されるため、離したことはwindowで受ける。
+  // タブを離れた・ページを閉じる時も必ず止める
+  window.addEventListener('pointerup', stopTalk);
+  window.addEventListener('pointercancel', stopTalk);
   window.addEventListener('blur', stopTalk);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopTalk(); });
   window.addEventListener('pagehide', stopTalk);
