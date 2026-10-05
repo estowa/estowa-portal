@@ -18,6 +18,8 @@ const sheetRoutes = require('./routes/sheets');
 const knowledgeRoutes = require('./routes/knowledge');
 const ideaRoutes = require('./routes/ideas');
 const profileRoutes = require('./routes/profile');
+const chatRoutes = require('./routes/chat');
+const { attachChatSocket } = require('./lib/chatSocket');
 const db = require('./db/connection');
 const { avatarFor } = require('./lib/avatar');
 
@@ -31,17 +33,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(
-  session({
-    store: new SQLiteStore({ db: 'sessions.db', dir: path.join(__dirname, 'db') }),
-    secret: process.env.SESSION_SECRET || 'estowa-portal-dev-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7日間
-    },
-  })
-);
+const sessionMiddleware = session({
+  store: new SQLiteStore({ db: 'sessions.db', dir: path.join(__dirname, 'db') }),
+  secret: process.env.SESSION_SECRET || 'estowa-portal-dev-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7日間
+  },
+});
+app.use(sessionMiddleware);
 
 // 全ビューでログインユーザー情報を使えるようにする
 // (アイコン設定はログイン後に変わりうるため、セッションではなくDBから都度取得する)
@@ -73,11 +74,13 @@ app.use(sheetLinkRoutes);
 app.use(sheetRoutes);
 app.use(knowledgeRoutes);
 app.use(ideaRoutes);
+app.use(chatRoutes);
 
 app.use((req, res) => {
   res.status(404).render('error', { message: 'ページが見つかりません', user: req.session.user });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`estowa社内ポータル起動: http://localhost:${PORT}`);
 });
+attachChatSocket(server, sessionMiddleware, db);
