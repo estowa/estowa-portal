@@ -11,8 +11,9 @@
 
   let audioEnabled = false;
   let muted = false;           // 消音: 話しかけられても鳴らさない
-  let holding = null;          // 「話す」を押している相手
-  let talking = null;          // { peerId, stream }
+  let starting = null;         // マイクの許可待ち・準備中の相手
+  let talking = null;          // { peerId, stream, timer }
+  const TALK_LIMIT_MS = window.ESTOWA_TALK_LIMIT_MS || 5 * 60 * 1000; // 止め忘れ防止の自動停止
   const speaking = new Set();  // 今こちらに話しかけている相手
   const conns = new Map();     // peerId -> { pc, cid, audio, sender, pending }
 
@@ -90,6 +91,7 @@
     const c = conns.get(peerId);
     if (!c) return;
     conns.delete(peerId);
+    if ((talking && talking.peerId === peerId) || starting === peerId) stopTalk();
     try { c.pc.close(); } catch (e) { /* 無視 */ }
     c.audio.srcObject = null;
     c.audio.remove();
@@ -194,13 +196,13 @@
     renderSpeaking();
   });
 
-  // ---- 送信側: 「話す」ボタン ----
+  // ---- 送信側: 「話す」ボタン（押すと話し始め、もう一度押すと終わる） ----
   async function startTalk(peerId) {
     showError('');
-    holding = peerId;
+    starting = peerId;
     const conn = conns.get(peerId);
     if (!conn || conn.pc.connectionState !== 'connected' || !conn.sender) {
-      holding = null;
+      starting = null;
       return showError('まだつながっていません。少し待ってからもう一度押してください');
     }
     let stream;
@@ -209,34 +211,51 @@
         audio: { echoCancellation: true, noiseSuppression: true },
       });
     } catch (e) {
-      holding = null;
-      return showError('マイクが使えません。ブラウザのアドレスバー左の鍵マークからマイクを「許可」にしてください');
+      starting = null;
+      return showError(micErrorText(e));
     }
-    if (holding !== peerId) { // 許可を待つ間にボタンが離された
+    if (starting !== peerId) { // 許可を待つ間にもう一度押された／相手が切れた
       stream.getTracks().forEach((t) => t.stop());
       return;
     }
+    starting = null;
     await conn.sender.replaceTrack(stream.getAudioTracks()[0]);
-    talking = { peerId, stream };
+    const timer = setTimeout(() => {
+      stopTalk();
+      showError('話し始めてから時間がたったので、自動で止めました。続ける場合はもう一度押してください');
+    }, TALK_LIMIT_MS);
+    talking = { peerId, stream, timer };
     chat.send({ type: 'ptt', to: peerId, on: true });
-    setTalkingUi(peerId, true);
+    refreshTalkButtons();
   }
 
   function stopTalk() {
-    holding = null;
-    if (!talking) return;
-    const { peerId, stream } = talking;
+    starting = null;
+    if (!talking) return refreshTalkButtons();
+    const { peerId, stream, timer } = talking;
     talking = null;
+    clearTimeout(timer);
     stream.getTracks().forEach((t) => t.stop());
     const conn = conns.get(peerId);
     if (conn && conn.sender) conn.sender.replaceTrack(null).catch(() => {});
     chat.send({ type: 'ptt', to: peerId, on: false });
-    setTalkingUi(peerId, false);
+    refreshTalkButtons();
   }
 
-  function setTalkingUi(peerId, on) {
-    const btn = document.querySelector('.talk-btn[data-user-id="' + CSS.escape(peerId) + '"]');
-    if (btn) btn.classList.toggle('talking', on);
+  function micErrorText(e) {
+    if (e && e.name === 'NotFoundError') return 'マイクが見つかりません。ヘッドセットなどを接続してください';
+    if (e && (e.name === 'NotReadableError' || e.name === 'AbortError')) return '他のアプリがマイクを使っているため使えません';
+    return 'マイクが使えません。ブラウザのアドレスバー左の設定アイコンから、マイクを「許可」にしてください';
+  }
+
+  function applyTalkButton(btn, peerId) {
+    const on = !!talking && talking.peerId === peerId;
+    btn.classList.toggle('talking', on);
+    btn.textContent = on ? '話し終わる' : '話す';
+    btn.disabled = !on && !chat.isOnline(peerId);
+  }
+  function refreshTalkButtons() {
+    document.querySelectorAll('.talk-btn').forEach((btn) => applyTalkButton(btn, btn.dataset.userId));
   }
 
   // ボタンを、会話相手の一覧に差し込む（chat.jsが一覧を描き直すたびに呼ばれる）
@@ -245,26 +264,19 @@
       const peerId = li.dataset.userId;
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'talk-btn' + (talking && talking.peerId === peerId ? ' talking' : '');
+      btn.className = 'talk-btn';
       btn.dataset.userId = peerId;
-      btn.textContent = '話す';
-      btn.disabled = !chat.isOnline(peerId);
-      btn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        btn.setPointerCapture(e.pointerId);
+      applyTalkButton(btn, peerId);
+      btn.addEventListener('click', () => {
+        if ((talking && talking.peerId === peerId) || starting === peerId) return stopTalk();
+        if (talking || starting) stopTalk(); // 別の人に話していたら切り替える
         startTalk(peerId);
       });
-      btn.addEventListener('contextmenu', (e) => e.preventDefault());
       li.appendChild(btn);
     });
   };
 
-  // 押しっぱなしの事故を防ぐ: ボタンは一覧の描き直しで作り直されるため、離したことはwindowで受ける。
-  // タブを離れた・ページを閉じる時も必ず止める
-  window.addEventListener('pointerup', stopTalk);
-  window.addEventListener('pointercancel', stopTalk);
-  window.addEventListener('blur', stopTalk);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stopTalk(); });
+  // ページを閉じる時は必ず止める
   window.addEventListener('pagehide', stopTalk);
 
   // chat.jsが先に一覧を描いていた場合に備えて、1回描き直す
