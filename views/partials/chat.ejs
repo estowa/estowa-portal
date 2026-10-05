@@ -1,0 +1,16 @@
+<div class="panel chat-panel" id="chat-root" hidden>
+  <h2>チャット・通話</h2>
+  <div class="chat-layout">
+    <ul class="chat-peers" id="chat-peers"></ul>
+    <div class="chat-thread">
+      <div class="chat-thread-title" id="chat-title">相手を選んでください</div>
+      <div class="chat-log" id="chat-log"></div>
+      <div class="chat-error" id="chat-error" hidden></div>
+      <form class="chat-form" id="chat-form">
+        <input type="text" id="chat-input" maxlength="2000" autocomplete="off" placeholder="メッセージを入力" disabled />
+        <button type="submit" id="chat-send" disabled>送信</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script src="/js/chat.js"></script>

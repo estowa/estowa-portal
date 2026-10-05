@@ -1139,3 +1139,26 @@ table.sheet-table.readonly td {
 .attendance-badge-in { background: #3fae5c; color: white; }
 .attendance-badge-out { background: #9aa0ae; color: white; }
 .attendance-badge-none { background: #f0ad4e; color: white; }
+
+/* ---- チャット・通話 ---- */
+.chat-layout { display: grid; grid-template-columns: 200px 1fr; gap: 14px; }
+.chat-peers { list-style: none; margin: 0; padding: 0; }
+.chat-peer { display: flex; align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.chat-peer.active { background: rgba(0,0,0,0.04); border-radius: 6px; }
+.chat-peer-name { cursor: pointer; flex: 1; }
+.chat-dot { width: 9px; height: 9px; border-radius: 50%; background: #c9ccd6; flex: none; }
+.chat-dot.on { background: #2fb344; }
+.chat-unread { background: #e0245e; color: #fff; border-radius: 10px; font-size: 11px; padding: 1px 7px; }
+.chat-thread-title { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.chat-log { height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: #fafbfd; }
+.chat-msg { margin-bottom: 10px; display: flex; flex-direction: column; }
+.chat-msg.mine { align-items: flex-end; }
+.chat-msg.theirs { align-items: flex-start; }
+.chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 14px; white-space: pre-wrap; word-break: break-word; background: #fff; border: 1px solid var(--border); }
+.chat-msg.mine .chat-bubble { background: var(--primary); color: #fff; border-color: var(--primary); }
+.chat-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.chat-form { display: flex; gap: 8px; margin-top: 8px; }
+.chat-form input { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+.chat-form button { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+.chat-form button:disabled, .chat-form input:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-error { color: #e0245e; font-size: 12px; margin-top: 6px; }
