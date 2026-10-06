@@ -1195,6 +1195,9 @@ table.sheet-table.readonly td {
 .chip-violet { background: var(--violet-t); color: var(--violet-x); }
 .chip-rose   { background: var(--rose-t);   color: var(--rose-x); }
 .chip-green  { background: var(--green-t);  color: var(--green-x); }
+/* サイドバーと同じ指定色（タスク=赤みのピンク、お知らせ=青紫） */
+.chip-coral    { background: #ffc1c1; color: #8f1717; }
+.chip-lavender { background: #b7b7ff; color: #1a1a8c; }
 
 /* サイドバー: アイコンを色付きの丸い面に入れる */
 .nav-ico {

@@ -2,7 +2,7 @@
 
 <div class="kpi-grid">
   <div class="kpi-card has-chip">
-    <span class="chip chip-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 15 4-4 3 3 5-6"/></svg></span>
+    <span class="chip chip-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 15 4-4 3 3 5-6"/></svg></span>
     <div class="kpi-body">
     <div class="label">今月のEC売上</div>
     <% if (salesSummary.monthlyTotal === null) { %>
@@ -13,14 +13,14 @@
     </div>
   </div>
   <div class="kpi-card has-chip">
-    <span class="chip chip-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5.5 2 7.5 2 7.5H4S6 13.5 6 8Z"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+    <span class="chip chip-lavender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5.5 2 7.5 2 7.5H4S6 13.5 6 8Z"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg></span>
     <div class="kpi-body">
     <div class="label">未読お知らせ</div>
     <div class="value"><%= unreadAnnouncementCount %> 件</div>
     </div>
   </div>
   <div class="kpi-card has-chip">
-    <span class="chip chip-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 10 2 2 4-4"/><path d="M8.5 16h7"/></svg></span>
+    <span class="chip chip-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 10 2 2 4-4"/><path d="M8.5 16h7"/></svg></span>
     <div class="kpi-body">
     <div class="label">自分の未完了タスク</div>
     <div class="value"><%= myTasks.length %> 件</div>
@@ -48,7 +48,7 @@
     <%- include('partials/chat') %>
 
     <div class="panel">
-      <h2 class="has-chip"><span class="h-chip chip-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5.5 2 7.5 2 7.5H4S6 13.5 6 8Z"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg></span>お知らせ <a href="/announcements" style="font-size:12px; font-weight:400; color:var(--primary); margin-left:auto;">すべて見る →</a></h2>
+      <h2 class="has-chip"><span class="h-chip chip-lavender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5.5 2 7.5 2 7.5H4S6 13.5 6 8Z"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg></span>お知らせ <a href="/announcements" style="font-size:12px; font-weight:400; color:var(--primary); margin-left:auto;">すべて見る →</a></h2>
       <% if (announcements.length === 0) { %>
         <div class="empty-note">現在お知らせはありません</div>
       <% } else { %>
@@ -62,7 +62,7 @@
     </div>
 
     <div class="panel">
-      <h2 class="has-chip"><span class="h-chip chip-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 10 2 2 4-4"/><path d="M8.5 16h7"/></svg></span>直近の個人タスク</h2>
+      <h2 class="has-chip"><span class="h-chip chip-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 10 2 2 4-4"/><path d="M8.5 16h7"/></svg></span>直近の個人タスク</h2>
       <% if (myTasks.length === 0) { %>
         <div class="empty-note">未完了のタスクはありません</div>
       <% } else { %>
