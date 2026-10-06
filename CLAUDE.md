@@ -1,7 +1,8 @@
 # estowa-portal
 
 estowa（デザイン会社）の社内ポータルアプリ。Node.js / Express / EJS / better-sqlite3。
-GitHub (`estowa/estowa-portal`) → Render（無料プラン）に自動デプロイ。
+GitHub (`estowa/estowa-portal`) → 本番はConoHa VPS（`https://portal.estowa.com`）。
+（2026-10-05にRenderからVPSへ移行。Renderは旧環境で、使わない。）
 
 依頼者はエンジニアではない（iPadのSafariなどブラウザから指示することが多い）。
 専門用語を避け、変更内容と確認方法を日本語で分かりやすく伝えること。
@@ -21,10 +22,25 @@ node server.js      # http://localhost:3000
 
 ## デプロイ
 
-`git push origin main` するとRenderが自動でビルド・再デプロイする。
-**Render無料プランのディスクは再デプロイのたびに消える**（SQLite DBとアップロード
-ファイルがリセットされる）。これは既知の制約で、まだ対応していない
-（永続化が必要になったらRenderの有料ディスク or 外部ストレージへの移行を検討）。
+**本番はConoHa VPS（Ubuntu 24.04、`https://portal.estowa.com`）。VPSへは自動デプロイされない。**
+変更の流れ: ローカルで確認 → `git push origin main` → VPSで反映（人の承認を得てから行う）。
+
+VPSでの反映手順（`ssh deploy@160.251.181.171`、鍵ログインのみ）:
+```
+cd ~/estowa-portal
+git pull
+npm install                          # 部品が増えた時だけ必要
+sudo systemctl restart estowa-portal
+```
+- DBとアップロード（`db/*.db`、`public/uploads/`）はGit管理外なので、`git pull`では消えない。
+- 本番のDB・`.env`は、VPS上にだけある。**ローカルから本番へ上書きしない。**
+- ログ確認: `journalctl -u estowa-portal -n 100`
+- 構成: Node（systemd常駐）＋ nginx（HTTPS、`/ws/chat`のUpgrade設定済み）＋ coturn（TURN）。
+- バックアップ: サーバー内に毎日3時（`~/backup/`、14日分）、PCへ毎日9時にコピー
+  （`scripts/backup-vps.ps1`はestowa_ai側）。
+- 設定・手順の詳細は、estowa_aiリポジトリの`docs/vps-setup.md`を参照。
+- `git push origin main`をすると、旧環境のRenderにも自動で反映されるが、Renderは使わない
+  （無料プランのためデプロイのたびにデータが消える）。
 
 ## ローカルでDBをリセットする時の手順（重要）
 
@@ -101,10 +117,10 @@ better-sqlite3はWALモードを使うため、サーバープロセスを止め
 ## 保留中の項目
 
 - タスク更新時のメール通知: コード実装済みだがSMTP情報未提供のため未稼働
-- Render無料プランのディスク揮発問題: 未対応（必要になったら対応）
 - グッズ受注・印刷手配管理（カンバン）: 要望待ちで保留
-- チャット・音声の本番化: VPS移行・独自ドメイン・HTTPS・TURN（coturn）の設定が未実施
-  （Render上では同一回線内でのみ音声が確実に動く）
+- チャット・音声の本番確認: VPS・HTTPS・TURN（coturn）は設定済み。ブラウザでの音声確認
+  （同一回線・別回線）と、テスト用ダミーアカウント（chat_home, chat_a〜d）・テスト用タスクの
+  削除が未実施（2026-10-06時点）
 
 ## テスト方法
 
