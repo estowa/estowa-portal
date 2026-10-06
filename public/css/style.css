@@ -1186,6 +1186,7 @@ table.sheet-table.readonly td {
   --teal-t: #d9f4ee;   --teal-x: #0b6558;
   --violet-t: #ebe5ff; --violet-x: #5334b0;
   --rose-t: #ffe3ee;   --rose-x: #9c3f66;
+  --green-t: #e3f6e8;  --green-x: #1d7a34;
 }
 .chip-navy   { background: var(--navy-t);   color: var(--primary); }
 .chip-sky    { background: var(--sky-t);    color: var(--sky-x); }
@@ -1193,6 +1194,7 @@ table.sheet-table.readonly td {
 .chip-teal   { background: var(--teal-t);   color: var(--teal-x); }
 .chip-violet { background: var(--violet-t); color: var(--violet-x); }
 .chip-rose   { background: var(--rose-t);   color: var(--rose-x); }
+.chip-green  { background: var(--green-t);  color: var(--green-x); }
 
 /* サイドバー: アイコンを色付きの丸い面に入れる */
 .nav-ico {
@@ -1211,6 +1213,13 @@ table.sheet-table.readonly td {
 .nav-ico-teal   { background: var(--teal-t);   color: var(--teal-x); }
 .nav-ico-violet { background: var(--violet-t); color: var(--violet-x); }
 .nav-ico-rose   { background: var(--rose-t);   color: var(--rose-x); }
+.nav-ico-green  { background: var(--green-t);  color: var(--green-x); }
+/* サイドバー専用の指定色（背景はご指定の色。アイコンは同じ色合いの濃い色で、背景に対し4.5:1以上） */
+.nav-ico-coral    { background: #ffc1c1; color: #8f1717; }
+.nav-ico-lavender { background: #b7b7ff; color: #1a1a8c; }
+.nav-ico-peach    { background: #ffddbc; color: #7c3f00; }
+/* 管理者向け（勤怠ダウンロード・ユーザー管理）: 色を付けず、白地にグレーの枠 */
+.nav-ico-plain  { background: #fff; color: var(--text-muted); border: 1px solid var(--border); }
 .nav-item { padding: 6px 2px; }
 /* 選択中: 淡い紺の面＋紺の太字（アイコンの面は白） */
 .nav-item.active { background: var(--navy-t); color: var(--primary); font-weight: 700; }
