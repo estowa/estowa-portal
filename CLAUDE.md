@@ -29,7 +29,7 @@ VPSでの反映手順（`ssh deploy@160.251.181.171`、鍵ログインのみ）:
 ```
 cd ~/estowa-portal
 git pull
-npm install                          # 部品が増えた時だけ必要
+npm install                          # 毎回実行する（DBの項目追加=マイグレーションも、ここで自動実行される）
 sudo systemctl restart estowa-portal
 ```
 - DBとアップロード（`db/*.db`、`public/uploads/`）はGit管理外なので、`git pull`では消えない。

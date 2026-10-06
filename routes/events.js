@@ -3,6 +3,7 @@
 const express = require('express');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
+const { normalizeCategory } = require('../lib/eventCategories');
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ function redirectToSales(year, month) {
 }
 
 router.post('/sales/events', requireLogin, (req, res) => {
-  const { title, start_date, end_date, redirect_year, redirect_month } = req.body;
+  const { title, start_date, end_date, category, redirect_year, redirect_month } = req.body;
   const dest = redirectToSales(redirect_year, redirect_month);
 
   if (!title || !start_date) {
@@ -25,14 +26,14 @@ router.post('/sales/events', requireLogin, (req, res) => {
   const endDate = end_date && end_date >= start_date ? end_date : start_date;
 
   db.prepare(
-    'INSERT INTO events (title, start_date, end_date, created_by) VALUES (?, ?, ?, ?)'
-  ).run(title.trim(), start_date, endDate, req.session.user.user_id);
+    'INSERT INTO events (title, start_date, end_date, category, created_by) VALUES (?, ?, ?, ?, ?)'
+  ).run(title.trim(), start_date, endDate, normalizeCategory(category), req.session.user.user_id);
 
   res.redirect(dest);
 });
 
 router.post('/sales/events/:id', requireLogin, (req, res) => {
-  const { title, start_date, end_date, redirect_year, redirect_month } = req.body;
+  const { title, start_date, end_date, category, redirect_year, redirect_month } = req.body;
   const dest = redirectToSales(redirect_year, redirect_month);
 
   const existing = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
@@ -42,8 +43,8 @@ router.post('/sales/events/:id', requireLogin, (req, res) => {
   const endDate = end_date && end_date >= start_date ? end_date : start_date;
 
   db.prepare(
-    "UPDATE events SET title = ?, start_date = ?, end_date = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ?"
-  ).run(title.trim(), start_date, endDate, req.session.user.user_id, req.params.id);
+    "UPDATE events SET title = ?, start_date = ?, end_date = ?, category = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ?"
+  ).run(title.trim(), start_date, endDate, normalizeCategory(category), req.session.user.user_id, req.params.id);
 
   res.redirect(dest);
 });

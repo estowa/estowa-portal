@@ -24,6 +24,10 @@ const db = require('./db/connection');
 const { avatarFor } = require('./lib/avatar');
 
 const app = express();
+// 全ビューで使う、イベントの種類(色分け)の定義
+const { EVENT_CATEGORY_DEFS, categoryClass } = require('./lib/eventCategories');
+app.locals.eventCategories = EVENT_CATEGORY_DEFS;
+app.locals.eventCategoryClass = categoryClass;
 const PORT = process.env.PORT || 3000;
 
 app.set('view engine', 'ejs');

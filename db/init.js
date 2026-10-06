@@ -267,6 +267,14 @@ db.exec(`
   );
 `);
 
+// 既存DBに events.category 列がない場合は追加(マイグレーション)
+// イベントの種類(セール・撮影など)ごとにカレンダーの色を分けるため。未設定は「セール・販促」扱い
+const eventColumns = db.prepare('PRAGMA table_info(events)').all().map((c) => c.name);
+if (!eventColumns.includes('category')) {
+  db.exec('ALTER TABLE events ADD COLUMN category TEXT');
+  console.log('eventsテーブルに category 列を追加しました');
+}
+
 // 外注先リスト
 db.exec(`
   CREATE TABLE IF NOT EXISTS vendors (

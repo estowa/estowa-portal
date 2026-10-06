@@ -151,6 +151,10 @@
                 <input type="date" name="start_date" value="<%= dayStr %>" required />
                 <label>終了日（複数日にまたがる場合）</label>
                 <input type="date" name="end_date" />
+                <label>種類</label>
+                <select name="category">
+                  <% eventCategories.forEach(c => { %><option value="<%= c.key %>"><%= c.label %></option><% }) %>
+                </select>
                 <label>イベント名</label>
                 <input type="text" name="title" placeholder="例: 楽天スーパーセール" required />
                 <button type="submit">追加する</button>
@@ -161,7 +165,7 @@
         <% if (eventsByDay[day]) { %>
           <% eventsByDay[day].forEach(ev => { %>
             <details class="event-chip-toggle">
-              <summary class="event-chip"><%= ev.title %></summary>
+              <summary class="event-chip <%= eventCategoryClass(ev.category) %>"><%= ev.title %></summary>
               <div class="event-popover">
                 <form method="POST" action="/sales/events/<%= ev.id %>">
                   <input type="hidden" name="redirect_year" value="<%= year %>" />
@@ -170,6 +174,10 @@
                   <input type="date" name="start_date" value="<%= ev.start_date %>" required />
                   <label>終了日（複数日にまたがる場合）</label>
                   <input type="date" name="end_date" value="<%= ev.end_date %>" />
+                  <label>種類</label>
+                  <select name="category">
+                    <% eventCategories.forEach(c => { %><option value="<%= c.key %>" <%= eventCategoryClass(ev.category) === c.cssClass ? 'selected' : '' %>><%= c.label %></option><% }) %>
+                  </select>
                   <label>イベント名</label>
                   <input type="text" name="title" value="<%= ev.title %>" required />
                   <button type="submit">保存する</button>

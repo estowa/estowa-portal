@@ -1175,3 +1175,86 @@ table.sheet-table.readonly td {
 .talk-btn { padding: 6px 12px; border: 1px solid var(--primary); background: #fff; color: var(--primary); border-radius: 8px; cursor: pointer; font-size: 13px; touch-action: none; user-select: none; }
 .talk-btn.talking { background: #e0245e; border-color: #e0245e; color: #fff; }
 .talk-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
+/* ---- 色の追加（2026-10-06 ホーム・サイドバーの配色案A+B）---- */
+/* 淡い面(-t)と、その上に載せる濃い文字色(-x)の組。文字と面は4.5:1以上 */
+:root {
+  --navy-t: #e8eaff;
+  --sky-t: #dcedff;    --sky-x: #0b4f9c;
+  --amber-t: #fff3d1;  --amber-x: #8a4a00;
+  --teal-t: #d9f4ee;   --teal-x: #0b6558;
+  --violet-t: #ebe5ff; --violet-x: #5334b0;
+  --rose-t: #ffe3ee;   --rose-x: #9c3f66;
+}
+.chip-navy   { background: var(--navy-t);   color: var(--primary); }
+.chip-sky    { background: var(--sky-t);    color: var(--sky-x); }
+.chip-amber  { background: var(--amber-t);  color: var(--amber-x); }
+.chip-teal   { background: var(--teal-t);   color: var(--teal-x); }
+.chip-violet { background: var(--violet-t); color: var(--violet-x); }
+.chip-rose   { background: var(--rose-t);   color: var(--rose-x); }
+
+/* サイドバー: アイコンを色付きの丸い面に入れる */
+.nav-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-ico svg { width: 18px; height: 18px; }
+.nav-ico-navy   { background: var(--navy-t);   color: var(--primary); }
+.nav-ico-sky    { background: var(--sky-t);    color: var(--sky-x); }
+.nav-ico-amber  { background: var(--amber-t);  color: var(--amber-x); }
+.nav-ico-teal   { background: var(--teal-t);   color: var(--teal-x); }
+.nav-ico-violet { background: var(--violet-t); color: var(--violet-x); }
+.nav-ico-rose   { background: var(--rose-t);   color: var(--rose-x); }
+.nav-item { padding: 6px 2px; }
+/* 選択中: 淡い紺の面＋紺の太字（アイコンの面は白） */
+.nav-item.active { background: var(--navy-t); color: var(--primary); font-weight: 700; }
+.nav-item.active .nav-ico { background: #fff; color: var(--primary); }
+
+/* ホームの数値カード: アイコンの面を左に */
+.kpi-card.has-chip { display: flex; align-items: center; gap: 14px; }
+.kpi-card .chip {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.kpi-card .chip svg { width: 20px; height: 20px; }
+.kpi-body { min-width: 0; }
+
+/* パネル見出し: 小さなアイコンの面を前に */
+.panel h2.has-chip { display: flex; align-items: center; gap: 10px; }
+.h-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.h-chip svg { width: 16px; height: 16px; }
+
+/* イベントの種類ごとの色（未設定は「セール・販促」＝従来のピンク） */
+.event-chip.cat-sale     { background: var(--rose-t);   color: var(--rose-x); }
+.event-chip.cat-shoot    { background: var(--sky-t);    color: var(--sky-x); }
+.event-chip.cat-due      { background: var(--amber-t);  color: var(--amber-x); }
+.event-chip.cat-internal { background: var(--teal-t);   color: var(--teal-x); }
+.event-chip.cat-other    { background: var(--violet-t); color: var(--violet-x); }
+.event-popover select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  box-sizing: border-box;
+  background: #fff;
+}
