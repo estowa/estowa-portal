@@ -18,7 +18,8 @@ node server.js      # http://localhost:3000
 
 メール通知（タスク更新時）を使う場合は `.env.example` を参考に `.env` を用意する
 （SMTP_HOST / SMTP_PORT / SMTP_SECURE / SMTP_USER / SMTP_PASS / MAIL_FROM / APP_BASE_URL）。
-**現時点ではSMTP情報が未提供のため、メール通知は実装済みだが未稼働。**
+本番は2026-10-09から稼働中（netowlのSMTP、`portal@estowa.jp`、587番・STARTTLS）。
+`@estowa.jp`からGmailへ転送されると迷惑メールに入ることがある（estowa.jpにDKIM・DMARCなし。netowlへ問い合わせ予定）。
 
 ## デプロイ
 
@@ -116,7 +117,6 @@ better-sqlite3はWALモードを使うため、サーバープロセスを止め
 
 ## 保留中の項目
 
-- タスク更新時のメール通知: コード実装済みだがSMTP情報未提供のため未稼働
 - グッズ受注・印刷手配管理（カンバン）: 要望待ちで保留
 - チャット・音声: VPS・HTTPS・TURN（coturn）で本番稼働。音声は2026-10-06に実機で確認済み
   （テスト用ダミーアカウントは削除済み）。同じアカウントで画面（タブ）を複数開くと、接続の
