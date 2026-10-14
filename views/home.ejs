@@ -112,7 +112,7 @@
           <a href="/?cal_year=<%= calNextYear %>&cal_month=<%= calNextMonth %>" class="mini-btn">→</a>
         </div>
       </div>
-      <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;"><%= calYear %>年<%= calMonth %>月</div>
+      <div class="cal-month-label"><%= calYear %>年<%= calMonth %>月</div>
 
       <div class="calendar-grid calendar-grid-mini">
         <% ['日','月','火','水','木','金','土'].forEach(d => { %>
@@ -124,8 +124,9 @@
         <% } %>
 
         <% for (let day = 1; day <= calLastDay; day++) { %>
-          <div class="calendar-cell">
-            <div class="calendar-day"><%= day %></div>
+          <% const isToday = calTodayStr === `${calYear}-${String(calMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`; %>
+          <div class="calendar-cell<%= isToday ? ' today' : '' %>">
+            <div class="calendar-day"><%= day %><%= isToday ? '（今日）' : '' %></div>
             <% if (calEventsByDay[day]) { %>
               <% calEventsByDay[day].forEach(ev => { %>
                 <div class="event-chip <%= eventCategoryClass(ev.category) %>" title="<%= ev.title %>"><%= ev.title %></div>

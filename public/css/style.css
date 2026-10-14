@@ -279,7 +279,7 @@ table.user-table th, table.user-table td {
 .kanban-grid {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(160px, 1fr);
+  grid-auto-columns: minmax(130px, 1fr);
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -291,7 +291,7 @@ table.user-table th, table.user-table td {
   border: 1px solid var(--border);
   padding: 12px;
   min-height: 200px;
-  min-width: 160px;
+  min-width: 130px;
 }
 .kanban-column h3 {
   font-size: 14px;
@@ -480,8 +480,8 @@ a.calendar-cell:hover { background: var(--bg); }
   padding: 4px;
   font-size: 10px;
 }
-.calendar-grid-mini .calendar-day { font-size: 10px; margin-bottom: 2px; }
-.calendar-grid-mini .event-chip { padding: 1px 3px; }
+.calendar-grid-mini .calendar-day { font-size: 11px; margin-bottom: 2px; }
+.calendar-grid-mini .event-chip { padding: 1px 3px; font-size: 11px; }
 
 @media (max-width: 900px) {
   .kanban-grid { grid-auto-flow: row; grid-auto-columns: unset; }
@@ -1287,3 +1287,49 @@ table.sheet-table.readonly td {
 .chat-total-unread { background: #e0245e; color: #fff; border-radius: 10px; font-size: 11px; font-weight: 400; padding: 1px 8px; margin-left: 8px; }
 .chat-body[hidden] { display: none; }
 .chat-panel .chat-log { height: 240px; }
+
+/* ---- B: ボード・カレンダー・スマホ表示の調整 ---- */
+.kanban-list:not(:has(.kanban-card))::before {
+  content: "タスクなし";
+  display: block;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 12px;
+  color: #b0b3c0;
+}
+.kanban-column h3 { white-space: nowrap; }
+.cal-month-label { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+.calendar-cell.today { border-color: var(--primary); background: #eef0ff; }
+.calendar-cell.today .calendar-day { color: var(--primary); font-weight: 700; }
+
+/* スマホ幅: サイドバーを画面下のメニューバーにする */
+@media (max-width: 640px) {
+  .app-layout { flex-direction: column; }
+  .main { padding: 16px 14px 88px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    width: 100%; flex-direction: row; align-items: stretch;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    border-right: none; border-top: 1px solid var(--border);
+    overflow-x: auto; gap: 2px;
+  }
+  .sidebar .nav-item { width: 64px; flex: none; margin-bottom: 0; }
+  .sidebar-footer {
+    margin-top: 0; border-top: none; border-left: 1px solid var(--border);
+    padding: 0 0 0 8px; width: auto; flex-direction: row; flex: none;
+  }
+  .sidebar-footer form { width: auto; }
+  .sidebar-footer button { width: 44px; height: 44px; }
+}
+@media (max-width: 640px) {
+  .chat-layout { grid-template-columns: 1fr; }
+  .chat-log { height: 220px; }
+  .voice-bar { flex-wrap: wrap; }
+}
+@media (max-width: 640px) {
+  .page-header { flex-wrap: wrap; gap: 10px; }
+  .page-header h1 { white-space: nowrap; }
+  .page-header > div { flex-wrap: wrap; gap: 8px !important; }
+  .page-header .project-toggle-btn { margin-left: 0 !important; }
+}

@@ -90,6 +90,7 @@ router.get('/', requireLogin, (req, res) => {
     teamAttendanceToday,
     calYear,
     calMonth,
+    calTodayStr: nowJstDateStr(),
     calEventsByDay,
     calLastDay,
     calFirstWeekday,
