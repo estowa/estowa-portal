@@ -187,6 +187,9 @@ a { text-decoration: none; color: inherit; }
 }
 .kpi-card .label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
 .kpi-card .value { font-size: 24px; font-weight: 700; }
+.kpi-card .kpi-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.kpi-card .kpi-link { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--primary); }
+.empty-note a { color: var(--primary); margin-left: 4px; }
 .kpi-card .value.placeholder { color: var(--text-muted); font-size: 15px; font-weight: 400; }
 
 /* ---- コンテンツグリッド ---- */
@@ -194,6 +197,11 @@ a { text-decoration: none; color: inherit; }
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 16px;
+}
+.content-grid > * { min-width: 0; }
+@media (max-width: 1024px) {
+  .content-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .panel {
   background: var(--card-bg);
@@ -335,7 +343,7 @@ table.user-table th, table.user-table td {
 /* ---- カレンダー ---- */
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
 }
 .calendar-weekday {
@@ -1270,3 +1278,12 @@ table.sheet-table.readonly td {
   box-sizing: border-box;
   background: #fff;
 }
+
+/* ---- チャットの折りたたみ ---- */
+.chat-panel h2 .chat-toggle {
+  margin-left: auto; padding: 4px 12px; font-size: 12px; font-weight: 400; cursor: pointer;
+  background: #fff; color: var(--primary); border: 1px solid var(--border); border-radius: 8px;
+}
+.chat-total-unread { background: #e0245e; color: #fff; border-radius: 10px; font-size: 11px; font-weight: 400; padding: 1px 8px; margin-left: 8px; }
+.chat-body[hidden] { display: none; }
+.chat-panel .chat-log { height: 240px; }

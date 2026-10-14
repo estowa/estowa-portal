@@ -7,6 +7,7 @@
     <div class="label">今月のEC売上</div>
     <% if (salesSummary.monthlyTotal === null) { %>
       <div class="value placeholder">データがまだありません</div>
+      <a class="kpi-link" href="/sales">EC関連でCSVを取り込む →</a>
     <% } else { %>
       <div class="value">¥<%= salesSummary.monthlyTotal.toLocaleString() %></div>
     <% } %>
@@ -31,13 +32,11 @@
     <div class="kpi-body">
     <% if (user.role === 'admin') { %>
       <div class="label">本日の出勤状況</div>
-      <div class="value" style="font-size:16px;">
-        出勤中 <%= teamAttendanceToday.filter(t => t.status === 'in').length %>名 /
-        未出勤 <%= teamAttendanceToday.filter(t => t.status === 'none').length %>名
-      </div>
+      <div class="value">出勤中 <%= teamAttendanceToday.filter(t => t.status === 'in').length %> 名</div>
+      <div class="kpi-sub">未出勤 <%= teamAttendanceToday.filter(t => t.status === 'none').length %> 名</div>
     <% } else { %>
       <div class="label">本日の勤怠</div>
-      <div class="value" style="font-size:16px;"><%= isCheckedIn ? '出勤中' : '未出勤 / 退勤済' %></div>
+      <div class="value"><%= isCheckedIn ? '出勤中' : '未出勤' %></div>
     <% } %>
     </div>
   </div>
@@ -50,7 +49,7 @@
     <div class="panel">
       <h2 class="has-chip"><span class="h-chip chip-lavender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5.5 2 7.5 2 7.5H4S6 13.5 6 8Z"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg></span>お知らせ <a href="/announcements" style="font-size:12px; font-weight:400; color:var(--primary); margin-left:auto;">すべて見る →</a></h2>
       <% if (announcements.length === 0) { %>
-        <div class="empty-note">現在お知らせはありません</div>
+        <div class="empty-note">現在お知らせはありません。<a href="/announcements">お知らせ一覧へ →</a></div>
       <% } else { %>
         <% announcements.forEach(a => { %>
           <div class="announcement-item">
@@ -64,7 +63,7 @@
     <div class="panel">
       <h2 class="has-chip"><span class="h-chip chip-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 10 2 2 4-4"/><path d="M8.5 16h7"/></svg></span>直近の個人タスク</h2>
       <% if (myTasks.length === 0) { %>
-        <div class="empty-note">未完了のタスクはありません</div>
+        <div class="empty-note">未完了のタスクはありません。<a href="/tasks">タスク管理を開く →</a></div>
       <% } else { %>
         <% myTasks.forEach(t => { %>
           <div class="task-item">
