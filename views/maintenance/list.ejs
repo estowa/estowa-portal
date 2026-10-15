@@ -11,6 +11,9 @@
 </div>
 
 <% if (notice) { %><div class="success-text"><%= notice %></div><% } %>
+<% if (summary.pending) { %>
+  <div class="mt-alert">まだ自動確認が行われていません。追加したサイトは、数分以内に最初の確認が入ります（詳細画面の「今すぐ確認」でも確認できます）。</div>
+<% } %>
 <% if (summary.stale) { %>
   <div class="mt-alert">自動確認が24時間以上、更新されていません。サーバーの状態を確認してください。</div>
 <% } %>

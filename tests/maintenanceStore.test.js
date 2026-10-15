@@ -113,10 +113,36 @@ test('集計: 要対応・期限が近い・最終確認・24時間以上更新�
   const id = store.addSite(db, site());
   store.updateSite(db, id, site({ domain_expires_manual: '2026-10-25' }));
   let s = store.summarize(store.overview(db, '2026-10-15'), now);
-  assert.deepStrictEqual([s.total, s.urgent, s.expiring, s.lastCheckedAt, s.stale], [1, 0, 1, null, true]);
+  // 一度も確認していないだけのときは、「24時間以上更新なし」とは言わない（まだ確認待ち）
+  assert.deepStrictEqual([s.total, s.urgent, s.expiring, s.lastCheckedAt, s.stale, s.pending], [1, 0, 1, null, false, true]);
   db.prepare("INSERT INTO maintenance_checks (site_id, checked_at, ok, http_status, response_ms) VALUES (?, '2026-10-15 11:00:00', 1, 200, 100)").run(id);
   s = store.summarize(store.overview(db, '2026-10-15'), now);
   assert.strictEqual(s.stale, false);
   assert.strictEqual(s.lastCheckedAt, '2026-10-15 11:00:00');
   assert.strictEqual(store.summarize(store.overview(db, '2026-10-15'), now + 25 * 3600 * 1000).stale, true);
+});
+
+test('【レビュー指摘I-3】確認が1件もない間は pending（確認待ち）。確認があって古いときだけ stale', () => {
+  const db = makeDb();
+  const now = Date.parse('2026-10-15T12:00:00Z');
+  assert.deepStrictEqual(
+    [store.summarize([], now).stale, store.summarize([], now).pending], [false, false]);
+  const id = store.addSite(db, site());
+  const fresh = store.summarize(store.overview(db, '2026-10-15'), now);
+  assert.deepStrictEqual([fresh.stale, fresh.pending], [false, true]);
+  db.prepare("INSERT INTO maintenance_checks (site_id, checked_at, ok, http_status, response_ms) VALUES (?, '2026-10-13 09:00:00', 1, 200, 100)").run(id);
+  const old = store.summarize(store.overview(db, '2026-10-15'), now);
+  assert.deepStrictEqual([old.stale, old.pending], [true, false]);
+});
+
+test('【レビュー指摘I-2】証明書の期限は、最後に取れた値を使う（確認の失敗が続いても、期限切れの表示が消えない）', () => {
+  const db = makeDb();
+  const id = store.addSite(db, site());
+  store.recordCheck(db, id, { ok: 1, http_status: 200, response_ms: 100, ssl_expires: '2026-10-14', error: null });
+  for (let i = 0; i < 4; i++) store.recordCheck(db, id, { ok: 0, http_status: null, response_ms: 50, ssl_expires: null, error: 'tls' });
+  const row = store.getRow(db, id, '2026-10-15');
+  assert.strictEqual(row.sslExpires, '2026-10-14');
+  assert.ok(row.status.reasons.some((r) => r.code === 'ssl_expiry' && /期限切れ/.test(r.text)));
+  assert.ok(row.status.reasons.some((r) => r.code === 'tls'));
+  assert.ok(!row.status.reasons.some((r) => r.code === 'down'));
 });

@@ -70,10 +70,33 @@ test('2回連続で失敗＝応答なし（要対応）。1回だけの失敗は
   assert.strictEqual(down.label, '応答なし');
   assert.strictEqual(down.parts.uptime, 'down');
   const once = judgeSite(base({ checks: [{ ok: 0 }, { ok: 1, response_ms: 300 }] }));
-  assert.strictEqual(once.level, 'ok');
   assert.strictEqual(once.parts.uptime, 'failing');
+  assert.notStrictEqual(once.label, '応答なし');
   const onlyOne = judgeSite(base({ checks: [{ ok: 0 }] }));
   assert.notStrictEqual(onlyOne.label, '応答なし');
+});
+
+test('【レビュー指摘I-1】直近の確認が1回失敗したサイトを、緑の「稼働中」と表示しない（注意として出す）', () => {
+  const once = judgeSite(base({ checks: [{ ok: 0 }, { ok: 1, response_ms: 300 }] }));
+  assert.strictEqual(once.level, 'warn');
+  assert.strictEqual(once.label, '要確認');
+  assert.ok(once.reasons.some((r) => r.code === 'check_failed' && /前回/.test(r.text)));
+  const firstEver = judgeSite(base({ checks: [{ ok: 0 }] }));
+  assert.strictEqual(firstEver.level, 'warn');
+  assert.notStrictEqual(firstEver.label, '稼働中');
+});
+
+test('【レビュー指摘I-2】証明書の問題（tls）で確認に失敗したときは、「応答なし」でなく、証明書の問題として出す', () => {
+  const tlsDown = judgeSite(base({ checks: [{ ok: 0, error: 'tls' }, { ok: 0, error: 'tls' }] }));
+  assert.strictEqual(tlsDown.level, 'urgent');
+  assert.notStrictEqual(tlsDown.label, '応答なし');
+  assert.ok(tlsDown.reasons.some((r) => r.code === 'tls' && /SSL証明書/.test(r.text)));
+  assert.ok(!tlsDown.reasons.some((r) => r.code === 'down'));
+  // 片方だけがtlsでも、証明書の問題として扱う。tls以外の失敗が混じれば、従来どおり「応答なし」
+  const mixed = judgeSite(base({ checks: [{ ok: 0, error: 'timeout' }, { ok: 0, error: 'tls' }] }));
+  assert.strictEqual(mixed.label, '応答なし');
+  const tlsOnce = judgeSite(base({ checks: [{ ok: 0, error: 'tls' }] }));
+  assert.ok(tlsOnce.reasons.some((r) => r.code === 'tls'));
 });
 
 test('応答が3秒を超えたら「遅い」（3000msちょうどは遅くない）', () => {

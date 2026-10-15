@@ -23,6 +23,20 @@ function createMaintenanceRouter(db, { runChecksFn = runChecks, nowFn = () => Da
   const noticeOf = (req) => NOTICES[req.query.notice] || null;
   const emptyForm = { name: '', url: '', server_name: '', client_type: 'client', is_wordpress: 1, domain_expires_manual: '', memo: '' };
 
+  // 確認中のサイト（二重に実行しない）
+  const inFlight = new Set();
+
+  // 追加したサイトの最初の確認を、待たずに始める（失敗しても、追加には影響させない）
+  function kickFirstCheck(siteIds) {
+    if (siteIds.length === 0) return;
+    try {
+      const p = runChecksFn(db, { siteIds });
+      if (p && typeof p.catch === 'function') p.catch((e) => console.error('[サイト確認] 最初の確認に失敗しました:', e.message));
+    } catch (e) {
+      console.error('[サイト確認] 最初の確認を始められませんでした:', e.message);
+    }
+  }
+
   // ---- 一覧 ----
   router.get('/maintenance', requireLogin, (req, res) => {
     const rows = store.sortOverview(store.overview(db, nowJstDateStr()));
@@ -40,7 +54,8 @@ function createMaintenanceRouter(db, { runChecksFn = runChecks, nowFn = () => Da
   router.post('/maintenance', admin, (req, res) => {
     const values = { ...req.body, is_wordpress: req.body.is_wordpress === '1' ? 1 : 0 };
     try {
-      store.addSite(db, { ...values, created_by: req.session.user.user_id });
+      const newId = store.addSite(db, { ...values, created_by: req.session.user.user_id });
+      kickFirstCheck([newId]);
       res.redirect('/maintenance?notice=added');
     } catch (e) {
       res.render('maintenance/form', { site: null, values, error: e.message });
@@ -56,9 +71,9 @@ function createMaintenanceRouter(db, { runChecksFn = runChecks, nowFn = () => Da
     const parsed = parseBulk(text, store.listSites(db).map((s) => s.url));
     if (req.body.confirm !== '1') return res.render('maintenance/bulk', { text, preview: parsed, error: null });
     try {
-      db.transaction(() => {
-        parsed.rows.forEach((r) => store.addSite(db, { ...r, is_wordpress: 1, created_by: req.session.user.user_id }));
-      })();
+      const newIds = db.transaction(() =>
+        parsed.rows.map((r) => store.addSite(db, { ...r, is_wordpress: 1, created_by: req.session.user.user_id })))();
+      kickFirstCheck(newIds);
       return res.redirect(`/maintenance?notice=added&n=${parsed.rows.length}`);
     } catch (e) {
       return res.render('maintenance/bulk', { text, preview: parsed, error: e.message });
@@ -107,10 +122,14 @@ function createMaintenanceRouter(db, { runChecksFn = runChecks, nowFn = () => Da
     const site = store.getSite(db, Number(req.params.id));
     if (!site) return notFound(req, res);
     const last = store.latestChecks(db, site.id, 1)[0];
-    if (last && nowFn() - Date.parse(String(last.checked_at).replace(' ', 'T') + 'Z') < CHECK_COOLDOWN_MS) {
-      return res.redirect(`/maintenance/${site.id}?notice=wait`);
+    const justChecked = last && nowFn() - Date.parse(String(last.checked_at).replace(' ', 'T') + 'Z') < CHECK_COOLDOWN_MS;
+    if (justChecked || inFlight.has(site.id)) return res.redirect(`/maintenance/${site.id}?notice=wait`);
+    inFlight.add(site.id);
+    try {
+      await runChecksFn(db, { siteIds: [site.id] });
+    } finally {
+      inFlight.delete(site.id);
     }
-    await runChecksFn(db, { siteIds: [site.id] });
     return res.redirect(`/maintenance/${site.id}?notice=checked`);
   });
 

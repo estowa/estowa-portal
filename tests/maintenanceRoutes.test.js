@@ -121,7 +121,7 @@ test('未ログインは、ログイン画面へ。メンバーの変更操作�
 
 test('管理者がサイトを追加できる。重複・不正なURLは、画面に理由が出て追加されない', async () => {
   const db = makeDb();
-  await withApp(db, ADMIN, {}, async (base) => {
+  await withApp(db, ADMIN, { runChecksFn: async () => {} }, async (base) => {
     const ok = await post(base, '/maintenance', { name: '新サイト', url: 'new.example.com', server_name: 'ss1', client_type: 'own', is_wordpress: '1' });
     assert.strictEqual(ok.status, 302);
     assert.strictEqual(store.listSites(db).length, 1);
@@ -137,7 +137,7 @@ test('管理者がサイトを追加できる。重複・不正なURLは、画�
 test('まとめて追加: 確認画面では登録されず、確定すると、正しい行だけ登録される', async () => {
   const db = makeDb();
   const text = 'A,a.example.com,ss1,自社\nB,ftp://b.example.com\nC,c.example.com';
-  await withApp(db, ADMIN, {}, async (base) => {
+  await withApp(db, ADMIN, { runChecksFn: async () => {} }, async (base) => {
     const preview = await post(base, '/maintenance/bulk', { text });
     assert.strictEqual(preview.status, 200);
     const html = await preview.text();
@@ -199,5 +199,54 @@ test('存在しないサイトは404。メモ欄の文字はエスケープさ�
     const html = await (await fetch(`${base}/maintenance/${id}`)).text();
     assert.ok(!html.includes('<script>alert(1)</script>'));
     assert.match(html, /&lt;script&gt;/);
+  });
+});
+
+test('【レビュー指摘I-3】サイトを追加すると、そのサイトの最初の確認がすぐ始まる（1件追加・まとめて追加とも）', async () => {
+  const db = makeDb();
+  const calls = [];
+  await withApp(db, ADMIN, { runChecksFn: async (d, o) => { calls.push(o.siteIds); } }, async (base) => {
+    await post(base, '/maintenance', { name: '単発', url: 'one.example.com', client_type: 'client' });
+    const oneId = store.listSites(db)[0].id;
+    assert.deepStrictEqual(calls, [[oneId]]);
+    await post(base, '/maintenance/bulk', { text: 'A,a.example.com\nB,b.example.com', confirm: '1' });
+    const ids = store.listSites(db).filter((s) => s.id !== oneId).map((s) => s.id).sort();
+    assert.strictEqual(calls.length, 2);
+    assert.deepStrictEqual([...calls[1]].sort(), ids);
+  });
+});
+
+test('【レビュー指摘I-3】最初の確認が失敗（例外）しても、追加は成功する。確認が1件もない間は「確認待ち」と出る', async () => {
+  const db = makeDb();
+  await withApp(db, ADMIN, { runChecksFn: async () => { throw new Error('boom'); } }, async (base) => {
+    const res = await post(base, '/maintenance', { name: '追加', url: 'x.example.com', client_type: 'client' });
+    assert.strictEqual(res.status, 302);
+    assert.strictEqual(store.listSites(db).length, 1);
+    const html = await (await fetch(base + '/maintenance')).text();
+    assert.match(html, /まだ自動確認が行われていません/);
+    assert.ok(!html.includes('24時間以上'));
+  });
+});
+
+test('【レビュー指摘I-3】確認中のサイトを、もう一度「今すぐ確認」しても、二重には実行しない', async () => {
+  const db = makeDb();
+  const id = seed(db);
+  let ran = 0;
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const opts = { runChecksFn: async () => { ran += 1; await gate; } };
+  await withApp(db, ADMIN, opts, async (base) => {
+    const first = post(base, `/maintenance/${id}/check`, {});
+    await new Promise((r) => setTimeout(r, 50));
+    // 二重に実行されると、2回目もゲートで待ち続けて返らない。時間内に返らなければ失敗とする
+    const second = await Promise.race([
+      post(base, `/maintenance/${id}/check`, {}),
+      new Promise((r) => setTimeout(() => r(null), 500)),
+    ]);
+    release();
+    await first;
+    assert.ok(second, '確認中の再実行が、待たされている（二重に実行された）');
+    assert.match(second.headers.get('location'), /notice=wait/);
+    assert.strictEqual(ran, 1);
   });
 });
