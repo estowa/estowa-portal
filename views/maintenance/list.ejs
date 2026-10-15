@@ -1,0 +1,82 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1>サイト保守</h1>
+  <% if (currentUser && currentUser.role === 'admin') { %>
+    <div class="mt-head-actions">
+      <a href="/maintenance/bulk" class="mini-btn">まとめて追加</a>
+      <a href="/maintenance/new" class="new-toggle-btn">+ サイトを追加</a>
+    </div>
+  <% } %>
+</div>
+
+<% if (notice) { %><div class="success-text"><%= notice %></div><% } %>
+<% if (summary.stale) { %>
+  <div class="mt-alert">自動確認が24時間以上、更新されていません。サーバーの状態を確認してください。</div>
+<% } %>
+
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="label">管理サイト</div><div class="value"><%= summary.total %></div></div>
+  <div class="kpi-card"><div class="label">要対応</div><div class="value"><%= summary.urgent %></div></div>
+  <div class="kpi-card"><div class="label">期限が近い（30日以内）</div><div class="value"><%= summary.expiring %></div></div>
+  <div class="kpi-card"><div class="label">最終確認</div><div class="value" style="font-size:16px;"><%= summary.lastCheckedAt ? formatJst(summary.lastCheckedAt) : 'まだ確認していません' %></div></div>
+</div>
+
+<% if (rows.length === 0) { %>
+  <div class="panel">
+    <div class="empty-note">
+      まだサイトが登録されていません。
+      <% if (currentUser && currentUser.role === 'admin') { %>
+        <a href="/maintenance/new">サイトを追加する →</a> ／ <a href="/maintenance/bulk">まとめて追加する →</a>
+      <% } else { %>
+        管理者が登録します。
+      <% } %>
+    </div>
+  </div>
+<% } else { %>
+  <div class="panel mt-panel">
+    <div class="mt-filters" role="group" aria-label="絞り込み">
+      <button type="button" class="mt-chip" data-filter="all" aria-pressed="true">すべて</button>
+      <button type="button" class="mt-chip" data-filter="urgent" aria-pressed="false">要対応</button>
+      <button type="button" class="mt-chip" data-filter="expiring" aria-pressed="false">期限が近い</button>
+      <% servers.forEach(s => { %>
+        <button type="button" class="mt-chip" data-filter="server" data-value="<%= s %>" aria-pressed="false"><%= s %></button>
+      <% }) %>
+      <span class="mt-count" id="mt-count" role="status" aria-live="polite"><%= rows.length %>件を表示</span>
+    </div>
+
+    <table class="mt-table" id="mt-table">
+      <thead>
+        <tr>
+          <th scope="col"><button type="button" class="mt-sort" data-sort="name">サイト</button></th>
+          <th scope="col"><button type="button" class="mt-sort" data-sort="status">状態</button></th>
+          <th scope="col"><button type="button" class="mt-sort" data-sort="ssl">SSL期限</button></th>
+          <th scope="col"><button type="button" class="mt-sort" data-sort="domain">ドメイン期限</button></th>
+          <th scope="col"><button type="button" class="mt-sort" data-sort="backup">バックアップ</button></th>
+          <th scope="col"><button type="button" class="mt-sort" data-sort="inspect">最終点検</button></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(r => { const p = r.status.parts; %>
+          <tr data-level="<%= r.status.level %>" data-expiring="<%= fmt.isExpiring(r.status) ? '1' : '0' %>" data-server="<%= r.site.server_name || '' %>">
+            <td data-label="サイト" data-sort-value="<%= r.site.name %>">
+              <a class="link-title" href="/maintenance/<%= r.site.id %>"><%= r.site.name %></a>
+              <div class="mt-sub">
+                <a href="<%= r.site.url %>" target="_blank" rel="noopener noreferrer"><%= fmt.hostLabel(r.site.url) %></a>
+                ・ <%= fmt.clientTypeLabel(r.site.client_type) %><%= r.site.server_name ? ' ・ ' + r.site.server_name : '' %>
+              </div>
+            </td>
+            <td data-label="状態" data-sort-value="<%= fmt.levelRank(r.status.level) %>"><%- include('_badge', { status: r.status }) %></td>
+            <td data-label="SSL期限" data-sort-value="<%= r.sslExpires || '9999-12-31' %>" class="<%= fmt.partClass(p.ssl) %>"><%= fmt.expiryText(p.ssl, r.sslExpires) %></td>
+            <td data-label="ドメイン期限" data-sort-value="<%= r.domainExpires || '9999-12-31' %>" class="<%= fmt.partClass(p.domain) %>"><%= fmt.expiryText(p.domain, r.domainExpires) %></td>
+            <td data-label="バックアップ" data-sort-value="<%= r.lastBackup || '0000-00-00' %>" class="<%= fmt.partClass(p.backup) %>"><%= fmt.staleText(p.backup, r.lastBackup) %></td>
+            <td data-label="最終点検" data-sort-value="<%= r.lastInspect || '0000-00-00' %>" class="<%= fmt.partClass(p.inspect) %>"><%= fmt.staleText(p.inspect, r.lastInspect) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <script src="/js/maintenance.js"></script>
+<% } %>
+
+<%- include('../partials/footer') %>

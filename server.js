@@ -20,6 +20,9 @@ const ideaRoutes = require('./routes/ideas');
 const profileRoutes = require('./routes/profile');
 const chatRoutes = require('./routes/chat');
 const searchRoutes = require('./routes/search');
+const { createMaintenanceRouter } = require('./routes/maintenance');
+const { ensureMaintenanceSchema } = require('./lib/maintenanceSchema');
+const { startScheduler } = require('./lib/siteCheckRunner');
 const { formatJst } = require('./lib/jst');
 const { linkify } = require('./lib/linkify');
 const { attachChatSocket } = require('./lib/chatSocket');
@@ -86,6 +89,8 @@ app.use(knowledgeRoutes);
 app.use(ideaRoutes);
 app.use(chatRoutes);
 app.use(searchRoutes);
+ensureMaintenanceSchema(db);
+app.use(createMaintenanceRouter(db));
 
 app.use((req, res) => {
   res.status(404).render('error', { message: 'ページが見つかりません', user: req.session.user });
@@ -95,3 +100,5 @@ const server = app.listen(PORT, () => {
   console.log(`estowa社内ポータル起動: http://localhost:${PORT}`);
 });
 attachChatSocket(server, sessionMiddleware, db);
+// サイト保守の自動確認（起動1分後と6時間おき）。SITE_CHECK_DISABLED=1 で止められる
+if (process.env.SITE_CHECK_DISABLED !== '1') startScheduler(db);

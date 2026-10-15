@@ -1,0 +1,39 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1><%= site ? 'サイトを編集' : 'サイトを追加' %></h1>
+  <a href="<%= site ? '/maintenance/' + site.id : '/maintenance' %>" class="mini-btn">← 戻る</a>
+</div>
+
+<div class="panel" style="max-width:640px;">
+  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+  <form method="POST" action="<%= site ? '/maintenance/' + site.id : '/maintenance' %>">
+    <label class="mt-label" for="f-name">名前</label>
+    <input id="f-name" type="text" name="name" required maxlength="100" value="<%= values.name %>" class="mt-input" />
+
+    <label class="mt-label" for="f-url">URL</label>
+    <input id="f-url" type="text" name="url" required value="<%= values.url %>" placeholder="例: example.com" class="mt-input" />
+
+    <label class="mt-label" for="f-server">サーバー名（任意）</label>
+    <input id="f-server" type="text" name="server_name" maxlength="50" value="<%= values.server_name %>" placeholder="例: ss170071" class="mt-input" />
+
+    <label class="mt-label" for="f-type">種別</label>
+    <select id="f-type" name="client_type" class="mt-input">
+      <option value="client" <%= values.client_type !== 'own' ? 'selected' : '' %>>受託</option>
+      <option value="own" <%= values.client_type === 'own' ? 'selected' : '' %>>自社</option>
+    </select>
+
+    <label class="mt-check"><input type="checkbox" name="is_wordpress" value="1" <%= values.is_wordpress ? 'checked' : '' %> /> WordPressのサイト</label>
+
+    <label class="mt-label" for="f-domain">ドメイン期限（任意・自動で取得できないとき用）</label>
+    <input id="f-domain" type="date" name="domain_expires_manual" value="<%= values.domain_expires_manual || '' %>" class="mt-input" />
+
+    <label class="mt-label" for="f-memo">メモ（任意）</label>
+    <textarea id="f-memo" name="memo" rows="3" maxlength="500" class="mt-input"><%= values.memo %></textarea>
+    <div class="mt-help">このメモは、メンバー全員が見られます。パスワード・個人情報・侵入や不審ファイルの詳細は書かないでください。</div>
+
+    <button type="submit" class="new-toggle-btn"><%= site ? '保存する' : '追加する' %></button>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

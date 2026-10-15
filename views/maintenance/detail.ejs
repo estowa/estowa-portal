@@ -1,0 +1,116 @@
+<%- include('../partials/header') %>
+<% const site = row.site; const isAdmin = currentUser && currentUser.role === 'admin'; const p = row.status.parts; %>
+
+<div class="page-header">
+  <h1><%= site.name %></h1>
+  <div class="mt-head-actions">
+    <a href="/maintenance" class="mini-btn">← 一覧に戻る</a>
+    <% if (isAdmin) { %><a href="/maintenance/<%= site.id %>/edit" class="mini-btn">編集</a><% } %>
+  </div>
+</div>
+
+<% if (notice) { %><div class="success-text"><%= notice %></div><% } %>
+
+<div class="content-grid">
+  <div>
+    <div class="panel">
+      <h2>状態 <%- include('_badge', { status: row.status }) %></h2>
+      <% if (row.status.reasons.length === 0) { %>
+        <div class="empty-note">注意が必要な点はありません。</div>
+      <% } else { %>
+        <ul class="mt-reasons">
+          <% row.status.reasons.forEach(r => { %><li class="mt-reason-<%= r.level %>"><%= r.level === 'urgent' ? '要対応：' : '注意：' %><%= r.text %></li><% }) %>
+        </ul>
+      <% } %>
+      <table class="mt-facts">
+        <tr><th scope="row">SSL期限</th><td><%= row.sslExpires || '—' %>（<%= fmt.expiryText(p.ssl, row.sslExpires) %>）</td></tr>
+        <tr><th scope="row">ドメイン期限</th><td><%= row.domainExpires || '—' %>（<%= fmt.expiryText(p.domain, row.domainExpires) %>）<%= site.domain_expires_manual ? ' ※手入力' : '' %></td></tr>
+        <tr><th scope="row">バックアップ</th><td><%= fmt.staleText(p.backup, row.lastBackup) %></td></tr>
+        <tr><th scope="row">最終点検</th><td><%= fmt.staleText(p.inspect, row.lastInspect) %></td></tr>
+        <tr><th scope="row">最終確認</th><td><%= row.lastCheckedAt ? formatJst(row.lastCheckedAt) : 'まだ確認していません' %></td></tr>
+      </table>
+      <% if (isAdmin) { %>
+        <form method="POST" action="/maintenance/<%= site.id %>/check" style="margin-top:12px;">
+          <button type="submit" class="mini-btn">今すぐ確認</button>
+        </form>
+      <% } %>
+    </div>
+
+    <div class="panel">
+      <h2>点検記録</h2>
+      <% if (isAdmin) { %>
+        <% if (logError) { %><div class="error-text"><%= logError %></div><% } %>
+        <form method="POST" action="/maintenance/<%= site.id %>/logs" class="mt-log-form">
+          <label>日付<input type="date" name="log_date" required value="<%= logValues ? logValues.log_date : today %>" /></label>
+          <label>種類
+            <select name="kind">
+              <% kinds.forEach(k => { %><option value="<%= k %>" <%= logValues && logValues.kind === k ? 'selected' : '' %>><%= k %></option><% }) %>
+            </select>
+          </label>
+          <label class="mt-log-note">内容（パスワード・個人情報・侵入の詳細は書かない）
+            <input type="text" name="note" maxlength="1000" value="<%= logValues ? logValues.note : '' %>" />
+          </label>
+          <button type="submit" class="new-toggle-btn">記録する</button>
+        </form>
+      <% } %>
+      <% if (logs.length === 0) { %>
+        <div class="empty-note">まだ記録がありません。</div>
+      <% } else { %>
+        <% logs.forEach(l => { %>
+          <div class="mt-log-row">
+            <span class="mt-log-date"><%= l.log_date %></span>
+            <span class="mt-log-kind"><%= l.kind %></span>
+            <span class="mt-log-text"><%= l.note %></span>
+            <% if (isAdmin) { %>
+              <form method="POST" action="/maintenance/<%= site.id %>/logs/<%= l.id %>/delete" onsubmit="return confirm('この記録を削除しますか？');">
+                <button type="submit" class="mini-btn">削除</button>
+              </form>
+            <% } %>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>基本情報</h2>
+      <table class="mt-facts">
+        <tr><th scope="row">URL</th><td><a href="<%= site.url %>" target="_blank" rel="noopener noreferrer"><%= fmt.hostLabel(site.url) %></a></td></tr>
+        <tr><th scope="row">種別</th><td><%= fmt.clientTypeLabel(site.client_type) %></td></tr>
+        <tr><th scope="row">サーバー</th><td><%= site.server_name || '—' %></td></tr>
+        <tr><th scope="row">WordPress</th><td><%= site.is_wordpress ? 'はい' : 'いいえ' %></td></tr>
+        <tr><th scope="row">メモ</th><td class="mt-memo"><%= site.memo || '—' %></td></tr>
+      </table>
+      <% if (isAdmin) { %>
+        <form method="POST" action="/maintenance/<%= site.id %>/delete" onsubmit="return confirm('このサイトと、確認履歴・点検記録をすべて削除します。よろしいですか？');" style="margin-top:12px;">
+          <button type="submit" class="mini-btn mt-danger-btn">このサイトを削除</button>
+        </form>
+      <% } %>
+    </div>
+
+    <div class="panel">
+      <h2>自動確認の履歴（直近30回）</h2>
+      <% if (checks.length === 0) { %>
+        <div class="empty-note">まだ確認していません。</div>
+      <% } else { %>
+        <div class="table-scroll">
+          <table class="mt-facts mt-history">
+            <thead><tr><th scope="col">日時</th><th scope="col">結果</th><th scope="col">応答</th></tr></thead>
+            <tbody>
+              <% checks.forEach(c => { %>
+                <tr>
+                  <td><%= formatJst(c.checked_at) %></td>
+                  <td><%= c.ok ? '成功' : '失敗' %><%= c.http_status ? '（' + c.http_status + '）' : '' %><%= c.error ? '：' + c.error : '' %></td>
+                  <td><%= c.response_ms === null ? '—' : c.response_ms + 'ms' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,38 @@
+<%- include('../partials/header') %>
+
+<div class="page-header">
+  <h1>サイトをまとめて追加</h1>
+  <a href="/maintenance" class="mini-btn">← 一覧に戻る</a>
+</div>
+
+<div class="panel" style="max-width:760px;">
+  <% if (error) { %><div class="error-text"><%= error %></div><% } %>
+  <p class="mt-help">1行に1サイトで、<b>名前,URL,サーバー名,種別</b> の順に書きます（カンマかタブ区切り）。サーバー名と種別は省略できます。種別は「自社」か「受託」（省略すると受託）。<br />例：<code>estowa.jp,estowa.jp,ss256422,自社</code></p>
+
+  <form method="POST" action="/maintenance/bulk">
+    <textarea name="text" rows="12" class="mt-input" style="font-family:monospace;" aria-label="サイトの一覧"><%= text %></textarea>
+    <button type="submit" class="mini-btn">内容を確認する</button>
+  </form>
+
+  <% if (preview) { %>
+    <h2 style="margin-top:20px;">確認</h2>
+    <p><b><%= preview.rows.length %>件</b>を追加します。<%= preview.errors.length ? preview.errors.length + '行は、追加されません（下記）。' : '' %></p>
+    <% if (preview.errors.length > 0) { %>
+      <ul class="mt-reasons">
+        <% preview.errors.forEach(e => { %><li class="mt-reason-urgent"><%= e.line %>行目：<%= e.message %><%= e.text ? '（' + e.text + '）' : '' %></li><% }) %>
+      </ul>
+    <% } %>
+    <% if (preview.rows.length > 0) { %>
+      <ul class="mt-preview-list">
+        <% preview.rows.forEach(r => { %><li><%= r.name %> ・ <%= r.url %> ・ <%= r.server_name || 'サーバー名なし' %> ・ <%= r.client_type === 'own' ? '自社' : '受託' %></li><% }) %>
+      </ul>
+      <form method="POST" action="/maintenance/bulk">
+        <input type="hidden" name="text" value="<%= text %>" />
+        <input type="hidden" name="confirm" value="1" />
+        <button type="submit" class="new-toggle-btn"><%= preview.rows.length %>件を追加する</button>
+      </form>
+    <% } %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>
