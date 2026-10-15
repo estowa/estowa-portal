@@ -56,3 +56,15 @@ test('既存の書き方（コード・引用）も壊れない／空の本文�
   assert.strictEqual(render(''), '');
   assert.strictEqual(render(null), '');
 });
+
+test('Enterを1回押した改行も、改行として表示される', () => {
+  assert.match(render('一行目\n二行目'), /一行目<br ?\/?>\s*二行目/);
+});
+
+test('改行を保つ設定でも、枠・表・リストは崩れない', () => {
+  const html = render(':::重要\n一行目\n二行目\n:::\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\n- x\n- y');
+  assert.match(html, /callout-important/);
+  assert.match(html, /一行目<br ?\/?>\s*二行目/);
+  assert.match(html, /<table>/);
+  assert.match(html, /<li>x<\/li>/);
+});
