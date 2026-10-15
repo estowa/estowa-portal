@@ -1333,3 +1333,68 @@ table.sheet-table.readonly td {
   .page-header > div { flex-wrap: wrap; gap: 8px !important; }
   .page-header .project-toggle-btn { margin-left: 0 !important; }
 }
+
+/* =====================================================================
+   デザイン刷新（落ち着いた業務ツール風）
+   読みやすさ優先: 文字を大きく・濃く、ヘッダーとメニューは #262626 の単色
+   ===================================================================== */
+:root {
+  --text: #1c1d22;
+  --text-muted: #565b6a;
+  --border: #d9dbe3;
+  --chrome: #262626;
+  --chrome-hover: #3a3a3a;
+  --chrome-active: #4a4a4a;
+  --chrome-text: #d6d6d6;
+}
+body { font-size: 14px; line-height: 1.6; }
+.panel, .kpi-card, .kanban-column { border-color: var(--border); }
+.kpi-card .label { font-size: 13px; }
+.empty-note, .kanban-card-meta, .calendar-task, .event-chip { font-size: 13px; }
+
+/* ヘッダー */
+.topbar { background: var(--chrome); border-bottom: none; color: #fff; gap: 24px; }
+.topbar-brand { color: #fff; font-size: 16px; white-space: nowrap; }
+.topbar-search {
+  flex: 1; max-width: 520px; display: flex; align-items: center; gap: 8px;
+  background: #3a3a3a; border: 1px solid #555; border-radius: 8px; padding: 0 12px; height: 36px;
+}
+.topbar-search:focus-within { background: #fff; border-color: #fff; }
+.topbar-search svg { width: 18px; height: 18px; flex: none; color: #bdbdbd; }
+.topbar-search:focus-within svg { color: #555; }
+.topbar-search input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  color: #fff; font-size: 14px; height: 100%;
+}
+.topbar-search input::placeholder { color: #a8a8a8; }
+.topbar-search:focus-within input { color: var(--text); }
+.topbar-search:focus-within input::placeholder { color: #8a8a8a; }
+.topbar-search input::-webkit-search-cancel-button { display: none; }
+
+/* レフトメニュー: 単色・アイコンの色分けなし */
+.sidebar { background: var(--chrome); border-right: none; }
+.nav-item { color: var(--chrome-text); padding: 8px 2px; }
+.nav-item:hover { background: var(--chrome-hover); color: #fff; }
+.nav-item .nav-label { font-size: 11px; }
+.nav-item .nav-ico,
+.nav-item .nav-ico-plain {
+  background: transparent !important; border: none !important; color: inherit !important;
+  width: 28px; height: 28px;
+}
+.nav-item .nav-ico svg { width: 22px; height: 22px; }
+.nav-item.active { background: var(--chrome-active); color: #fff; font-weight: 700; }
+.nav-item.active .nav-ico { background: transparent !important; color: #fff !important; }
+.sidebar-footer { border-top-color: #444; }
+.sidebar-footer button { border-color: #555; color: var(--chrome-text); }
+.sidebar-footer button:hover { background: var(--chrome-hover); color: #fff; }
+
+/* ホームの数値カード・見出しのアイコン: 単色 */
+.kpi-card .chip, .panel h2 .h-chip { background: #ececf1; color: var(--chrome); }
+
+@media (max-width: 640px) {
+  .topbar { padding: 0 12px; gap: 10px; }
+  .topbar-brand span { font-size: 14px; }
+  .topbar-search input::placeholder { color: transparent; }
+  .sidebar { border-top: none; }
+  .sidebar-footer { border-left-color: #444; }
+}
