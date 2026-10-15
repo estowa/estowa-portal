@@ -84,3 +84,42 @@ test('定期実行: 最初の待ち時間のあとと、一定間隔で実行さ
   assert.strictEqual(overlap, false);
   assert.strictEqual(runs, after);
 });
+
+test('同じドメイン（別サブドメイン）は、1回の確認で1度だけ問い合わせる', async () => {
+  const db = new Database(':memory:');
+  ensureMaintenanceSchema(db);
+  store.addSite(db, { name: 'A', url: 'nao-asobiba.com', created_by: 'a' });
+  store.addSite(db, { name: 'B', url: 'housing.nao-asobiba.com', created_by: 'a' });
+  store.addSite(db, { name: 'C', url: 'other-site.com', created_by: 'a' });
+  const asked = [];
+  await runChecks(db, {
+    checkFn: async () => okResult, domainDelayMs: 0,
+    domainFn: async (host) => { asked.push(host); return '2027-04-27'; },
+  });
+  assert.strictEqual(asked.length, 2);
+  assert.deepStrictEqual(store.listSites(db).map((s) => s.domain_expires_auto), ['2027-04-27', '2027-04-27', '2027-04-27']);
+});
+
+test('ドメイン期限の問い合わせは、同時に1件ずつ（相手に断られないよう、順番に行う）', async () => {
+  const db = makeDb(6);
+  let active = 0, peak = 0;
+  await runChecks(db, {
+    checkFn: async () => okResult, domainDelayMs: 0,
+    domainFn: async () => { active += 1; peak = Math.max(peak, active); await new Promise((r) => setTimeout(r, 10)); active -= 1; return '2027-01-01'; },
+  });
+  assert.strictEqual(peak, 1);
+});
+
+test('取得に失敗したサイトは、20時間待たず、1時間後に再取得する。取れているサイトは、20時間までそのまま', async () => {
+  const db = makeDb(2);
+  const [a, b] = store.listSites(db);
+  const t0 = Date.parse('2026-10-15T00:00:00Z');
+  store.setDomainAuto(db, a.id, null, new Date(t0).toISOString()); // 失敗（値なし）
+  store.setDomainAuto(db, b.id, '2027-05-01', new Date(t0).toISOString()); // 成功
+  const asked = [];
+  await runChecks(db, {
+    checkFn: async () => okResult, domainDelayMs: 0, now: t0 + 2 * 3600 * 1000,
+    domainFn: async (host) => { asked.push(host); return '2027-06-01'; },
+  });
+  assert.deepStrictEqual(asked, ['s1.example.com']);
+});

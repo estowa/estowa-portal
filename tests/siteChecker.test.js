@@ -116,3 +116,54 @@ test('ドメイン期限（RDAP）: expiration の日付を取る。失敗・形
   await fetchDomainExpiry('bad host!.com', { fetchFn: async () => { called += 1; return { ok: false }; } });
   assert.strictEqual(called, 0);
 });
+
+// ---- ドメイン期限の取得方法（com/net=Verisign直接、jp=JPRSのWHOIS、それ以外=rdap.org）----
+const { parseJprsExpiry, DOMAIN_LOOKUP_SKIP } = require('../lib/siteChecker');
+
+const rdapBody = (date) => ({ ok: true, json: async () => ({ events: [{ eventAction: 'expiration', eventDate: date }] }) });
+
+test('.com・.net は、断られやすい中継（rdap.org）を通さず、登録元（Verisign）へ直接問い合わせる', async () => {
+  const urls = [];
+  const fetchFn = async (u) => { urls.push(u); return rdapBody('2027-03-19T00:09:20Z'); };
+  assert.strictEqual(await fetchDomainExpiry('www.ikarigaseki.com', { fetchFn }), '2027-03-19');
+  assert.strictEqual(await fetchDomainExpiry('araya-auto.net', { fetchFn }), '2027-03-19');
+  assert.deepStrictEqual(urls, [
+    'https://rdap.verisign.com/com/v1/domain/ikarigaseki.com',
+    'https://rdap.verisign.com/net/v1/domain/araya-auto.net',
+  ]);
+});
+
+test('その他の末尾（例: .org）は、これまでどおり rdap.org を使う', async () => {
+  const urls = [];
+  await fetchDomainExpiry('example.org', { fetchFn: async (u) => { urls.push(u); return rdapBody('2027-01-01T00:00:00Z'); } });
+  assert.deepStrictEqual(urls, ['https://rdap.org/domain/example.org']);
+});
+
+test('JPRSのWHOISの表示から、有効期限を日付にする（英語・日本語の表記とも）。ない・壊れた値は null', () => {
+  assert.strictEqual(parseJprsExpiry('[Domain Name]                   ESTOWA.JP\n[Expires on]                    2026/12/31\n'), '2026-12-31');
+  assert.strictEqual(parseJprsExpiry('[有効期限]                      2027/04/30\n'), '2027-04-30');
+  assert.strictEqual(parseJprsExpiry('No match!!'), null);
+  assert.strictEqual(parseJprsExpiry('[Expires on]   2026/13/45'), null);
+  assert.strictEqual(parseJprsExpiry(''), null);
+  assert.strictEqual(parseJprsExpiry(undefined), null);
+});
+
+test('.jp は、JPRSのWHOISへ問い合わせ（HTTPは使わない）。co.jp などは3つ目まで。失敗は null', async () => {
+  const asked = [];
+  const whoisFn = async (host, q) => { asked.push([host, q]); return '[Expires on]    2026/12/31\n'; };
+  let fetched = 0;
+  const fetchFn = async () => { fetched += 1; return { ok: false }; };
+  assert.strictEqual(await fetchDomainExpiry('www.estowa.jp', { whoisFn, fetchFn }), '2026-12-31');
+  assert.strictEqual(await fetchDomainExpiry('shop.example.co.jp', { whoisFn, fetchFn }), '2026-12-31');
+  assert.deepStrictEqual(asked, [['whois.jprs.jp', 'estowa.jp/e'], ['whois.jprs.jp', 'example.co.jp/e']]);
+  assert.strictEqual(fetched, 0);
+  assert.strictEqual(await fetchDomainExpiry('estowa.jp', { whoisFn: async () => { throw new Error('net'); } }), null);
+});
+
+test('他社が運営する共有ドメイン（guidebook.jp など）は、お客様のドメイン期限ではないので、問い合わせない', async () => {
+  let called = 0;
+  const fn = async () => { called += 1; return ''; };
+  assert.ok(DOMAIN_LOOKUP_SKIP.has('guidebook.jp'));
+  assert.strictEqual(await fetchDomainExpiry('hirakawa-company.guidebook.jp', { whoisFn: fn, fetchFn: fn }), null);
+  assert.strictEqual(called, 0);
+});
