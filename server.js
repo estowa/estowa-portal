@@ -19,6 +19,7 @@ const knowledgeRoutes = require('./routes/knowledge');
 const ideaRoutes = require('./routes/ideas');
 const profileRoutes = require('./routes/profile');
 const chatRoutes = require('./routes/chat');
+const searchRoutes = require('./routes/search');
 const { attachChatSocket } = require('./lib/chatSocket');
 const db = require('./db/connection');
 const { avatarFor } = require('./lib/avatar');
@@ -79,6 +80,7 @@ app.use(sheetRoutes);
 app.use(knowledgeRoutes);
 app.use(ideaRoutes);
 app.use(chatRoutes);
+app.use(searchRoutes);
 
 app.use((req, res) => {
   res.status(404).render('error', { message: 'ページが見つかりません', user: req.session.user });

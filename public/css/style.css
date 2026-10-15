@@ -1398,3 +1398,25 @@ body { font-size: 14px; line-height: 1.6; }
   .sidebar { border-top: none; }
   .sidebar-footer { border-left-color: #444; }
 }
+
+/* ヘッダーとレフトメニューは、スクロールしても固定 */
+.topbar { position: sticky; top: 0; z-index: 100; }
+@media (min-width: 641px) {
+  .sidebar {
+    position: sticky; top: 56px; align-self: flex-start;
+    height: calc(100vh - 56px); overflow-y: auto;
+  }
+}
+
+/* 検索結果 */
+.search-q { font-weight: 400; color: var(--text-muted); margin-left: 8px; }
+.search-count { font-size: 13px; font-weight: 400; color: var(--text-muted); margin-left: 6px; }
+.search-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  padding: 10px 6px; border-bottom: 1px solid var(--border);
+}
+.search-row:last-child { border-bottom: none; }
+.search-row:hover { background: var(--bg); }
+.search-row-title { font-weight: 600; color: var(--primary); }
+.search-row-tag { font-size: 12px; background: #ececf1; color: var(--text-muted); border-radius: 10px; padding: 1px 8px; }
+.search-row-snippet { flex-basis: 100%; font-size: 13px; color: var(--text-muted); }

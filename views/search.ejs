@@ -1,0 +1,29 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <h1>検索結果<% if (q) { %><span class="search-q">「<%= q %>」</span><% } %></h1>
+</div>
+
+<% if (!q) { %>
+  <div class="panel"><div class="empty-note">ヘッダーの検索窓に、探したい言葉を入れてください。</div></div>
+<% } else if (total === 0) { %>
+  <div class="panel"><div class="empty-note">「<%= q %>」に当てはまるものは見つかりませんでした。言葉を変えるか、短くしてみてください。</div></div>
+<% } else { %>
+  <% groups.forEach(g => { %>
+    <% if (g.items.length > 0) { %>
+      <div class="panel">
+        <h2><%= g.label %> <span class="search-count"><%= g.items.length %>件<%= g.items.length >= 20 ? '（上位20件）' : '' %></span></h2>
+        <% g.items.forEach(it => { %>
+          <a href="<%= it.href %>" class="search-row">
+            <span class="search-row-title"><%= it.title %></span>
+            <% if (it.category) { %><span class="search-row-tag"><%= it.category %></span><% } %>
+            <% if (it.board === 'project') { %><span class="search-row-tag">プロジェクト</span><% } %>
+            <% if (it.snippet) { %><span class="search-row-snippet"><%= it.snippet %></span><% } %>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  <% }) %>
+<% } %>
+
+<%- include('partials/footer') %>
