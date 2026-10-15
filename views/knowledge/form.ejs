@@ -4,7 +4,7 @@
 
 <% if (attachments && attachments.length > 0) { %>
   <div class="panel">
-    <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
+    <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
     <div class="file-list">
       <% attachments.forEach(a => { %>
         <div class="file-list-item">
@@ -27,7 +27,7 @@
     <input type="text" name="title" placeholder="タイトル" required value="<%= article ? article.title : '' %>"
       style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px;" />
 
-    <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">カテゴリ</label>
+    <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:2px;">カテゴリ</label>
     <select name="category" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px;">
       <% categoryDefs.forEach(([name]) => { %>
         <option value="<%= name %>" <%= article && article.category === name ? 'selected' : '' %>><%= name %></option>
@@ -37,7 +37,7 @@
     <textarea name="body" placeholder="本文（Markdown記法が使えます）" rows="16"
       style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px; font-family:monospace; font-size:13px;"><%= article ? article.body : '' %></textarea>
 
-    <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
+    <label style="font-size:13px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
     <div class="dropzone" style="margin-bottom:16px;">
       <input type="file" name="files" multiple />
       <div>ここにファイルをドラッグ&ドロップ<br />またはクリックして選択</div>

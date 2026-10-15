@@ -9,7 +9,7 @@
   <div>
     <% if (attachments.length > 0) { %>
       <div class="panel">
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
+        <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">添付ファイル</label>
         <div class="file-list">
           <% attachments.forEach(a => { %>
             <div class="file-list-item">
@@ -29,22 +29,22 @@
       <% if (error) { %><div class="error-text"><%= error %></div><% } %>
       <% if (uploadError) { %><div class="error-text"><%= uploadError %></div><% } %>
       <form method="POST" action="/announcements/<%= announcement.id %>" enctype="multipart/form-data">
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">タイトル</label>
+        <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:2px;">タイトル</label>
         <input type="text" name="title" value="<%= announcement.title %>" required
           style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;" />
 
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">本文（任意）</label>
+        <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:2px;">本文（任意）</label>
         <textarea name="body" rows="6" placeholder="お知らせの内容"
           style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; resize:vertical;"><%= announcement.body || '' %></textarea>
 
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:2px;">投稿者</label>
+        <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:2px;">投稿者</label>
         <select name="created_by" style="width:100%; padding:10px; margin-bottom:14px; border:1px solid var(--border); border-radius:8px;">
           <% users.forEach(u => { %>
             <option value="<%= u.user_id %>" <%= announcement.created_by === u.user_id ? 'selected' : '' %>><%= u.display_name %></option>
           <% }) %>
         </select>
 
-        <label style="font-size:12px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
+        <label style="font-size:13px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
         <div class="dropzone" style="margin-bottom:16px;">
           <input type="file" name="files" multiple />
           <div>ここにファイルをドラッグ&ドロップ<br />またはクリックして選択</div>

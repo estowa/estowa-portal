@@ -1420,3 +1420,10 @@ body { font-size: 14px; line-height: 1.6; }
 .search-row-title { font-weight: 600; color: var(--primary); }
 .search-row-tag { font-size: 12px; background: #ececf1; color: var(--text-muted); border-radius: 10px; padding: 1px 8px; }
 .search-row-snippet { flex-basis: 100%; font-size: 13px; color: var(--text-muted); }
+
+/* 閉じているスライドパネルの影が、画面の右端に漏れないようにする */
+.task-detail-panel { box-shadow: none; visibility: hidden; transition: transform 0.25s ease, visibility 0s linear 0.25s; }
+.task-detail-panel.open { box-shadow: -12px 0 32px rgba(0, 0, 0, 0.12); visibility: visible; transition: transform 0.25s ease, visibility 0s; }
+
+/* 幅の狭い画面で表がはみ出すときは、表だけ横にスクロール */
+.table-scroll { overflow-x: auto; }
