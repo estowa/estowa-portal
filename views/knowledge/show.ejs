@@ -17,6 +17,14 @@
 </div>
 
 <div class="panel markdown-body">
+  <% if (toc && toc.length > 0) { %>
+    <nav class="kb-toc">
+      <div class="kb-toc-title">目次</div>
+      <ul>
+        <% toc.forEach(t => { %><li class="toc-l<%= t.level %>"><a href="#<%= t.id %>"><%= t.text %></a></li><% }) %>
+      </ul>
+    </nav>
+  <% } %>
   <%- bodyHtml %>
 
   <% if (article.attachments && article.attachments.length > 0) { %>

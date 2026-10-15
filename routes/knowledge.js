@@ -1,12 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const { marked } = require('marked');
-const sanitizeHtml = require('sanitize-html');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
 const { createUploader } = require('../lib/uploads');
 const { CATEGORY_DEFS, colorForCategory } = require('../lib/knowledgeCategories');
+const { renderKnowledgeMarkdown } = require('../lib/knowledgeMarkdown');
 
 const router = express.Router();
 
@@ -26,18 +25,6 @@ function insertAttachments(articleId, files, uploadedBy) {
   );
   files.forEach((f) => {
     insert.run(articleId, f.filename, f.originalname, f.mimetype, uploadedBy);
-  });
-}
-
-function renderMarkdown(md) {
-  const rawHtml = marked.parse(md || '');
-  return sanitizeHtml(rawHtml, {
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'img']),
-    allowedAttributes: {
-      ...sanitizeHtml.defaults.allowedAttributes,
-      img: ['src', 'alt'],
-      a: ['href', 'name', 'target', 'rel'],
-    },
   });
 }
 
@@ -71,6 +58,13 @@ router.get('/knowledge', requireLogin, (req, res) => {
     .map((r) => r.category);
 
   res.render('knowledge/index', { articles, categories, categoryFilter, q, colorForCategory });
+});
+
+// 編集画面のプレビュー(保存前に、完成形を見る)
+router.post('/knowledge/preview', requireLogin, (req, res) => {
+  const body = String((req.body && req.body.body) || '').slice(0, 200000);
+  const { html, toc } = renderKnowledgeMarkdown(body);
+  res.json({ html, toc });
 });
 
 // 新規作成フォーム
@@ -115,7 +109,8 @@ router.get('/knowledge/:id', requireLogin, (req, res) => {
     return res.status(404).render('error', { message: '記事が見つかりません', user: req.session.user });
   }
   article.attachments = attachmentsFor(article.id);
-  res.render('knowledge/show', { article, bodyHtml: renderMarkdown(article.body), colorForCategory });
+  const { html: bodyHtml, toc } = renderKnowledgeMarkdown(article.body);
+  res.render('knowledge/show', { article, bodyHtml, toc, colorForCategory });
 });
 
 // 編集フォーム

@@ -34,8 +34,26 @@
       <% }) %>
     </select>
 
-    <textarea name="body" placeholder="本文（Markdown記法が使えます）" rows="16"
-      style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px; font-family:monospace; font-size:13px;"><%= article ? article.body : '' %></textarea>
+    <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:4px;">本文</label>
+    <div class="kb-toolbar" id="kb-toolbar">
+      <button type="button" data-act="heading" title="大見出し">見出し</button>
+      <button type="button" data-act="sub" title="小見出し">小見出し</button>
+      <button type="button" data-act="bold" title="太字"><b>太字</b></button>
+      <button type="button" data-act="ul" title="箇条書き">箇条書き</button>
+      <button type="button" data-act="ol" title="番号リスト">番号リスト</button>
+      <button type="button" data-act="table" title="表を入れる">表</button>
+      <button type="button" data-act="link" title="リンクを入れる">リンク</button>
+      <span class="kb-toolbar-sep"></span>
+      <button type="button" data-act="callout" data-name="重要" class="kb-btn-important" title="赤い枠">重要</button>
+      <button type="button" data-act="callout" data-name="注意" class="kb-btn-caution" title="黄色い枠">注意</button>
+      <button type="button" data-act="callout" data-name="ポイント" class="kb-btn-point" title="青い枠">ポイント</button>
+      <button type="button" data-act="callout" data-name="メモ" class="kb-btn-memo" title="グレーの枠">メモ</button>
+      <button type="button" id="kb-preview-toggle" class="kb-preview-btn" aria-pressed="false">プレビュー</button>
+    </div>
+    <div class="kb-hint">文字を選んでからボタンを押すと、その部分に効きます。保存の前に「プレビュー」で見え方を確認できます。</div>
+    <textarea name="body" id="kb-body" placeholder="本文を入力" rows="16"
+      style="width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--border); border-radius:8px; font-family:monospace; font-size:14px;"><%= article ? article.body : '' %></textarea>
+    <div id="kb-preview" class="markdown-body kb-preview" hidden></div>
 
     <label style="font-size:13px; color:var(--text-muted); display:block; margin:8px 0 4px;">ファイルを追加（任意・複数枚OK）</label>
     <div class="dropzone" style="margin-bottom:16px;">
@@ -50,4 +68,5 @@
 </div>
 
 <script src="/js/dropzone.js"></script>
+<script src="/js/knowledge-editor.js"></script>
 <%- include('../partials/footer') %>

@@ -1434,3 +1434,46 @@ body { font-size: 14px; line-height: 1.6; }
 
 /* 幅の狭い画面で表がはみ出すときは、表だけ横にスクロール */
 .table-scroll { overflow-x: auto; }
+
+/* ---- ナレッジ: 記事の見やすさ（枠・表・見出し・目次）と編集ボタン ---- */
+.markdown-body { font-size: 15px; line-height: 1.8; }
+.markdown-body h1, .markdown-body h2 { font-size: 18px; border-bottom: 2px solid var(--primary); padding-bottom: 4px; margin-top: 28px; }
+.markdown-body h3 { font-size: 16px; border-left: 4px solid var(--primary); padding-left: 8px; margin-top: 22px; }
+.markdown-body h1:first-child, .markdown-body h2:first-child { margin-top: 0; }
+.markdown-body th { background: #ececf1; text-align: left; font-weight: 700; }
+.markdown-body th, .markdown-body td { padding: 8px 12px; vertical-align: top; }
+.markdown-body { overflow-x: auto; }
+.markdown-body table { margin: 12px 0; }
+.markdown-body img { max-width: 100%; height: auto; }
+.callout { border-left: 5px solid; border-radius: 0; padding: 10px 16px; margin: 14px 0; }
+.callout > :last-child { margin-bottom: 0; }
+.callout > p:first-of-type { margin-top: 6px; }
+.callout-title { font-weight: 700; font-size: 14px; }
+.callout-important { background: #fdecec; border-color: #c93030; }
+.callout-important .callout-title { color: #8f1717; }
+.callout-caution { background: #fff4d6; border-color: #d9a400; }
+.callout-caution .callout-title { color: #7a4a00; }
+.callout-point { background: #e6f0ff; border-color: #2a6fd6; }
+.callout-point .callout-title { color: #0b4f9c; }
+.callout-memo { background: #eef0f4; border-color: #9aa0ae; }
+.callout-memo .callout-title { color: #444a5e; }
+.kb-toc { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; margin: 0 0 18px; display: inline-block; min-width: 240px; max-width: 100%; }
+.kb-toc-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.kb-toc ul { list-style: none; margin: 0; padding: 0; }
+.kb-toc li { margin: 2px 0; font-size: 14px; }
+.kb-toc li.toc-l3 { padding-left: 16px; }
+.kb-toc a { color: var(--primary); text-decoration: none; }
+.kb-toc a:hover { text-decoration: underline; }
+.kb-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.kb-toolbar button { border: 1px solid var(--border); background: #fff; color: var(--text); border-radius: 6px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+.kb-toolbar button:hover:not(:disabled) { border-color: var(--primary); }
+.kb-toolbar button:disabled { opacity: 0.45; cursor: not-allowed; }
+.kb-toolbar-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+.kb-toolbar .kb-btn-important { background: #fdecec; border-color: #c93030; color: #8f1717; }
+.kb-toolbar .kb-btn-caution { background: #fff4d6; border-color: #d9a400; color: #7a4a00; }
+.kb-toolbar .kb-btn-point { background: #e6f0ff; border-color: #2a6fd6; color: #0b4f9c; }
+.kb-toolbar .kb-btn-memo { background: #eef0f4; border-color: #9aa0ae; color: #444a5e; }
+.kb-toolbar .kb-preview-btn { margin-left: auto; border-color: var(--primary); color: var(--primary); }
+.kb-hint { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.kb-preview { border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin-bottom: 8px; min-height: 200px; background: #fff; }
+.kb-preview[hidden] { display: none; }
