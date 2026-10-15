@@ -21,6 +21,7 @@ const profileRoutes = require('./routes/profile');
 const chatRoutes = require('./routes/chat');
 const searchRoutes = require('./routes/search');
 const { formatJst } = require('./lib/jst');
+const { linkify } = require('./lib/linkify');
 const { attachChatSocket } = require('./lib/chatSocket');
 const db = require('./db/connection');
 const { avatarFor } = require('./lib/avatar');
@@ -65,6 +66,7 @@ app.use((req, res, next) => {
   }
   // DBのUTC日時を、画面では日本時間で表示する
   res.locals.formatJst = formatJst;
+  res.locals.linkify = linkify;
   next();
 });
 

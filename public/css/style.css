@@ -979,8 +979,10 @@ table.sheet-table.readonly td {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.announcement-row-title { color: var(--primary); }
+.announcement-row:hover .announcement-row-title { text-decoration: underline; }
 .announcement-row.is-unread .announcement-row-title { font-weight: 700; }
-.announcement-row.is-read .announcement-row-title { color: var(--text-muted); font-weight: 400; }
+.announcement-row.is-read .announcement-row-title { font-weight: 400; }
 .unread-dot {
   flex-shrink: 0;
   width: 8px;
@@ -1263,12 +1265,17 @@ table.sheet-table.readonly td {
 }
 .h-chip svg { width: 16px; height: 16px; }
 
-/* イベントの種類ごとの色（未設定は「セール・販促」＝従来のピンク） */
-.event-chip.cat-sale     { background: var(--rose-t);   color: var(--rose-x); }
-.event-chip.cat-shoot    { background: var(--sky-t);    color: var(--sky-x); }
-.event-chip.cat-due      { background: var(--amber-t);  color: var(--amber-x); }
-.event-chip.cat-internal { background: var(--teal-t);   color: var(--teal-x); }
-.event-chip.cat-other    { background: var(--violet-t); color: var(--violet-x); }
+/* イベントの種類(モール)ごとの色。旧い種類・未設定は「指定なし」(グレー) */
+.event-chip.cat-rakuten        { background: var(--rose-t);   color: var(--rose-x); }
+.event-chip.cat-yahoo          { background: var(--violet-t); color: var(--violet-x); }
+.event-chip.cat-cowcow         { background: var(--amber-t);  color: var(--amber-x); }
+.event-chip.cat-mercari        { background: var(--sky-t);    color: var(--sky-x); }
+.event-chip.cat-qoo10          { background: var(--green-t);  color: var(--green-x); }
+.event-chip.cat-giftmall       { background: var(--teal-t);   color: var(--teal-x); }
+.event-chip.cat-mercari-shops  { background: #b7b7ff;         color: #1a1a8c; }
+.event-chip.cat-none           { background: #e6e7ee;         color: #444a5e; }
+.body-link { color: var(--primary); text-decoration: underline; word-break: break-all; }
+.body-link:hover { color: var(--primary-dark); }
 .event-popover select {
   width: 100%;
   padding: 6px 8px;

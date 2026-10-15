@@ -12,7 +12,7 @@
   </div>
 
   <% if (announcement.body) { %>
-    <div style="color:#444a5e; font-size:14px; margin-top:14px; white-space:pre-wrap;"><%= announcement.body %></div>
+    <div style="color:#444a5e; font-size:14px; margin-top:14px; white-space:pre-wrap;"><%- linkify(announcement.body) %></div>
   <% } %>
 
   <% if (announcement.attachments && announcement.attachments.length > 0) { %>
