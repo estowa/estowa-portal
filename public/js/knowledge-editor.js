@@ -14,12 +14,13 @@
     ta.setSelectionRange(selStart, selEnd);
   }
 
-  // 選択範囲を、前後の記号で囲む(選択がなければ、見本の文字を入れて選んだ状態にする)
-  function wrap(before, after, placeholder) {
+  // 選択範囲を、前後の記号で囲む。選択がなければ記号だけを入れて、その間にカーソルを置く。
+  function wrap(before, after) {
     var c = sel();
-    var picked = c.v.slice(c.s, c.e) || placeholder;
+    var picked = c.v.slice(c.s, c.e);
     var out = c.v.slice(0, c.s) + before + picked + after + c.v.slice(c.e);
-    setText(out, c.s + before.length, c.s + before.length + picked.length);
+    var caret = picked ? c.s + before.length + picked.length + after.length : c.s + before.length;
+    setText(out, caret, caret);
   }
 
   // 選択範囲を含む行の先頭に、記号を付ける。
@@ -46,7 +47,8 @@
   }
 
   // 前後に空行を入れて、まとまりを差し込む
-  function insertBlock(text) {
+  // caretOffset を渡すと、まとまりの先頭からその位置にカーソルを置く(渡さなければ全体を選ぶ)
+  function insertBlock(text, caretOffset) {
     var c = sel();
     var head = c.v.slice(0, c.s);
     var tail = c.v.slice(c.e);
@@ -54,7 +56,8 @@
     var trail = tail.startsWith('\n\n') ? '' : (tail.startsWith('\n') ? '\n' : '\n\n');
     var out = head + lead + text + trail + tail;
     var pos = (head + lead).length;
-    setText(out, pos, pos + text.length);
+    if (typeof caretOffset === 'number') setText(out, pos + caretOffset, pos + caretOffset);
+    else setText(out, pos, pos + text.length);
   }
 
   function askNumber(message, def) {
@@ -67,7 +70,7 @@
   var actions = {
     heading: function () { prefixLines(function () { return '## '; }); },
     sub: function () { prefixLines(function () { return '### '; }); },
-    bold: function () { wrap('**', '**', '太字にする文字'); },
+    bold: function () { wrap('**', '**'); },
     ul: function () { prefixLines(function () { return '- '; }); },
     ol: function () { prefixLines(function (n) { return n + '. '; }); },
     table: function () {
@@ -88,14 +91,18 @@
       var url = window.prompt('リンク先のURL（https:// から）', 'https://');
       if (!url || url === 'https://') return;
       var c = sel();
-      var text = c.v.slice(c.s, c.e) || 'リンクの文字';
+      var text = c.v.slice(c.s, c.e);
       var md = '[' + text + '](' + url.trim() + ')';
-      setText(c.v.slice(0, c.s) + md + c.v.slice(c.e), c.s + 1, c.s + 1 + text.length);
+      // 文字を選んでいたらリンクの後ろに、なければ[ ]の中にカーソルを置く
+      var caret = text ? c.s + md.length : c.s + 1;
+      setText(c.v.slice(0, c.s) + md + c.v.slice(c.e), caret, caret);
     },
     callout: function (name) {
       var c = sel();
-      var picked = c.v.slice(c.s, c.e) || '内容を入力';
-      insertBlock(':::' + name + '\n' + picked + '\n:::');
+      var picked = c.v.slice(c.s, c.e);
+      var head = ':::' + name + '\n' + picked;
+      // 選択がなければ枠の中の空行に、あれば選んだ文字の後ろにカーソルを置く
+      insertBlock(head + '\n:::', head.length);
     },
   };
 
