@@ -22,20 +22,27 @@
     setText(out, c.s + before.length, c.s + before.length + picked.length);
   }
 
-  // 選択範囲を含む行の先頭に、記号を付ける
+  // 選択範囲を含む行の先頭に、記号を付ける。
+  // 空の行なら記号だけを入れて、その直後にカーソルを置く(すぐ書き出せる)。
   function prefixLines(makePrefix) {
     var c = sel();
     var lineStart = c.v.lastIndexOf('\n', c.s - 1) + 1;
     var lineEndIdx = c.v.indexOf('\n', c.e);
     var lineEnd = lineEndIdx === -1 ? c.v.length : lineEndIdx;
-    var block = c.v.slice(lineStart, lineEnd) || '項目';
+    var block = c.v.slice(lineStart, lineEnd);
+    if (block.trim() === '') {
+      var p = makePrefix(1);
+      setText(c.v.slice(0, lineStart) + p + c.v.slice(lineEnd), lineStart + p.length, lineStart + p.length);
+      return;
+    }
     var n = 0;
     var changed = block.split('\n').map(function (line) {
       if (line.trim() === '') return line;
       n += 1;
       return makePrefix(n) + line;
     }).join('\n');
-    setText(c.v.slice(0, lineStart) + changed + c.v.slice(lineEnd), lineStart, lineStart + changed.length);
+    var end = lineStart + changed.length;
+    setText(c.v.slice(0, lineStart) + changed + c.v.slice(lineEnd), end, end);
   }
 
   // 前後に空行を入れて、まとまりを差し込む
