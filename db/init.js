@@ -5,6 +5,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const Database = require('better-sqlite3');
 const { ensureChatSchema } = require('../lib/chatSchema');
+const { ensureMaintenanceSchema } = require('../lib/maintenanceSchema');
 
 const dbPath = path.join(__dirname, 'estowa.db');
 const db = new Database(dbPath);
@@ -32,6 +33,7 @@ if (!userColumns.includes('email')) {
 }
 
 ensureChatSchema(db);
+ensureMaintenanceSchema(db);
 
 // 既存DBに avatar_emoji / avatar_color 列がない場合は追加(マイグレーション)
 // タスク一覧・お知らせでの視認性向上のため、担当者/投稿者をアイコン表示できるようにする
