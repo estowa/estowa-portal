@@ -22,7 +22,7 @@
         <span class="link-title"><%= i.title %></span>
         <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
           <% if (i.category) { %><span class="badge member"><%= i.category %></span> ・ <% } %>
-          <%= i.author_name || i.created_by %> ・ 更新: <%= i.updated_at %>
+          <%= i.author_name || i.created_by %> ・ 更新: <%= formatJst(i.updated_at) %>
         </div>
       </a>
     <% }) %>

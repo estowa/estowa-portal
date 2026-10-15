@@ -20,7 +20,7 @@
           </span>
           <span class="announcement-row-meta">
             <%- include('../partials/avatar', { avatar: a.authorAvatar, size: 'xs' }) %>
-            <span class="announcement-row-date"><%= a.created_at %></span>
+            <span class="announcement-row-date"><%= formatJst(a.created_at) %></span>
           </span>
         </a>
       <% }) %>

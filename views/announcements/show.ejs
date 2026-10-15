@@ -8,7 +8,7 @@
 <div class="panel">
   <div style="display:flex; justify-content:space-between; align-items:flex-start;">
     <h2 style="margin:0;"><%= announcement.title %></h2>
-    <span style="color:#b0b3c0; font-size:12px; white-space:nowrap; margin-left:12px;"><%= announcement.created_at %></span>
+    <span style="color:#b0b3c0; font-size:12px; white-space:nowrap; margin-left:12px;"><%= formatJst(announcement.created_at) %></span>
   </div>
 
   <% if (announcement.body) { %>

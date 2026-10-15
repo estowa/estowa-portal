@@ -24,7 +24,7 @@
         <% sheets.forEach(s => { %>
           <tr>
             <td><a href="/sheets/<%= s.id %>" style="color:var(--primary); font-weight:600;"><%= s.name %></a></td>
-            <td><%= s.updated_at %></td>
+            <td><%= formatJst(s.updated_at) %></td>
             <td>
               <form method="POST" action="/sheets/<%= s.id %>/delete" onsubmit="return confirm('このシートを削除しますか？');">
                 <button type="submit" class="mini-btn">削除</button>
