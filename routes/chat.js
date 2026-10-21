@@ -10,8 +10,8 @@ const { createUploader } = require('../lib/uploads');
 
 const router = express.Router();
 
-// 添付の置き場。公開フォルダ（public/）の外に置き、ダウンロードは部屋のメンバーだけに許す
-const CHAT_FILES_DIR = path.join(__dirname, '..', 'db', 'chat-files');
+// 添付の置き場は lib/chatFiles.js（公開フォルダ public/ の外。ダウンロードは部屋のメンバーだけに許す）
+const { CHAT_FILES_DIR } = require('../lib/chatFiles');
 const uploader = createUploader(CHAT_FILES_DIR, { maxFiles: store.MAX_FILES, maxFileSize: store.MAX_FILE_SIZE });
 
 const IMAGE_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
@@ -137,19 +137,23 @@ router.post('/chat/rooms/:id/messages', requireLogin, (req, res) => {
   });
 });
 
-// 添付のダウンロード。画像（png/jpg/gif/webp）だけ画面内に表示し、それ以外は保存させる
+// 添付のダウンロード。画像（png/jpg/gif/webp）とPDFは、そのまま開いて見られる。それ以外は保存させる。
+// ?download=1 を付けると、画像・PDFも保存（ダウンロード）になる
 router.get('/chat/files/:id', requireLogin, (req, res) => {
   const file = store.getFileForUser(db, Number(req.params.id), req.session.user.user_id);
   if (!file) return res.status(404).send('見つかりません');
   const ext = path.extname(file.original_name).toLowerCase();
-  const inline = !!file.is_image && IMAGE_TYPES[ext];
-  res.set({
-    'Content-Type': inline ? IMAGE_TYPES[ext] : 'application/octet-stream',
+  const viewType = file.is_image && IMAGE_TYPES[ext] ? IMAGE_TYPES[ext] : ext === '.pdf' ? 'application/pdf' : null;
+  const inline = !!viewType && req.query.download !== '1';
+  const headers = {
+    'Content-Type': inline ? viewType : 'application/octet-stream',
     'X-Content-Type-Options': 'nosniff',
-    'Content-Security-Policy': "default-src 'none'; sandbox",
     'Cache-Control': 'private, max-age=3600',
     'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(file.original_name)}`,
-  });
+  };
+  // 画像は何も実行させない設定にする。PDFはブラウザの表示機能が動かなくなるため、この設定は付けない（nosniffでHTMLとして解釈されるのは防ぐ）
+  if (!inline || viewType !== 'application/pdf') headers['Content-Security-Policy'] = "default-src 'none'; sandbox";
+  res.set(headers);
   res.sendFile(path.join(CHAT_FILES_DIR, path.basename(file.stored_name)), (err) => {
     if (err && !res.headersSent) res.status(404).send('見つかりません');
   });

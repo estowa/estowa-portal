@@ -117,8 +117,19 @@
   }
 
   // ---- メッセージ ----
+  function downloadLink(f) {
+    const a = el('a', 'chat-dl', 'ダウンロード');
+    a.href = '/chat/files/' + f.id + '?download=1';
+    a.setAttribute('download', f.name);
+    return a;
+  }
   function fileNode(f) {
     const url = '/chat/files/' + f.id;
+    const box = el('div', 'chat-attachment');
+    if (f.deleted) { // 期限（15日）で削除された画像
+      box.appendChild(el('div', 'chat-file-gone', '🖼 ' + f.name + '（15日たったので削除されました）'));
+      return box;
+    }
     if (f.is_image) {
       const a = el('a', 'chat-img-link');
       a.href = url;
@@ -129,12 +140,23 @@
       img.alt = f.name;
       img.loading = 'lazy';
       a.appendChild(img);
-      return a;
+      box.appendChild(a);
+      box.appendChild(downloadLink(f));
+      return box;
     }
-    const a = el('a', 'chat-file', '📄 ' + f.name + '（' + sizeText(f.size) + '）');
+    const isPdf = /\.pdf$/i.test(f.name);
+    const a = el('a', 'chat-file', (isPdf ? '📄 ' : '📎 ') + f.name + '（' + sizeText(f.size) + '）');
     a.href = url;
-    a.setAttribute('download', f.name);
-    return a;
+    if (isPdf) { // PDFはクリックで、新しいタブに開いて見られる
+      a.target = '_blank';
+      a.rel = 'noopener';
+      box.appendChild(a);
+      box.appendChild(downloadLink(f));
+    } else { // それ以外は、クリックでダウンロード
+      a.setAttribute('download', f.name);
+      box.appendChild(a);
+    }
+    return box;
   }
 
   function appendMessage(m) {

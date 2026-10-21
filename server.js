@@ -119,5 +119,7 @@ const server = app.listen(PORT, () => {
   console.log(`estowa社内ポータル起動: http://localhost:${PORT}`);
 });
 attachChatSocket(server, sessionMiddleware, db);
+// 添付の画像は15日で自動削除（起動1分後と6時間おき）。CHAT_CLEANUP_DISABLED=1 で止められる
+if (process.env.CHAT_CLEANUP_DISABLED !== '1') require('./lib/chatCleanup').startScheduler(db, require('./lib/chatFiles').CHAT_FILES_DIR);
 // サイト保守の自動確認（起動1分後と6時間おき）。SITE_CHECK_DISABLED=1 で止められる
 if (process.env.SITE_CHECK_DISABLED !== '1') startScheduler(db);
