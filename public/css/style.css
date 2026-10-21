@@ -1170,7 +1170,7 @@ table.sheet-table.readonly td {
 .chat-form { display: flex; gap: 8px; margin-top: 8px; }
 .chat-form { align-items: flex-end; }
 .chat-form input, .chat-form textarea { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; line-height: 1.5; }
-.chat-form textarea { resize: none; max-height: 140px; overflow-y: auto; box-sizing: border-box; }
+.chat-form textarea { resize: none; min-height: 40px; max-height: 140px; overflow-y: auto; box-sizing: border-box; }
 .chat-form button { padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
 .chat-form button:disabled, .chat-form input:disabled, .chat-form textarea:disabled { opacity: 0.5; cursor: not-allowed; }
 .chat-error { color: #e0245e; font-size: 12px; margin-top: 6px; }

@@ -367,7 +367,6 @@
     inputEl.style.height = Math.min(inputEl.scrollHeight + border, 140) + 'px';
   }
   inputEl.addEventListener('input', fitInput);
-  fitInput();
 
   formEl.addEventListener('submit', async (e) => {
     e.preventDefault();
