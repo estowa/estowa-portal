@@ -91,12 +91,22 @@
     renderPeers();
   }
 
+  // サイドバー・アイコンの赤い数字を取り直す（既読・新着の反映を待ってから）
+  let badgeTimer = null;
+  function refreshBadgeSoon() {
+    clearTimeout(badgeTimer);
+    badgeTimer = setTimeout(() => {
+      if (window.refreshAppBadge) window.refreshAppBadge();
+    }, 600);
+  }
+
   function markActiveRead() {
     const p = state.peers.find((x) => x.user_id === active);
     if (!p) return;
     p.unread = 0;
     send({ type: 'read', from: active });
     updateTabTitle();
+    refreshBadgeSoon();
   }
 
   function onChat(m) {
@@ -108,6 +118,7 @@
     } else if (!mine) {
       const p = state.peers.find((x) => x.user_id === other);
       if (p) p.unread += 1;
+      refreshBadgeSoon();
     }
     renderPeers();
   }

@@ -249,8 +249,16 @@ router.get('/tasks', requireLogin, (req, res) => {
   let nextMonth = month + 1, nextYear = year;
   if (nextMonth > 12) { nextMonth = 1; nextYear += 1; }
 
+  let unreadTaskIds = new Set();
+  try {
+    unreadTaskIds = new Set(badge.unreadTaskIds(db, req.session.user.user_id));
+  } catch (e) {
+    // 赤い点が出せなくても、一覧は表示する
+  }
+
   const payload = {
     board,
+    unreadTaskIds,
     taskBoard,
     statusDefs: STATUS_DEFS,
     users,

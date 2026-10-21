@@ -1555,3 +1555,17 @@ th[aria-sort="descending"] .mt-sort::after { content: " ▼"; font-size: 11px; }
 .push-check input { width: 20px; height: 20px; }
 .push-saved { font-size: 13px; color: var(--green); margin-bottom: 10px; }
 .push-steps { margin: 0 0 12px; padding-left: 20px; font-size: 14px; line-height: 1.9; }
+
+/* ---- 新着の目印（サイドバーの件数・タスクカードの赤い点） ---- */
+.nav-item { position: relative; }
+.nav-badge {
+  position: absolute; top: 2px; right: calc(50% - 26px);
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: #e5303a; color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+}
+.nav-badge[hidden] { display: none; }
+.unread-dot {
+  display: none; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%;
+  background: #e5303a; vertical-align: middle;
+}
+.kanban-card.is-unread .unread-dot { display: inline-block; }

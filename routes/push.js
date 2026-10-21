@@ -30,7 +30,8 @@ router.get('/notifications', requireLogin, (req, res) => {
 // アイコンの赤い数字（未読の合計）。アプリに戻ったときに取り直す
 router.get('/badge', requireLoginJson, (req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({ count: badge.unreadTotalSafe(db, req.session.user.user_id) || 0 });
+  const b = badge.unreadBreakdownSafe(db, req.session.user.user_id) || { announcements: 0, chat: 0, tasks: 0 };
+  res.json({ count: b.announcements + b.chat + b.tasks, ...b });
 });
 
 router.post('/push/subscribe', requireLoginJson, json, (req, res) => {

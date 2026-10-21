@@ -21,8 +21,8 @@
       <h3><%= label %> <span class="count">(<%= board[key].length %>)</span></h3>
       <div class="kanban-list" data-status="<%= key %>">
         <% board[key].forEach(t => { %>
-          <a href="/tasks/<%= t.id %>" class="kanban-card" data-id="<%= t.id %>">
-            <div class="kanban-card-title"><%= t.title %></div>
+          <a href="/tasks/<%= t.id %>" class="kanban-card<%= (typeof unreadTaskIds !== 'undefined' && unreadTaskIds.has(t.id)) ? ' is-unread' : '' %>" data-id="<%= t.id %>">
+            <div class="kanban-card-title"><span class="unread-dot" title="新着・更新があります" aria-label="新着・更新があります"></span><%= t.title %></div>
             <div class="kanban-card-meta">
               <div class="assignee-inline">
                 <% if (t.assignees.length === 0) { %>

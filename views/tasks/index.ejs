@@ -55,6 +55,7 @@
         card.dataset.justDragged = '';
         return;
       }
+      card.classList.remove('is-unread'); // 開いたタスクは「見た」ことになる
       openPanelFromUrl(card.getAttribute('href'));
       return;
     }

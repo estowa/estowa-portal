@@ -111,3 +111,13 @@ test('通知には、その人の未読の合計（badge）が付く。数えら
   await push.sendToUser(bare, 'me', { title: 't' });
   assert.strictEqual('badge' in sent[1], false);
 });
+
+test('新着タスクのid: 数え方と同じ条件で、開くと外れる', () => {
+  const db = makeDb();
+  const t = addTask(db);
+  addTask(db, { status: 'done' });
+  assert.deepStrictEqual(badge.unreadTaskIds(db, 'me'), [t]);
+  badge.markTaskSeen(db, 'me', t);
+  assert.deepStrictEqual(badge.unreadTaskIds(db, 'me'), []);
+  assert.strictEqual(badge.unreadBreakdownSafe(new Database(':memory:'), 'me'), null);
+});

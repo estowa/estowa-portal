@@ -27,15 +27,20 @@
 </header>
 <div class="app-layout">
   <aside class="sidebar">
+    <% const nb = (typeof unreadBreakdown === 'function' && currentUser) ? unreadBreakdown() : null; %>
+    <% const badgeText = (n) => (n > 99 ? '99+' : String(n)); %>
     <a class="nav-item" href="/" title="ホーム">
+      <span class="nav-badge" data-badge="chat" aria-label="チャットの未読" <%= nb && nb.chat > 0 ? '' : 'hidden' %>><%= nb ? badgeText(nb.chat) : '' %></span>
       <span class="nav-ico nav-ico-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></span>
       <span class="nav-label">ホーム</span>
     </a>
     <a class="nav-item" href="/tasks" title="タスク管理">
+      <span class="nav-badge" data-badge="tasks" aria-label="新着・更新のタスク" <%= nb && nb.tasks > 0 ? '' : 'hidden' %>><%= nb ? badgeText(nb.tasks) : '' %></span>
       <span class="nav-ico nav-ico-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 11h8"/><path d="M7 16h12"/><path d="M7 6h3"/></svg></span>
       <span class="nav-label">タスク管理</span>
     </a>
     <a class="nav-item" href="/announcements" title="お知らせ">
+      <span class="nav-badge" data-badge="announcements" aria-label="未読のお知らせ" <%= nb && nb.announcements > 0 ? '' : 'hidden' %>><%= nb ? badgeText(nb.announcements) : '' %></span>
       <span class="nav-ico nav-ico-lavender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5.5 2 7.5 2 7.5H4S6 13.5 6 8Z"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg></span>
       <span class="nav-label">お知らせ</span>
     </a>
