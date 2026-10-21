@@ -26,6 +26,8 @@
         panelBody.innerHTML = html;
         panel.classList.add('open');
         if (window.initDropzones) window.initDropzones(panelBody);
+        // 開いたタスクは「見た」ことになるので、アイコンの赤い数字を取り直す
+        if (window.refreshAppBadge) window.refreshAppBadge();
       });
   }
 

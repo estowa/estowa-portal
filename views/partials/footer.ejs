@@ -10,12 +10,15 @@
       if (op && op.catch) op.catch(function () {});
     }
     setBadge(<%= (typeof unreadBadge === 'function' ? Number(unreadBadge()) : 0) || 0 %>);
-    document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState !== 'visible') return;
+    // 数字を取り直す。アプリに戻ったときと、タスクのパネルを開いた直後（ページ遷移がないため）に呼ぶ
+    window.refreshAppBadge = function () {
       fetch('/badge', { credentials: 'same-origin' })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (j) { if (j) setBadge(j.count); })
         .catch(function () {});
+    };
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') window.refreshAppBadge();
     });
   })();
 </script>
