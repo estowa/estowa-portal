@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <h1>通知設定</h1>
+  <a href="/" class="mini-btn">← ホームに戻る</a>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div class="panel" id="push-panel" data-key="<%= push.publicKey || '' %>" data-configured="<%= push.configured ? '1' : '0' %>">
+      <h2>この端末で通知を受け取る</h2>
+      <% if (!push.configured) { %>
+        <p class="push-note">通知の設定がまだ済んでいないため、使えません。</p>
+      <% } else { %>
+        <p class="push-note" id="push-message" role="status">確認しています…</p>
+        <div class="push-actions">
+          <button id="push-enable" class="push-btn push-btn-main" type="button" hidden>この端末で通知を受け取る</button>
+          <button id="push-test" class="push-btn" type="button" hidden>テスト通知を送る</button>
+          <button id="push-disable" class="push-btn" type="button" hidden>この端末の通知をやめる</button>
+          <a id="push-install" class="push-btn" href="/install" hidden>ホーム画面への追加の方法</a>
+        </div>
+        <script src="/js/push.js" defer></script>
+      <% } %>
+    </div>
+
+    <form class="panel" method="POST" action="/notifications">
+      <h2>受け取る通知の種類</h2>
+      <% if (saved) { %><div class="push-saved" role="status">通知の設定を保存しました</div><% } %>
+      <% Object.keys(push.kinds).forEach((k) => { %>
+        <label class="push-check" for="pref-<%= k %>">
+          <input id="pref-<%= k %>" type="checkbox" name="<%= k %>" value="on" <%= push.prefs[k] ? 'checked' : '' %> />
+          <span><%= push.kinds[k].label %></span>
+        </label>
+      <% }) %>
+      <p class="push-note">自分で操作したときは、通知は届きません。設定は、アカウントごとに保存されます（端末ごとのオン・オフは上のボタンです）。</p>
+      <button class="push-btn push-btn-main" type="submit">種類の設定を保存</button>
+    </form>
+
+    <div class="panel">
+      <h2>ホーム画面に追加（アプリのように使う）</h2>
+      <p class="push-note">スマホのホーム画面にアイコンを置くと、ブラウザの枠なしで開けます。iPhoneで通知を受け取るには、この追加が必要です。</p>
+      <a class="push-btn" href="/install">追加の方法を見る</a>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

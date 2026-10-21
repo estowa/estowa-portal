@@ -1541,3 +1541,17 @@ th[aria-sort="descending"] .mt-sort::after { content: " ▼"; font-size: 11px; }
   .mt-count { flex-basis: 100%; margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .mt-chip, .mt-sort { transition: none; } }
+
+/* ---- 通知設定・ホーム画面に追加 ---- */
+.push-note { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; line-height: 1.7; }
+.push-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.push-actions [hidden] { display: none; }
+.push-btn {
+  display: inline-block; min-height: 40px; padding: 8px 16px; font-size: 14px; font-family: inherit;
+  border: 1px solid var(--border); border-radius: 6px; background: white; color: var(--text); cursor: pointer; text-decoration: none;
+}
+.push-btn-main { background: var(--primary); border-color: var(--primary); color: white; }
+.push-check { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; }
+.push-check input { width: 20px; height: 20px; }
+.push-saved { font-size: 13px; color: var(--green); margin-bottom: 10px; }
+.push-steps { margin: 0 0 12px; padding-left: 20px; font-size: 14px; line-height: 1.9; }

@@ -1,6 +1,14 @@
   </main>
 </div>
 <script>
+  // Service Worker（通知の受信・オフライン案内）。失敗しても画面の動作には影響しない
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    });
+  }
+</script>
+<script>
   // 「+ 新規登録」系のdetailsを外側クリックで閉じる
   document.addEventListener('click', (e) => {
     document.querySelectorAll('details.new-toggle[open]').forEach((el) => {

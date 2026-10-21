@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#00008b" />
+  <title>オフライン | estowa社内ポータル</title>
+  <style>
+    :root { --bg: #f4f5f9; --fg: #1b1d2a; --pri: #00008b; --card: #FFFFFF; --bd: #d9dbe8; --mut: #555a73; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 16px; padding-top: calc(16px + env(safe-area-inset-top)); padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      background: var(--bg); color: var(--fg);
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+      font-size: 16px; line-height: 1.6;
+    }
+    .card { width: 100%; max-width: 400px; padding: 24px 16px; background: var(--card); border: 1px solid var(--bd); border-radius: 12px; }
+    h1 { margin: 0 0 8px; font-size: 20px; font-weight: 500; }
+    p { margin: 0 0 16px; color: var(--mut); }
+    button {
+      min-height: 44px; padding: 8px 16px; border: 1px solid var(--pri); border-radius: 12px;
+      background: var(--pri); color: #FFFFFF; font: inherit; font-weight: 500; cursor: pointer;
+    }
+    button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>インターネットにつながっていません</h1>
+    <p>電波のあるところで、もう一度開いてください。入力した内容は、つながるまで保存されません。</p>
+    <form action="/" method="get"><button type="submit">もう一度開く</button></form>
+  </main>
+</body>
+</html>

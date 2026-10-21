@@ -1,0 +1,40 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <h1>ホーム画面に追加</h1>
+  <a href="/notifications" class="mini-btn">← 通知設定に戻る</a>
+</div>
+
+<div class="content-grid">
+  <div>
+    <div id="installed" class="push-saved" role="status" hidden>ホーム画面から開いています。追加は済んでいます。</div>
+
+    <div class="panel">
+      <h2>iPhone・iPad（Safari）</h2>
+      <p class="push-note">iOS 16.4以上が必要です。通知を使うには、この手順でホーム画面に追加してください。</p>
+      <ol class="push-steps">
+        <li>Safariで、このポータル（https://portal.estowa.com）を開く。</li>
+        <li>画面下の<strong>共有ボタン</strong>（四角から矢印が出ているマーク）を押す。</li>
+        <li>メニューを下にスクロールして、<strong>「ホーム画面に追加」</strong>を押す。</li>
+        <li>右上の<strong>「追加」</strong>を押す。</li>
+        <li>ホーム画面にできた<strong>アイコンから</strong>開く。</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h2>Android（Chrome）</h2>
+      <ol class="push-steps">
+        <li>Chromeで、このポータルを開く。</li>
+        <li>右上の<strong>メニュー（︙）</strong>を押す。</li>
+        <li><strong>「アプリをインストール」</strong>または<strong>「ホーム画面に追加」</strong>を押す。</li>
+        <li>ホーム画面にできた<strong>アイコンから</strong>開く。</li>
+      </ol>
+      <button id="install-button" class="push-btn push-btn-main" type="button" hidden>ホーム画面に追加する</button>
+    </div>
+
+    <p class="push-note">追加したあと、通知設定のページで「この端末で通知を受け取る」を押すと、通知が届くようになります。</p>
+  </div>
+</div>
+<script src="/js/install.js" defer></script>
+
+<%- include('partials/footer') %>

@@ -4,6 +4,7 @@ const express = require('express');
 const db = require('../db/connection');
 const { requireLogin, requireAdmin } = require('../middleware/auth');
 const { avatarFor } = require('../lib/avatar');
+const push = require('../lib/push');
 const { createUploader } = require('../lib/uploads');
 
 const router = express.Router();
@@ -112,6 +113,9 @@ router.post('/announcements', requireLogin, requireAdmin, (req, res) => {
       .run(title, body || '', req.session.user.user_id);
 
     insertAttachments(result.lastInsertRowid, req.files, req.session.user.user_id);
+
+    // 全員へ通知（投稿した本人は除く。結果は待たない）
+    push.notify(db, 'announcement_new', push.allUserIds(db), push.buildAnnouncementPayload({ id: result.lastInsertRowid, title }), req.session.user.user_id);
 
     res.redirect('/announcements');
   });

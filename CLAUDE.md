@@ -105,6 +105,8 @@ better-sqlite3はWALモードを使うため、サーバープロセスを止め
   ローカル確認用のダミーアカウントは`node db/seed-chat-dummy.js`（本番では実行不可）。
 - **サイト保守（自動確認）**: `lib/siteCheckRunner.js` が、起動1分後と6時間おきに、登録サイトのURLへ外から1回アクセスし、応答・応答時間・SSL証明書の期限を保存する（ドメイン期限は、取れていれば20時間ごと・取れていなければ1時間ごとに、1件ずつ順に取得。`.com`/`.net` は登録元Verisignの公開RDAPへ直接、`.jp` は日本レジストリ（JPRS）のWHOIS、その他は rdap.org へ、ドメイン名だけを送る。rdap.org は短時間に続けると429で断るため、`.com`/`.net` では使わない。`guidebook.jp` など他社の共有ドメインは問い合わせない＝`DOMAIN_LOOKUP_SKIP`）。本文は保存しない。内部アドレス（127.x・10.x・169.254.x・::1 など）と、そこへの転送には、接続しない（`lib/siteChecker.js` の `isBlockedAddress` / `safeLookup`）。`allowPrivate` はテスト専用で、本番のコードから渡さない。ログインが必要な情報（更新状況・バックアップ日）は取得せず、「点検記録」の手入力から出す。メンバーも閲覧できるため、運用状況だけを置き、侵入経路・不審ファイルの詳細・アカウント情報・個人情報は書かない。`SITE_CHECK_DISABLED=1` で、定期確認を止められる。
 
+- **PWA・プッシュ通知**（2026-10-21追加）: `public/manifest.webmanifest`・`public/sw.js`（通知の受信とオフライン案内。画面のデータは保存しない）・`public/icons/`。全ページの`partials/header.ejs`で読み込み、`partials/footer.ejs`でService Workerを登録。通知の中身・送信は`lib/push.js`（`db`を引数で受ける。`notify(db, 種類, 候補ユーザー, 中身, 除く本人)`）、テーブルは`lib/pushSchema.js`（起動時と`db/init.js`で作成）、設定ページは`/notifications`（`routes/push.js`）、ホーム画面への追加の案内は`/install`。通知の種類: タスク追加（担当者へ）・タスクのステータス変更（担当者+作成者へ）・新着お知らせ（全員へ）・チャット新着（相手がチャットを開いていないときだけ、本文は載せず「誰から」だけ）。いずれも操作した本人には送らず、各自が種類ごとにオン・オフできる（初期は全部オン）。鍵（VAPID）は`.env`の`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`（`node scripts/make-vapid-keys.js`で作る。ローカルと本番で別々）。`PUSH_DISABLED=1`で送信を止められる。iPhoneはホーム画面に追加したアイコンから開いたときだけ通知が届く。通知の送信失敗で、元の操作（タスク保存など）は失敗させない。
+
 ## 機能一覧（2026年10月時点）
 
 ホーム（KPI・お知らせ・自分のタスク・勤怠・イベントカレンダー）/ タスク管理

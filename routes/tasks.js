@@ -4,6 +4,7 @@ const express = require('express');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
 const mailer = require('../lib/mailer');
+const push = require('../lib/push');
 const { avatarFor } = require('../lib/avatar');
 const { createUploader } = require('../lib/uploads');
 const { formatJst, nowJstDateTimeStr } = require('../lib/jst');
@@ -132,6 +133,14 @@ function notifyTaskUpdate({ task, actorUserId, changeLines }) {
     `<p><a href="${url}">詳細を見る</a></p>`;
 
   mailer.sendMail({ to, subject, text, html }).catch((err) => console.error('[tasks] メール通知エラー:', err));
+}
+
+// ステータスが変わったときのプッシュ通知（担当者+作成者へ。変更した本人は除く。結果は待たない）
+function notifyTaskMoved(before, after, actorUserId) {
+  if (before.status === after.status) return;
+  const ids = db.prepare('SELECT user_id FROM task_assignees WHERE task_id = ?').all(after.id).map((r) => r.user_id);
+  if (after.created_by) ids.push(after.created_by);
+  push.notify(db, 'task_moved', ids, push.buildTaskMovedPayload(after, statusLabel(before.status), statusLabel(after.status)), actorUserId);
 }
 
 // 担当者選択チェックリストなどで使う、アイコン付きのユーザー一覧
@@ -317,6 +326,9 @@ router.post('/tasks', requireLogin, (req, res) => {
 
     insertAttachments(result.lastInsertRowid, req.files, req.session.user.user_id, null);
 
+    // 担当者に指定された人へ通知（本人は除く。通知の結果は待たない）
+    push.notify(db, 'task_added', assignees, push.buildTaskAddedPayload({ id: result.lastInsertRowid, title }), req.session.user.user_id);
+
     if (isFetch(req)) return res.json({ redirect: '/tasks?board=' + taskBoard });
     res.redirect('/tasks?board=' + taskBoard);
   });
@@ -451,6 +463,7 @@ router.post('/tasks/:id', requireLogin, (req, res) => {
 
   const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
   notifyTaskUpdate({ task: updatedTask, actorUserId: req.session.user.user_id, changeLines });
+  notifyTaskMoved(before, updatedTask, req.session.user.user_id);
 
   if (isFetch(req)) return res.json({ redirect: '/tasks/' + req.params.id });
   res.redirect('/tasks/' + req.params.id);
@@ -529,6 +542,7 @@ router.post('/tasks/:id/status', requireLogin, (req, res) => {
       actorUserId: req.session.user.user_id,
       changeLines: [`ステータス: ${statusLabel(before.status)} → ${statusLabel(status)}`],
     });
+    notifyTaskMoved(before, updatedTask, req.session.user.user_id);
   }
 
   if (isFetch(req)) {

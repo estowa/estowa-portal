@@ -41,7 +41,20 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    // Service Workerと設定ファイルは、更新がすぐ届くようにキャッシュさせない
+    setHeaders(res, filePath) {
+      const name = path.basename(filePath);
+      if (name === 'sw.js') {
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Service-Worker-Allowed', '/');
+      } else if (name === 'manifest.webmanifest' || name === 'offline.html') {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
+  })
+);
 
 const sessionMiddleware = session({
   store: new SQLiteStore({ db: 'sessions.db', dir: path.join(__dirname, 'db') }),
@@ -88,8 +101,11 @@ app.use(sheetRoutes);
 app.use(knowledgeRoutes);
 app.use(ideaRoutes);
 app.use(chatRoutes);
+app.use(require('./routes/push'));
+app.use(require('./routes/install'));
 app.use(searchRoutes);
 ensureMaintenanceSchema(db);
+require('./lib/pushSchema').ensurePushSchema(db);
 app.use(createMaintenanceRouter(db));
 
 app.use((req, res) => {

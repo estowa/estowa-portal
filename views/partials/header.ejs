@@ -2,12 +2,18 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>estowa社内ポータル</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png" />
-  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#00008b" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="estowa" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 </head>
 <body>
 <header class="topbar">
@@ -60,6 +66,9 @@
     <a class="nav-item" href="/maintenance" title="サイト保守">
       <span class="nav-ico nav-ico-plain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
       <span class="nav-label">サイト保守</span>
+    </a>
+    <a class="nav-item" href="/notifications" title="通知設定">
+      <span class="nav-label">通知設定</span>
     </a>
     <% if (currentUser && currentUser.role === 'admin') { %>
       <a class="nav-item" href="/attendance" title="勤怠ダウンロード">
