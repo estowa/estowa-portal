@@ -244,6 +244,7 @@
     ws.onopen = () => {
       retry = 0;
       showError('');
+      sendVisible();
       if (active) { // 切断中の取りこぼしを読み直す
         const g = state.groups.find((x) => x.room_id === active);
         const d = state.dms.find((x) => x.room_id === active);
@@ -273,6 +274,12 @@
       setTimeout(connect, Math.min(10000, 1000 * retry));
     };
   }
+
+  // 画面が見えているかをサーバーへ伝える（見えていない端末には、プッシュ通知が届く）
+  function sendVisible() { send({ type: 'visible', on: !document.hidden }); }
+  document.addEventListener('visibilitychange', sendVisible);
+  window.addEventListener('pagehide', () => send({ type: 'visible', on: false }));
+  window.addEventListener('pageshow', sendVisible);
 
   // ---- 添付 ----
   function renderPicked() {

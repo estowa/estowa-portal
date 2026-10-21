@@ -150,3 +150,22 @@ test('notifyRooms: 指定した人の全接続に rooms を送る', () => {
   assert.strictEqual(a.of('rooms').length, 1);
   assert.strictEqual(b.of('rooms').length, 0);
 });
+
+test('画面が見えていない接続（スマホのバックグラウンドなど）だけの人は、プッシュ通知の対象になる', () => {
+  const calls = [];
+  const { hub, db } = makeEnv({ onOfflineMessage: (m, offline) => calls.push(offline) });
+  const a = fakeSocket(), bPc = fakeSocket(), bPhone = fakeSocket();
+  hub.connect('a', a); hub.connect('b', bPc); hub.connect('b', bPhone);
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  send(hub, 'a', a, { type: 'chat', room: room.id, body: '1' });
+  assert.deepStrictEqual(calls, []);                          // 見えている接続があれば、通知しない
+  send(hub, 'b', bPc, { type: 'visible', on: false });
+  send(hub, 'a', a, { type: 'chat', room: room.id, body: '2' });
+  assert.deepStrictEqual(calls, []);                          // もう1つが見えているので、まだ通知しない
+  send(hub, 'b', bPhone, { type: 'visible', on: false });
+  send(hub, 'a', a, { type: 'chat', room: room.id, body: '3' });
+  assert.deepStrictEqual(calls, [['b']]);                     // どれも見えていなければ通知する
+  send(hub, 'b', bPc, { type: 'visible', on: true });
+  send(hub, 'a', a, { type: 'chat', room: room.id, body: '4' });
+  assert.strictEqual(calls.length, 1);                        // 見えるようになれば、また通知しない
+});
