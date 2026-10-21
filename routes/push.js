@@ -2,6 +2,7 @@
 const express = require('express');
 const db = require('../db/connection');
 const push = require('../lib/push');
+const badge = require('../lib/badge');
 const { requireLogin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -24,6 +25,12 @@ router.get('/notifications', requireLogin, (req, res) => {
     },
     saved: req.query.saved === '1',
   });
+});
+
+// アイコンの赤い数字（未読の合計）。アプリに戻ったときに取り直す
+router.get('/badge', requireLoginJson, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ count: badge.unreadTotalSafe(db, req.session.user.user_id) || 0 });
 });
 
 router.post('/push/subscribe', requireLoginJson, json, (req, res) => {

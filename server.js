@@ -83,6 +83,8 @@ app.use((req, res, next) => {
   // DBのUTC日時を、画面では日本時間で表示する
   res.locals.formatJst = formatJst;
   res.locals.linkify = linkify;
+  // ホーム画面アイコンの赤い数字。画面の最後（フッター）で数えるので、開いたお知らせ・タスクは含まれない
+  res.locals.unreadBadge = () => (req.session.user ? require('./lib/badge').unreadTotalSafe(db, req.session.user.user_id) : null);
   next();
 });
 

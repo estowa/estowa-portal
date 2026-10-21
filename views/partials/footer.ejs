@@ -1,5 +1,25 @@
   </main>
 </div>
+<% if (currentUser) { %>
+<script>
+  // ホーム画面アイコンの赤い数字（未読の合計）。対応していない端末では何もしない
+  (function () {
+    function setBadge(n) {
+      if (!navigator.setAppBadge) return;
+      var op = n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge();
+      if (op && op.catch) op.catch(function () {});
+    }
+    setBadge(<%= (typeof unreadBadge === 'function' ? Number(unreadBadge()) : 0) || 0 %>);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible') return;
+      fetch('/badge', { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j) setBadge(j.count); })
+        .catch(function () {});
+    });
+  })();
+</script>
+<% } %>
 <script>
   // Service Worker（通知の受信・オフライン案内）。失敗しても画面の動作には影響しない
   if ('serviceWorker' in navigator) {

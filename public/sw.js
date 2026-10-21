@@ -28,15 +28,26 @@ self.addEventListener('push', (event) => {
     data = { body: event.data ? event.data.text() : '' };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || 'estowaポータル', {
-      body: data.body || '',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      tag: data.tag || undefined,
-      data: { url: data.url || '/' },
-    })
+    Promise.all([
+      updateBadge(data.badge),
+      self.registration.showNotification(data.title || 'estowaポータル', {
+        body: data.body || '',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: data.tag || undefined,
+        data: { url: data.url || '/' },
+      }),
+    ])
   );
 });
+
+// アイコンの赤い数字（未読の合計）を更新する。0なら消す。対応していない端末では何もしない
+function updateBadge(count) {
+  const nav = self.navigator;
+  if (typeof count !== 'number' || !nav || !nav.setAppBadge) return Promise.resolve();
+  const op = count > 0 ? nav.setAppBadge(count) : nav.clearAppBadge();
+  return Promise.resolve(op).catch(() => {});
+}
 
 // 通知が押されたら、開いているアプリの画面を前に出して移動する。なければ新しく開く
 self.addEventListener('notificationclick', (event) => {

@@ -5,6 +5,7 @@ const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
 const mailer = require('../lib/mailer');
 const push = require('../lib/push');
+const badge = require('../lib/badge');
 const { avatarFor } = require('../lib/avatar');
 const { createUploader } = require('../lib/uploads');
 const { formatJst, nowJstDateTimeStr } = require('../lib/jst');
@@ -413,6 +414,8 @@ function renderTaskDetail(req, res, taskId, { error = null, uploadError = null, 
 
 // タスク詳細・編集画面
 router.get('/tasks/:id', requireLogin, (req, res) => {
+  // 開いたら「見た」ことにする（アイコンの赤い数字から外れる）
+  badge.markTaskSeen(db, req.session.user.user_id, req.params.id);
   renderTaskDetail(req, res, req.params.id, { uploadError: req.query.uploadError || null });
 });
 
