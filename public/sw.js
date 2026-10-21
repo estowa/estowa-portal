@@ -35,6 +35,7 @@ self.addEventListener('push', (event) => {
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
         tag: data.tag || undefined,
+        requireInteraction: data.tag === 'call', // 着信は、押すまで消さない（PC）
         data: { url: data.url || '/' },
       }),
     ])

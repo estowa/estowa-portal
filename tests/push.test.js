@@ -58,7 +58,7 @@ test('同じ端末を別ユーザーで登録すると付け替わる。解除�
 
 test('設定の初期値は全部オン。保存した設定が優先される', () => {
   const db = makeDb();
-  assert.deepStrictEqual(push.getPrefs(db, 'a'), { task_added: true, task_moved: true, chat_new: true, announcement_new: true });
+  assert.deepStrictEqual(push.getPrefs(db, 'a'), { task_added: true, task_moved: true, chat_new: true, announcement_new: true, call_incoming: true });
   push.setPrefs(db, 'a', { task_added: false, chat_new: true });
   const p = push.getPrefs(db, 'a');
   assert.strictEqual(p.task_added, false);
@@ -92,6 +92,7 @@ test('タスク移動・お知らせ・チャットの中身（長いタイト�
   assert.strictEqual(ann.url, '/announcements/3');
   const chat = push.buildChatPayload('山田');
   assert.strictEqual(chat.body, '山田さんからメッセージがあります');
+  assert.strictEqual(push.buildCallPayload('山田').body, '山田さんから通話です。ポータルを開いて応答してください');
   assert.strictEqual(push.buildChatPayload('山田', 'デザイン班').body, 'デザイン班に新着メッセージがあります');
   assert.ok(!JSON.stringify(push.buildChatPayload('山田', 'デザイン班')).includes('山田'));
 });

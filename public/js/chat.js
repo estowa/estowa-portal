@@ -41,7 +41,7 @@
   let retry = 0;
   let ready = false;
   const readyHandlers = [];
-  const handlers = { signal: [], ptt: [], presence: [] };
+  const handlers = { signal: [], ptt: [], presence: [], call: [], open: [] };
   const baseTitle = document.title;
 
   // 本文は必ず textContent で入れる（HTMLとして解釈させない）
@@ -282,6 +282,7 @@
       retry = 0;
       showError('');
       sendViewing();
+      handlers.open.forEach((h) => h());
       if (active) { // 切断中の取りこぼしを読み直す（未読の数も、サーバーの値に取り直す）
         refreshState().then(() => {
           const g = state.groups.find((x) => x.room_id === active);
@@ -302,6 +303,7 @@
         handlers.presence.forEach((h) => h(online));
       } else if (msg.type === 'signal') handlers.signal.forEach((h) => h(msg.from, msg.data));
       else if (msg.type === 'ptt') handlers.ptt.forEach((h) => h(msg.from, msg.on));
+      else if (msg.type === 'call') handlers.call.forEach((h) => h(msg));
       else if (msg.type === 'error') showError(errText(msg.code));
     };
     ws.onclose = () => {
@@ -546,6 +548,8 @@
     onReady: (h) => { readyHandlers.push(h); if (ready) h(); },
     onSignal: (h) => handlers.signal.push(h),
     onPtt: (h) => handlers.ptt.push(h),
+    onCall: (h) => handlers.call.push(h),
+    onOpen: (h) => handlers.open.push(h),
     onPresence: (h) => handlers.presence.push(h),
     isOnline: (userId) => !!online[userId],
     onlineCid: (userId) => online[userId],

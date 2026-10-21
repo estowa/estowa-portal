@@ -1336,6 +1336,19 @@ table.sheet-table.readonly td {
 .chat-dialog-actions .chat-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 .chat-dialog-actions .chat-leave-btn { margin-right: auto; color: #e0245e; border-color: #e0245e; }
 .voice-panel { margin-top: 16px; }
+.voice-call { border-radius: 10px; padding: 12px 14px; margin: 8px 0; background: #eef0f6; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.voice-call.ringing { background: #fff4d6; animation: voice-ring 1s ease-in-out infinite; }
+.voice-call.active { background: #e8f7ec; }
+.voice-call[hidden] { display: none; }
+.voice-call-text { font-size: 15px; font-weight: 700; flex: 1 1 auto; }
+.voice-call-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.voice-call-actions button { min-height: 40px; padding: 0 16px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: #fff; font-size: 14px; }
+.voice-call-actions button[hidden] { display: none; }
+.voice-call-actions .voice-accept { background: #1d9b4a; border-color: #1d9b4a; color: #fff; font-weight: 700; }
+.voice-call-actions .voice-decline, .voice-call-actions .voice-end { background: #e0245e; border-color: #e0245e; color: #fff; }
+.voice-call-actions .voice-mic.on { background: #6b7080; border-color: #6b7080; color: #fff; }
+@keyframes voice-ring { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.5); } 50% { box-shadow: 0 0 0 6px rgba(255, 170, 0, 0); } }
+@media (prefers-reduced-motion: reduce) { .voice-call.ringing { animation: none; } }
 .voice-peers .chat-peer { max-width: 360px; }
 .voice-peers .talk-btn { margin-left: auto; }
 
