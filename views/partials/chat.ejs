@@ -17,10 +17,10 @@
       <div class="chat-error" id="chat-error" hidden></div>
       <div class="chat-picked" id="chat-picked" hidden></div>
       <form class="chat-form" id="chat-form">
-        <label class="chat-attach" title="ファイルや画像を添付（1ファイル10MBまで、5つまで）">
+        <label class="chat-attach" title="ファイルや画像を添付（1ファイル10MBまで、5つまで。PCでは、チャット画面へドラッグしても添付できます）">
           <input type="file" id="chat-file" multiple hidden />📎
         </label>
-        <input type="text" id="chat-input" maxlength="2000" autocomplete="off" placeholder="メッセージを入力" disabled />
+        <textarea id="chat-input" rows="1" maxlength="2000" autocomplete="off" placeholder="メッセージを入力（Enterは改行。送信は右のボタン）" disabled></textarea>
         <button type="submit" id="chat-send" disabled>送信</button>
       </form>
     </div>

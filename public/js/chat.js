@@ -319,9 +319,9 @@
   }
   function clearPicked() { picked = []; fileEl.value = ''; renderPicked(); }
 
-  fileEl.addEventListener('change', () => {
+  function addFiles(list) {
     showError('');
-    for (const f of Array.from(fileEl.files)) {
+    for (const f of Array.from(list)) {
       const ext = (f.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
       if (BLOCKED_EXT.includes(ext)) { showError(f.name + ' は添付できない種類です'); continue; }
       if (f.size > MAX_FILE_SIZE) { showError(f.name + ' は大きすぎます（1ファイル10MBまで）'); continue; }
@@ -330,7 +330,44 @@
     }
     fileEl.value = '';
     renderPicked();
+  }
+  fileEl.addEventListener('change', () => addFiles(fileEl.files));
+
+  // PC: チャット画面へのドラッグ＆ドロップでも添付できる（会話を開いているときだけ）
+  const threadEl = document.querySelector('.chat-thread');
+  const hint = el('div', 'chat-drop-hint', 'ここにドロップして添付');
+  threadEl.appendChild(hint);
+  let dragDepth = 0;
+  const hasFiles = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  threadEl.addEventListener('dragenter', (e) => {
+    if (!hasFiles(e) || !active) return;
+    e.preventDefault();
+    dragDepth += 1;
+    threadEl.classList.add('drag-over');
   });
+  threadEl.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+  threadEl.addEventListener('dragleave', (e) => {
+    if (!hasFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) threadEl.classList.remove('drag-over');
+  });
+  threadEl.addEventListener('drop', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); // ブラウザがファイルを開いてしまうのを防ぐ
+    dragDepth = 0;
+    threadEl.classList.remove('drag-over');
+    if (!active) return showError('先に、相手かグループを選んでください');
+    addFiles(e.dataTransfer.files);
+  });
+
+  // メッセージ欄: Enterは改行（送信は「送信」ボタン）。入力に合わせて高さを広げる
+  function fitInput() {
+    inputEl.style.height = 'auto';
+    const border = inputEl.offsetHeight - inputEl.clientHeight; // 枠線の分（これを足さないと、1行でもスクロールバーが出る）
+    inputEl.style.height = Math.min(inputEl.scrollHeight + border, 140) + 'px';
+  }
+  inputEl.addEventListener('input', fitInput);
+  fitInput();
 
   formEl.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -339,6 +376,7 @@
     if (picked.length === 0) {
       send({ type: 'chat', room: active, body });
       inputEl.value = '';
+      fitInput();
       return;
     }
     // 添付があるときはHTTPで送る（配信は、サーバーが他の人と自分の画面へ行う）
@@ -351,6 +389,7 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return showError(data.message || errText(data.error));
       inputEl.value = '';
+      fitInput();
       clearPicked();
       showError('');
       if (data.message && data.message.room_id === active) appendMessage(data.message);
