@@ -113,6 +113,9 @@ test('既読にすると未読が消える。メンバーでない部屋の既�
   const room = store.getOrCreateDm(db, 'a', 'b');
   send(hub, 'a', a, { type: 'chat', room: room.id, body: 'x' });
   assert.strictEqual(store.totalUnread(db, 'b'), 1);
+  send(hub, 'b', b, { type: 'read', room: room.id });          // 見ていない（隠れたタブなど）ので既読にならない
+  assert.strictEqual(store.totalUnread(db, 'b'), 1);
+  send(hub, 'b', b, { type: 'viewing', room: room.id });
   send(hub, 'b', b, { type: 'read', room: room.id });
   assert.strictEqual(store.totalUnread(db, 'b'), 0);
   send(hub, 'home', home, { type: 'read', room: room.id });

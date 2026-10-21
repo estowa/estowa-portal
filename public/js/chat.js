@@ -15,6 +15,7 @@
   const totalEl = document.getElementById('chat-total-unread');
   const settingsBtn = document.getElementById('chat-group-settings');
   const newGroupBtn = document.getElementById('chat-new-group');
+  const chatBodyEl = document.getElementById('chat-body');
 
   const MAX_FILES = 5;
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -207,14 +208,21 @@
     }, 600);
   }
 
+  function activeEntry() {
+    return state.groups.find((x) => x.room_id === active) || state.dms.find((x) => x.room_id === active) || null;
+  }
   function setUnread(roomId, n) {
     const g = state.groups.find((x) => x.room_id === roomId);
     if (g) g.unread = n;
     const d = state.dms.find((x) => x.room_id === roomId);
     if (d) d.unread = n;
   }
+  // 画面が見えていて、チャットを開いていて、その部屋を表示しているときだけ「見ている」
+  function isViewing() {
+    return !!active && !document.hidden && !chatBodyEl.hidden;
+  }
   function markActiveRead() {
-    if (!active) return;
+    if (!isViewing()) return;
     setUnread(active, 0);
     send({ type: 'read', room: active });
     updateUnreadViews();
@@ -225,7 +233,12 @@
     const mine = m.sender_id === state.me.user_id;
     if (m.room_id === active) {
       appendMessage(m);
-      if (!mine) markActiveRead();
+      if (mine) return;
+      if (isViewing()) return markActiveRead();
+      // 見ていない（隠れている・たたんでいる）ときは、未読のまま数える
+      setUnread(active, (activeEntry() || { unread: 0 }).unread + 1);
+      renderLists();
+      refreshBadgeSoon();
       return;
     }
     if (mine) return;
@@ -247,11 +260,13 @@
       retry = 0;
       showError('');
       sendViewing();
-      if (active) { // 切断中の取りこぼしを読み直す
-        const g = state.groups.find((x) => x.room_id === active);
-        const d = state.dms.find((x) => x.room_id === active);
-        if (g) openRoom(g.room_id, g.name, true);
-        else if (d) openRoom(d.room_id, d.display_name + ' さんとのチャット', false);
+      if (active) { // 切断中の取りこぼしを読み直す（未読の数も、サーバーの値に取り直す）
+        refreshState().then(() => {
+          const g = state.groups.find((x) => x.room_id === active);
+          const d = state.dms.find((x) => x.room_id === active);
+          if (g) openRoom(g.room_id, g.name, true);
+          else if (d) openRoom(d.room_id, d.display_name + ' さんとのチャット', false);
+        });
       }
     };
     ws.onmessage = (ev) => {
@@ -278,10 +293,10 @@
   }
 
   // 「今この部屋を見ている」ことをサーバーへ伝える。見ていない部屋のメッセージは、PCを開いていてもプッシュ通知が届く
-  const chatBodyEl = document.getElementById('chat-body');
   function sendViewing() {
     const viewing = active && !document.hidden && !chatBodyEl.hidden;
     send({ type: 'viewing', room: viewing ? active : null });
+    if (viewing) markActiveRead(); // 隠れていた画面を見た・チャットをひらいた、その時点で既読にする
   }
   document.addEventListener('visibilitychange', sendViewing);
   window.addEventListener('pagehide', () => send({ type: 'viewing', room: null }));
