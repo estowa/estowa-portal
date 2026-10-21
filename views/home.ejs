@@ -1,5 +1,6 @@
 <%- include('partials/header') %>
 
+<div class="home-stack">
 <div class="kpi-grid">
   <div class="kpi-card has-chip">
     <span class="chip chip-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 15 4-4 3 3 5-6"/></svg></span>
@@ -47,7 +48,7 @@
     <%- include('partials/chat') %>
     <%- include('partials/voice') %>
 
-    <div class="panel">
+    <div class="panel home-announce">
       <h2 class="has-chip"><span class="h-chip chip-lavender"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 5.5 2 7.5 2 7.5H4S6 13.5 6 8Z"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg></span>お知らせ <a href="/announcements" style="font-size:12px; font-weight:400; color:var(--primary); margin-left:auto;">すべて見る →</a></h2>
       <% if (announcements.length === 0) { %>
         <div class="empty-note">現在お知らせはありません。<a href="/announcements">お知らせ一覧へ →</a></div>
@@ -61,7 +62,7 @@
       <% } %>
     </div>
 
-    <div class="panel">
+    <div class="panel home-tasks">
       <h2 class="has-chip"><span class="h-chip chip-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 10 2 2 4-4"/><path d="M8.5 16h7"/></svg></span>直近の個人タスク</h2>
       <% if (myTasks.length === 0) { %>
         <div class="empty-note">未完了のタスクはありません。<a href="/tasks">タスク管理を開く →</a></div>
@@ -77,7 +78,7 @@
   </div>
 
   <div>
-    <div class="panel">
+    <div class="panel home-members">
       <% if (user.role === 'admin') { %>
         <h2 class="has-chip"><span class="h-chip chip-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>本日のメンバー出勤状況</h2>
         <% if (teamAttendanceToday.length === 0) { %>
@@ -105,7 +106,7 @@
       <% } %>
     </div>
 
-    <div class="panel">
+    <div class="panel home-calendar">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h2 class="has-chip" style="margin:0;"><span class="h-chip chip-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M3 10h18"/></svg></span>イベントカレンダー</h2>
         <div style="display:flex; gap:6px;">
@@ -139,6 +140,7 @@
       <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">追加・編集は<a href="/sales#events" style="color:var(--primary);">EC関連ページ</a>から行えます。</div>
     </div>
   </div>
+</div>
 </div>
 
 <%- include('partials/footer') %>

@@ -24,9 +24,16 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input type="search" name="q" placeholder="タスク・お知らせ・ナレッジ・アイディアを検索" aria-label="全体検索" autocomplete="off" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>" />
   </form>
+  <% const nbTop = (typeof unreadBreakdown === 'function' && currentUser) ? unreadBreakdown() : null; %>
+  <% const nbTotal = nbTop ? (nbTop.chat + nbTop.tasks + nbTop.announcements) : 0; %>
+  <button type="button" class="menu-toggle" id="menu-toggle" aria-label="メニュー" aria-expanded="false" aria-controls="app-sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+    <span class="menu-toggle-badge" id="menu-toggle-badge" <%= nbTotal > 0 ? '' : 'hidden' %>><%= nbTotal > 99 ? '99+' : nbTotal %></span>
+  </button>
 </header>
+<div class="menu-backdrop" id="menu-backdrop" hidden></div>
 <div class="app-layout">
-  <aside class="sidebar">
+  <aside class="sidebar" id="app-sidebar">
     <% const nb = (typeof unreadBreakdown === 'function' && currentUser) ? unreadBreakdown() : null; %>
     <% const badgeText = (n) => (n > 99 ? '99+' : String(n)); %>
     <a class="nav-item" href="/" title="ホーム">

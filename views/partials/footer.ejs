@@ -17,6 +17,12 @@
         el.textContent = n > 99 ? '99+' : String(n);
         el.hidden = n <= 0;
       });
+      var tb = document.getElementById('menu-toggle-badge');
+      if (tb) {
+        var t = (Number(j.chat) || 0) + (Number(j.tasks) || 0) + (Number(j.announcements) || 0);
+        tb.textContent = t > 99 ? '99+' : String(t);
+        tb.hidden = t <= 0;
+      }
     }
     window.refreshAppBadge = function () {
       fetch('/badge', { credentials: 'same-origin' })
@@ -56,6 +62,22 @@
       }
     }
   });
+
+  // スマホ: ハンバーガーメニューの開閉
+  (function () {
+    const btn = document.getElementById('menu-toggle');
+    const back = document.getElementById('menu-backdrop');
+    if (!btn) return;
+    function setOpen(open) {
+      document.body.classList.toggle('menu-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (back) back.hidden = !open;
+    }
+    btn.addEventListener('click', () => setOpen(!document.body.classList.contains('menu-open')));
+    if (back) back.addEventListener('click', () => setOpen(false));
+    document.querySelectorAll('.sidebar a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+  })();
 
   // 現在のページに応じてサイドバーのハイライトを切り替え
   (function () {
