@@ -90,19 +90,8 @@ better-sqlite3はWALモードを使うため、サーバープロセスを止め
   せず、都度自由入力（候補はdatalistで過去のカテゴリを表示）にしている。
 - **リンク色**: クリックできるタイトルは`.link-title`クラス（`var(--primary)`色）
   で統一している。新しい一覧を作る際もこれに合わせる。
-- **チャット・音声**: ホーム画面の`partials/chat.ejs`＋`public/js/chat.js`・`voice.js`。
-  サーバーは`lib/chatSocket.js`（ws、`/ws/chat`、既存セッションで認証）→`lib/chatHub.js`
-  （接続管理・中継）。会話できるのは「在宅フラグ（`users.is_remote`、常に1人）の人 ↔
-  その他の各人」のみで、判定は`lib/chatRules.js`の`canPair`に集約している（社内同士は
-  サーバー側で拒否）。音声は在宅側が各社内の人へWebRTCを1本ずつ常時接続し、「話す」を
-  クリックで話し始め、もう一度クリックで終わる間だけ送信トラックを差し込む（5分で自動停止。
-  録音・保存はしない）。受信音声は相手が話して
-  いる間だけ鳴らし、「消音」で話しかけられても鳴らさない設定もできる。複数タブで開いた
-  場合、音声の接続情報は最新のタブにだけ届く。チャットはホーム画面を開いている間だけ動く。
-  TURNは`.env`の`TURN_URL`/`TURN_USER`/`TURN_PASS`で設定（未設定ならSTUNのみ。
-  別回線同士で繋がらない場合はTURNが必要）。HTTPS必須（マイク利用のため）。
-  VPSでnginx等のリバースプロキシを使う場合は`/ws/chat`にUpgradeヘッダーを通す設定が必要。
-  ローカル確認用のダミーアカウントは`node db/seed-chat-dummy.js`（本番では実行不可）。
+- **チャット**（2026-10-21に全面改訂）: ホーム画面の`partials/chat.ejs`＋`public/js/chat.js`。**社内の全員が、全員と1対1で話せ、グループも作れ、ファイル・画像を添付できる**（在宅かどうかは関係ない）。テーブルは`lib/chatSchema.js`（`chat_rooms`＝部屋（`kind`は`dm`/`group`）、`chat_members`＝メンバーと既読位置（`last_read_id`）、`chat_msgs`、`chat_files`）。保存・権限は`lib/chatStore.js`に集約（メンバーでない人は、送信・履歴・添付の取得すべて拒否）。1対1の部屋は、初めて開いたときに作る（`dm_key`で同じ2人は同じ部屋）。グループは**誰でも作れ**、メンバーなら誰でも追加・名前変更でき、抜けるのは本人だけ（追加された人は追加前の発言も読めるが、未読にはしない）。未読は「部屋の既読位置より後の、他人の発言」の数で、自分の発言では既読にならない。旧`chat_messages`は消さずに残し、起動時に1対1の部屋へ一度だけ引き継ぐ（未読の位置も保つ）。WebSocket（`lib/chatSocket.js`→`lib/chatHub.js`）は、文字の送信（`{type:'chat', room, body}`）・既読（`{type:'read', room}`）・オンライン状態（つながっている全員）・部屋の変更通知（`rooms`）・通話の中継を担う。添付つきの送信はHTTP（`POST /chat/rooms/:id/messages`、multipart、1ファイル10MB・5つまで、`lib/uploads.js`の拒否拡張子あり）で行い、保存後に`lib/chatBus.js`経由でハブが配る。添付の実体は`db/chat-files/`（`public/`の外・Git管理外）に置き、`GET /chat/files/:id`で部屋のメンバーだけに渡す（画像png/jpg/gif/webpのみ画面内表示、それ以外は保存。`nosniff`とCSPつき）。**本番のバックアップ（`~/backup.sh`）は`public/uploads`と`db/estowa.db`だけなので、`db/chat-files/`を足す必要がある**。プッシュ通知は、接続のない人だけに送り、本文は載せない（1対1は「○○さんから」、グループは「グループ名に新着」）。
+- **通話**（チャットとは別のパネル。`partials/voice.ejs`＋`public/js/voice.js`）: 会話できるのは「在宅フラグ（`users.is_remote`、常に1人）の人 ↔ その他の各人」のみで、判定は`lib/chatRules.js`の`canPair`（社内同士はサーバー側で拒否）。通話の相手一覧は`/chat/state`の`voicePeers`。音声は在宅側が各社内の人へWebRTCを1本ずつ常時接続し、「話す」をクリックで話し始め、もう一度クリックで終わる間だけ送信トラックを差し込む（5分で自動停止。録音・保存はしない）。受信音声は相手が話している間だけ鳴らし、「消音」で話しかけられても鳴らさない設定もできる。複数タブで開いた場合、音声の接続情報は最新のタブにだけ届く。WebSocketは`chat.js`が持ち、`window.estowaChat`（`onReady`/`onSignal`/`onPtt`/`onPresence`など）経由で`voice.js`が使う。TURNは`.env`の`TURN_URL`/`TURN_USER`/`TURN_PASS`で設定（未設定ならSTUNのみ。別回線同士で繋がらない場合はTURNが必要）。HTTPS必須（マイク利用のため）。VPSでnginx等のリバースプロキシを使う場合は`/ws/chat`にUpgradeヘッダーを通す設定が必要。nginxの`client_max_body_size`は20m設定済み（10MBの添付が通る）。ローカル確認用のダミーアカウントは`node db/seed-chat-dummy.js`（本番では実行不可）。
 - **サイト保守（自動確認）**: `lib/siteCheckRunner.js` が、起動1分後と6時間おきに、登録サイトのURLへ外から1回アクセスし、応答・応答時間・SSL証明書の期限を保存する（ドメイン期限は、取れていれば20時間ごと・取れていなければ1時間ごとに、1件ずつ順に取得。`.com`/`.net` は登録元Verisignの公開RDAPへ直接、`.jp` は日本レジストリ（JPRS）のWHOIS、その他は rdap.org へ、ドメイン名だけを送る。rdap.org は短時間に続けると429で断るため、`.com`/`.net` では使わない。`guidebook.jp` など他社の共有ドメインは問い合わせない＝`DOMAIN_LOOKUP_SKIP`）。本文は保存しない。内部アドレス（127.x・10.x・169.254.x・::1 など）と、そこへの転送には、接続しない（`lib/siteChecker.js` の `isBlockedAddress` / `safeLookup`）。`allowPrivate` はテスト専用で、本番のコードから渡さない。ログインが必要な情報（更新状況・バックアップ日）は取得せず、「点検記録」の手入力から出す。メンバーも閲覧できるため、運用状況だけを置き、侵入経路・不審ファイルの詳細・アカウント情報・個人情報は書かない。`SITE_CHECK_DISABLED=1` で、定期確認を止められる。
 
 - **PWA・プッシュ通知**（2026-10-21追加）: `public/manifest.webmanifest`・`public/sw.js`（通知の受信とオフライン案内。画面のデータは保存しない）・`public/icons/`。全ページの`partials/header.ejs`で読み込み、`partials/footer.ejs`でService Workerを登録。通知の中身・送信は`lib/push.js`（`db`を引数で受ける。`notify(db, 種類, 候補ユーザー, 中身, 除く本人)`）、テーブルは`lib/pushSchema.js`（起動時と`db/init.js`で作成）、設定ページは`/notifications`（`routes/push.js`）、ホーム画面への追加の案内は`/install`。通知の種類: タスク追加（担当者へ）・タスクのステータス変更（担当者+作成者へ）・新着お知らせ（全員へ）・チャット新着（相手がチャットを開いていないときだけ、本文は載せず「誰から」だけ）。いずれも操作した本人には送らず、各自が種類ごとにオン・オフできる（初期は全部オン）。鍵（VAPID）は`.env`の`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`（`node scripts/make-vapid-keys.js`で作る。ローカルと本番で別々）。`PUSH_DISABLED=1`で送信を止められる。iPhoneはホーム画面に追加したアイコンから開いたときだけ通知が届く。通知の送信失敗で、元の操作（タスク保存など）は失敗させない。
@@ -117,7 +106,7 @@ better-sqlite3はWALモードを使うため、サーバープロセスを止め
 外注先リスト（カテゴリ別色分け）/ 共有シートリンク集 / 商品粗利表（表計算、Excel
 インポート/エクスポート）/ EC売上ダッシュボード（ROBOTIN CSV取り込み、モール別
 集計）/ 勤怠（個人の出退勤打刻、管理者向けメンバー別CSVダウンロード）/
-ホーム画面のチャット・トランシーバー音声（在宅×社内、音量・消音）/ 全体検索（ヘッダーの窓。`lib/search.js`、`/search`）/ サイト保守ダッシュボード（管理しているWordPressサイトの稼働・SSL期限・ドメイン期限・バックアップ・点検を一覧。`routes/maintenance.js`、`lib/maintenance*.js`・`lib/siteChecker.js`。自動確認は外から見える情報だけで、サイトの認証情報は持たない。閲覧は全員・編集は管理者のみ）/ ユーザー管理・プロフィール（アバター設定）。
+ホーム画面のチャット（全員との1対1・グループ・添付）と、別パネルの通話（在宅×社内のトランシーバー音声、音量・消音）/ 全体検索（ヘッダーの窓。`lib/search.js`、`/search`）/ サイト保守ダッシュボード（管理しているWordPressサイトの稼働・SSL期限・ドメイン期限・バックアップ・点検を一覧。`routes/maintenance.js`、`lib/maintenance*.js`・`lib/siteChecker.js`。自動確認は外から見える情報だけで、サイトの認証情報は持たない。閲覧は全員・編集は管理者のみ）/ ユーザー管理・プロフィール（アバター設定）。
 
 ## 保留中の項目
 
@@ -128,7 +117,7 @@ better-sqlite3はWALモードを使うため、サーバープロセスを止め
 
 ## テスト方法
 
-自動テストは`npm test`（`node:test`、`tests/`配下）。チャットの権限・保存・中継のみ
+自動テストは`npm test`（`node:test`、`tests/`配下）。チャットの保存・権限・中継（`chatStore`/`chatHub`など）のみ
 カバーしている。それ以外は、変更後にローカルで一時サーバーを立て、curlまたは
 Playwright（Chromiumは`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`）で
 実際に操作して確認してから報告する運用にしている。

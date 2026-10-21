@@ -1,0 +1,13 @@
+<div class="panel voice-panel" id="voice-root" hidden>
+  <h2 class="has-chip"><span class="h-chip chip-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg></span>通話（在宅の人 ⇔ 社内）</h2>
+  <div class="voice-bar">
+    <button type="button" id="voice-enable" class="voice-enable">音声ON</button>
+    <label class="voice-volume">音量 <input type="range" id="voice-volume" min="0" max="100" value="80" /></label>
+    <button type="button" id="voice-mute" class="voice-mute" aria-pressed="false">消音</button>
+    <span class="voice-note" id="voice-note">先に「音声ON」を押してください。PCのミュートを解除し、音量を上げておいてください。</span>
+  </div>
+  <div class="voice-speaking" id="voice-speaking" hidden></div>
+  <div class="voice-error" id="voice-error" hidden></div>
+  <ul class="chat-peers voice-peers" id="voice-peers"></ul>
+</div>
+<script src="/js/voice.js"></script>

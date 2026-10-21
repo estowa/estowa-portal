@@ -9,56 +9,161 @@ function makeDb() {
   db.exec(`CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL DEFAULT 'x', display_name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member')`);
+  for (const uid of ['home', 'a', 'b', 'c']) {
+    db.prepare('INSERT INTO users (user_id, display_name) VALUES (?, ?)').run(uid, uid + 'さん');
+  }
   ensureChatSchema(db);
   return db;
 }
 
-test('保存した本文は前後の空白が除かれ、JST表示の時刻が付く', () => {
+test('1対1は社内同士でも作れ、同じ組み合わせは同じ部屋になる', () => {
   const db = makeDb();
-  const m = store.saveMessage(db, 'home', 'a', '  こんにちは  ');
+  const r1 = store.getOrCreateDm(db, 'a', 'b');
+  const r2 = store.getOrCreateDm(db, 'b', 'a');
+  assert.strictEqual(r1.id, r2.id);
+  assert.deepStrictEqual(store.memberIds(db, r1.id).sort(), ['a', 'b']);
+  assert.throws(() => store.getOrCreateDm(db, 'a', 'a'), /forbidden/);
+  assert.throws(() => store.getOrCreateDm(db, 'a', 'nobody'), /forbidden/);
+});
+
+test('保存した本文は前後の空白が除かれ、送信者名とJST時刻が付く', () => {
+  const db = makeDb();
+  const room = store.getOrCreateDm(db, 'home', 'a');
+  const m = store.saveMessage(db, room.id, 'home', '  こんにちは  ');
   assert.strictEqual(m.body, 'こんにちは');
-  assert.strictEqual(m.sender_id, 'home');
-  assert.strictEqual(m.read, false);
+  assert.strictEqual(m.sender_name, 'homeさん');
+  assert.deepStrictEqual(m.files, []);
   assert.match(m.created_at, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
 });
 
-test('空と2000文字超は拒否する', () => {
+test('空・2000文字超は拒否。ただし添付があれば本文は空でもよい', () => {
   const db = makeDb();
-  assert.throws(() => store.saveMessage(db, 'home', 'a', '   '), /empty/);
-  assert.throws(() => store.saveMessage(db, 'home', 'a', undefined), /empty/);
-  assert.throws(() => store.saveMessage(db, 'home', 'a', 'あ'.repeat(2001)), /too_long/);
-  assert.doesNotThrow(() => store.saveMessage(db, 'home', 'a', 'あ'.repeat(2000)));
+  const room = store.getOrCreateDm(db, 'home', 'a');
+  assert.throws(() => store.saveMessage(db, room.id, 'home', '   '), /empty/);
+  assert.throws(() => store.saveMessage(db, room.id, 'home', 'あ'.repeat(2001)), /too_long/);
+  assert.doesNotThrow(() => store.saveMessage(db, room.id, 'home', 'あ'.repeat(2000)));
+  const withFile = store.saveMessage(db, room.id, 'home', '', [{ originalName: '写真.PNG', storedName: 's1.png', size: 10 }]);
+  assert.strictEqual(withFile.body, '');
+  assert.deepStrictEqual(withFile.files.map((f) => [f.name, f.is_image]), [['写真.PNG', true]]);
+  const pdf = store.saveMessage(db, room.id, 'home', 'x', [{ originalName: 'a.pdf', storedName: 's2.pdf', size: 10 }]);
+  assert.strictEqual(pdf.files[0].is_image, false);
+  const six = Array.from({ length: 6 }, (_, i) => ({ originalName: `f${i}.txt`, storedName: `s${i}`, size: 1 }));
+  assert.throws(() => store.saveMessage(db, room.id, 'home', 'x', six), /too_many_files/);
+});
+
+test('メンバーでない人は送れない・読めない', () => {
+  const db = makeDb();
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  assert.throws(() => store.saveMessage(db, room.id, 'c', 'こそこそ'), /forbidden/);
+  assert.strictEqual(store.isMember(db, room.id, 'c'), false);
 });
 
 test('HTMLを含む本文もそのまま保存する（表示側でテキスト扱い）', () => {
   const db = makeDb();
-  const m = store.saveMessage(db, 'a', 'home', '<script>alert(1)</script>');
-  assert.strictEqual(m.body, '<script>alert(1)</script>');
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  assert.strictEqual(store.saveMessage(db, room.id, 'a', '<script>alert(1)</script>').body, '<script>alert(1)</script>');
 });
 
-test('一覧は2人の間の会話だけを古い順に返す', () => {
+test('一覧は部屋ごとに分かれ、limit件の最新分を古い順に返す', () => {
   const db = makeDb();
-  store.saveMessage(db, 'home', 'a', '1');
-  store.saveMessage(db, 'a', 'home', '2');
-  store.saveMessage(db, 'home', 'b', '別の人');
-  const list = store.listMessages(db, 'home', 'a');
-  assert.deepStrictEqual(list.map((m) => m.body), ['1', '2']);
+  const ab = store.getOrCreateDm(db, 'a', 'b');
+  const ac = store.getOrCreateDm(db, 'a', 'c');
+  for (let i = 1; i <= 5; i++) store.saveMessage(db, ab.id, 'a', String(i));
+  store.saveMessage(db, ac.id, 'a', '別の人');
+  assert.deepStrictEqual(store.listMessages(db, ab.id, 3).map((m) => m.body), ['3', '4', '5']);
+  assert.deepStrictEqual(store.listMessages(db, ac.id).map((m) => m.body), ['別の人']);
 });
 
-test('一覧はlimit件の最新分を返す', () => {
+test('グループ: 名前とメンバーの検証、作った人は自動で入る', () => {
   const db = makeDb();
-  for (let i = 1; i <= 5; i++) store.saveMessage(db, 'home', 'a', String(i));
-  assert.deepStrictEqual(store.listMessages(db, 'home', 'a', 3).map((m) => m.body), ['3', '4', '5']);
+  assert.throws(() => store.createGroup(db, 'a', '  ', ['b']), /name_required/);
+  assert.throws(() => store.createGroup(db, 'a', 'あ'.repeat(31), ['b']), /name_too_long/);
+  assert.throws(() => store.createGroup(db, 'a', 'チーム', []), /members_required/);
+  assert.throws(() => store.createGroup(db, 'a', 'チーム', ['a']), /members_required/);
+  assert.throws(() => store.createGroup(db, 'a', 'チーム', ['nobody']), /unknown_member/);
+  const g = store.createGroup(db, 'a', 'あ'.repeat(30), ['b', 'b', 'c']);
+  assert.deepStrictEqual(store.memberIds(db, g.id).sort(), ['a', 'b', 'c']);
 });
 
-test('未読数は受信者ごと・送信者ごとに数え、既読にすると減る', () => {
+test('グループ: メンバーだけが追加・名前変更・退出でき、追加された人は過去分が未読にならない', () => {
   const db = makeDb();
-  store.saveMessage(db, 'a', 'home', 'x');
-  store.saveMessage(db, 'a', 'home', 'y');
-  store.saveMessage(db, 'b', 'home', 'z');
-  store.saveMessage(db, 'home', 'a', '自分が送ったもの');
-  assert.deepStrictEqual(store.unreadCounts(db, 'home'), { a: 2, b: 1 });
-  store.markRead(db, 'home', 'a');
-  assert.deepStrictEqual(store.unreadCounts(db, 'home'), { b: 1 });
-  assert.deepStrictEqual(store.unreadCounts(db, 'a'), { home: 1 });
+  const g = store.createGroup(db, 'a', 'チーム', ['b']);
+  store.saveMessage(db, g.id, 'a', '追加前の発言');
+  assert.throws(() => store.addMembers(db, g.id, 'c', ['home']), /forbidden/);
+  assert.deepStrictEqual(store.addMembers(db, g.id, 'b', ['c', 'b']), ['c']);
+  assert.deepStrictEqual(store.unreadByRoom(db, 'c'), {});
+  assert.deepStrictEqual(store.unreadByRoom(db, 'b'), { [g.id]: 1 });
+  store.renameGroup(db, g.id, 'c', '新しい名前');
+  assert.strictEqual(store.getRoom(db, g.id).name, '新しい名前');
+  assert.throws(() => store.renameGroup(db, g.id, 'home', 'x'), /forbidden/);
+  store.leaveGroup(db, g.id, 'c');
+  assert.strictEqual(store.isMember(db, g.id, 'c'), false);
+  assert.throws(() => store.saveMessage(db, g.id, 'c', '抜けた後'), /forbidden/);
+});
+
+test('1対1の部屋に人を足したり、1対1から退出したりはできない', () => {
+  const db = makeDb();
+  const dm = store.getOrCreateDm(db, 'a', 'b');
+  assert.throws(() => store.addMembers(db, dm.id, 'a', ['c']), /forbidden/);
+  assert.throws(() => store.leaveGroup(db, dm.id, 'a'), /forbidden/);
+});
+
+test('未読は部屋ごと・人ごとに数え、自分の発言は数えず、既読で消える', () => {
+  const db = makeDb();
+  const dm = store.getOrCreateDm(db, 'a', 'home');
+  const g = store.createGroup(db, 'a', 'チーム', ['home', 'b']);
+  store.saveMessage(db, dm.id, 'a', 'x');
+  store.saveMessage(db, dm.id, 'a', 'y');
+  store.saveMessage(db, g.id, 'b', 'z');
+  store.saveMessage(db, dm.id, 'home', '自分の発言');
+  // 自分の発言は数えない。返信しただけでは、見ていない発言は既読にならない
+  assert.deepStrictEqual(store.unreadByRoom(db, 'home'), { [dm.id]: 2, [g.id]: 1 });
+  assert.strictEqual(store.totalUnread(db, 'a'), 2); // dmのhomeの発言1 + グループのbの発言1
+  store.markRead(db, g.id, 'a');
+  assert.strictEqual(store.totalUnread(db, 'a'), 1);
+  store.markRead(db, dm.id, 'home');
+  assert.deepStrictEqual(store.unreadByRoom(db, 'home'), { [g.id]: 1 });
+});
+
+test('画面用の一覧: 自分以外の全員の1対1と、入っているグループだけ', () => {
+  const db = makeDb();
+  const g1 = store.createGroup(db, 'a', 'Aのグループ', ['b']);
+  store.createGroup(db, 'b', '別のグループ', ['c']);
+  store.saveMessage(db, g1.id, 'b', 'こんにちは');
+  const { groups, dms } = store.listForUser(db, 'a');
+  assert.deepStrictEqual(groups.map((g) => [g.name, g.unread]), [['Aのグループ', 1]]);
+  assert.deepStrictEqual(dms.map((d) => d.user_id), ['home', 'b', 'c']);
+  assert.strictEqual(dms[0].room_id, null);
+});
+
+test('添付をダウンロードできるのは、その部屋のメンバーだけ', () => {
+  const db = makeDb();
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  const m = store.saveMessage(db, room.id, 'a', '', [{ originalName: 'a.pdf', storedName: 'x.pdf', size: 1 }]);
+  const fileId = m.files[0].id;
+  assert.strictEqual(store.getFileForUser(db, fileId, 'b').stored_name, 'x.pdf');
+  assert.strictEqual(store.getFileForUser(db, fileId, 'c'), null);
+});
+
+test('旧チャットの履歴は1対1の部屋へ一度だけ引き継がれ、未読の位置も保たれる', () => {
+  const db = new Database(':memory:');
+  db.exec(`CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL DEFAULT 'x', display_name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member')`);
+  for (const uid of ['home', 'a']) db.prepare('INSERT INTO users (user_id, display_name) VALUES (?, ?)').run(uid, uid);
+  // 旧スキーマだけを作り、旧データを入れる
+  db.exec(`CREATE TABLE chat_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id TEXT NOT NULL, receiver_id TEXT NOT NULL,
+    body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), read_at TEXT)`);
+  const ins = db.prepare('INSERT INTO chat_messages (sender_id, receiver_id, body, created_at, read_at) VALUES (?, ?, ?, ?, ?)');
+  ins.run('home', 'a', '1', '2026-10-01 00:00:00', '2026-10-01 00:01:00');
+  ins.run('a', 'home', '2', '2026-10-01 00:02:00', '2026-10-01 00:03:00');
+  ins.run('home', 'a', '3', '2026-10-01 00:04:00', null); // aにとって未読
+  ensureChatSchema(db);
+  ensureChatSchema(db); // 2回目は増えない
+  const dm = store.getOrCreateDm(db, 'home', 'a');
+  assert.deepStrictEqual(store.listMessages(db, dm.id).map((m) => m.body), ['1', '2', '3']);
+  assert.strictEqual(db.prepare('SELECT COUNT(*) c FROM chat_msgs').get().c, 3);
+  assert.deepStrictEqual(store.unreadByRoom(db, 'a'), { [dm.id]: 1 });
+  assert.deepStrictEqual(store.unreadByRoom(db, 'home'), {});
+  assert.strictEqual(db.prepare('SELECT COUNT(*) c FROM chat_messages').get().c, 3); // 旧データは残す
 });

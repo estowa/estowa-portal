@@ -45,11 +45,18 @@ test('お知らせ: 未読だけ数える。自分が投稿したものと既読
   assert.strictEqual(badge.unreadBreakdown(db, 'me').announcements, 1);
 });
 
-test('チャット: 自分宛ての未読だけ数える', () => {
+test('チャット: 自分宛ての未読だけ数える（1対1もグループも）', () => {
   const db = makeDb();
-  db.prepare("INSERT INTO chat_messages (sender_id, receiver_id, body) VALUES ('other','me','x'), ('other','me','y'), ('me','other','z')").run();
+  const chatStore = require('../lib/chatStore');
+  const dm = chatStore.getOrCreateDm(db, 'me', 'other');
+  chatStore.saveMessage(db, dm.id, 'other', 'x');
+  chatStore.saveMessage(db, dm.id, 'other', 'y');
+  chatStore.saveMessage(db, dm.id, 'me', 'z');
   assert.strictEqual(badge.unreadBreakdown(db, 'me').chat, 2);
-  db.prepare("UPDATE chat_messages SET read_at = datetime('now') WHERE body = 'x'").run();
+  chatStore.markRead(db, dm.id, 'me');
+  assert.strictEqual(badge.unreadBreakdown(db, 'me').chat, 0);
+  const g = chatStore.createGroup(db, 'other', 'チーム', ['me']);
+  chatStore.saveMessage(db, g.id, 'other', 'g');
   assert.strictEqual(badge.unreadBreakdown(db, 'me').chat, 1);
 });
 
@@ -90,7 +97,8 @@ test('合計と、数えられないときのnull', () => {
   const db = makeDb();
   addTask(db);
   db.prepare("INSERT INTO announcements (title, created_by) VALUES ('a','other')").run();
-  db.prepare("INSERT INTO chat_messages (sender_id, receiver_id, body) VALUES ('other','me','x')").run();
+  const chatStore = require('../lib/chatStore');
+  chatStore.saveMessage(db, chatStore.getOrCreateDm(db, 'me', 'other').id, 'other', 'x');
   assert.strictEqual(badge.unreadTotal(db, 'me'), 3);
   const bare = new Database(':memory:');
   assert.strictEqual(badge.unreadTotalSafe(bare, 'me'), null);

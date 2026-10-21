@@ -92,6 +92,8 @@ test('タスク移動・お知らせ・チャットの中身（長いタイト�
   assert.strictEqual(ann.url, '/announcements/3');
   const chat = push.buildChatPayload('山田');
   assert.strictEqual(chat.body, '山田さんからメッセージがあります');
+  assert.strictEqual(push.buildChatPayload('山田', 'デザイン班').body, 'デザイン班に新着メッセージがあります');
+  assert.ok(!JSON.stringify(push.buildChatPayload('山田', 'デザイン班')).includes('山田'));
 });
 
 test('無効になった端末(410)は登録から外れ、他の失敗は残る', async () => {
@@ -140,20 +142,21 @@ test('PUSH_DISABLED=1 のときは送らない', async () => {
   assert.strictEqual(sent.length, 0);
 });
 
-test('チャット: 相手が接続していないときだけ onOfflineMessage が呼ばれる', () => {
+test('チャット: 接続していない人にだけ onOfflineMessage が呼ばれる', () => {
   const db = makeDb();
-  setRemoteUser(db, db.prepare("SELECT id FROM users WHERE user_id='a'").get().id);
+  const store = require('../lib/chatStore');
   const calls = [];
-  const hub = createHub(db, { onOfflineMessage: (m) => calls.push(m) });
+  const hub = createHub(db, { onOfflineMessage: (m, offline) => calls.push({ m, offline }) });
   const mk = () => ({ sent: [], send(s) { this.sent.push(s); } });
   const sa = mk();
   const sb = mk();
   hub.connect('a', sa);
   hub.connect('b', sb);
-  hub.handle('a', sa, JSON.stringify({ type: 'chat', to: 'b', body: 'こんにちは' }));
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  hub.handle('a', sa, JSON.stringify({ type: 'chat', room: room.id, body: 'こんにちは' }));
   assert.strictEqual(calls.length, 0);
   hub.disconnect('b', sb);
-  hub.handle('a', sa, JSON.stringify({ type: 'chat', to: 'b', body: 'いますか' }));
+  hub.handle('a', sa, JSON.stringify({ type: 'chat', room: room.id, body: 'いますか' }));
   assert.strictEqual(calls.length, 1);
-  assert.strictEqual(calls[0].receiver_id, 'b');
+  assert.deepStrictEqual(calls[0].offline, ['b']);
 });

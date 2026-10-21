@@ -26,8 +26,10 @@
   volumeEl.value = String(Math.round(volume * 100));
 
   function me() { return chat.getState().me; }
+  function voicePeers() { return chat.getState().voicePeers; }
+  function isVoicePeer(userId) { return voicePeers().some((p) => p.user_id === userId); }
   function nameOf(userId) {
-    const p = chat.getState().peers.find((x) => x.user_id === userId);
+    const p = voicePeers().find((x) => x.user_id === userId);
     return p ? p.display_name : userId;
   }
   function showError(text) {
@@ -130,7 +132,7 @@
   }
 
   async function maybeOffer(peerId) {
-    if (!me().isRemote || !chat.isOnline(peerId)) return;
+    if (!me().isRemote || !isVoicePeer(peerId) || !chat.isOnline(peerId)) return;
     const cid = chat.onlineCid(peerId);
     const existing = conns.get(peerId);
     if (existing && existing.cid === cid &&
@@ -185,8 +187,9 @@
   chat.onPresence((online) => {
     // 相手がいなくなったら接続を片付ける
     [...conns.keys()].forEach((peerId) => { if (!online[peerId]) closeConn(peerId); });
-    // 在宅側は、オンラインの相手に接続する（相手の接続番号が変わっていたら作り直す）
-    if (me().isRemote) Object.keys(online).forEach((peerId) => maybeOffer(peerId));
+    // 在宅側は、オンラインの通話相手に接続する（相手の接続番号が変わっていたら作り直す）
+    if (me().isRemote) voicePeers().forEach((p) => { if (online[p.user_id]) maybeOffer(p.user_id); });
+    renderVoicePeers();
   });
 
   // ---- 受信側: 相手が話している間だけ鳴らす ----
@@ -258,28 +261,40 @@
     document.querySelectorAll('.talk-btn').forEach((btn) => applyTalkButton(btn, btn.dataset.userId));
   }
 
-  // ボタンを、会話相手の一覧に差し込む（chat.jsが一覧を描き直すたびに呼ばれる）
-  chat.afterRenderPeers = function (peersEl) {
-    peersEl.querySelectorAll('.chat-peer').forEach((li) => {
-      const peerId = li.dataset.userId;
+  // 通話の相手の一覧（在宅の人 ⇔ 社内の各人）。チャットの一覧とは別
+  const root = document.getElementById('voice-root');
+  const peersEl = document.getElementById('voice-peers');
+  function renderVoicePeers() {
+    const peers = voicePeers();
+    root.hidden = peers.length === 0;
+    peersEl.textContent = '';
+    peers.forEach((p) => {
+      const li = document.createElement('li');
+      li.className = 'chat-peer';
+      const dot = document.createElement('span');
+      dot.className = 'chat-dot' + (chat.isOnline(p.user_id) ? ' on' : '');
+      const name = document.createElement('span');
+      name.className = 'chat-peer-name';
+      name.textContent = p.display_name;
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'talk-btn';
-      btn.dataset.userId = peerId;
-      applyTalkButton(btn, peerId);
+      btn.dataset.userId = p.user_id;
+      applyTalkButton(btn, p.user_id);
       btn.addEventListener('click', () => {
-        if ((talking && talking.peerId === peerId) || starting === peerId) return stopTalk();
+        if ((talking && talking.peerId === p.user_id) || starting === p.user_id) return stopTalk();
         if (talking || starting) stopTalk(); // 別の人に話していたら切り替える
-        startTalk(peerId);
+        startTalk(p.user_id);
       });
-      li.appendChild(btn);
+      li.append(dot, name, btn);
+      peersEl.appendChild(li);
     });
-  };
+  }
+  chat.onReady(() => {
+    renderVoicePeers();
+    if (me().isRemote) voicePeers().forEach((p) => { if (chat.isOnline(p.user_id)) maybeOffer(p.user_id); });
+  });
 
   // ページを閉じる時は必ず止める
   window.addEventListener('pagehide', stopTalk);
-
-  // chat.jsが先に一覧を描いていた場合に備えて、1回描き直す
-  const peersEl = document.getElementById('chat-peers');
-  if (peersEl && peersEl.children.length) chat.afterRenderPeers(peersEl);
 })();

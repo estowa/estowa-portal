@@ -1151,7 +1151,7 @@ table.sheet-table.readonly td {
 .attendance-badge-none { background: #f0ad4e; color: white; }
 
 /* ---- チャット・通話 ---- */
-.chat-layout { display: grid; grid-template-columns: 200px 1fr; gap: 14px; }
+.chat-layout { display: grid; grid-template-columns: 220px 1fr; gap: 14px; }
 .chat-peers { list-style: none; margin: 0; padding: 0; }
 .chat-peer { display: flex; align-items: center; gap: 8px; padding: 8px 6px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .chat-peer.active { background: rgba(0,0,0,0.04); border-radius: 6px; }
@@ -1295,6 +1295,40 @@ table.sheet-table.readonly td {
 .chat-body[hidden] { display: none; }
 .chat-panel .chat-log { height: 240px; }
 
+/* ---- チャット（全員との1対1・グループ・添付） ---- */
+.chat-side { max-height: 340px; overflow-y: auto; }
+.chat-side-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin: 6px 0 2px; }
+.chat-mini-btn { padding: 3px 10px; font-size: 12px; cursor: pointer; background: #fff; color: var(--primary); border: 1px solid var(--border); border-radius: 8px; }
+.chat-empty { font-size: 12px; color: var(--text-muted); padding: 6px; }
+.chat-count { font-size: 11px; color: var(--text-muted); }
+.chat-thread-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.chat-thread-head .chat-thread-title { margin-bottom: 0; }
+.chat-sender { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+.chat-text { white-space: pre-wrap; word-break: break-word; }
+.chat-img-link { display: block; margin-top: 6px; }
+.chat-img { max-width: 240px; max-height: 200px; border-radius: 8px; display: block; }
+.chat-file { display: block; margin-top: 6px; font-size: 13px; color: inherit; text-decoration: underline; word-break: break-all; }
+.chat-msg.theirs .chat-file { color: var(--primary); }
+.chat-attach { display: inline-flex; align-items: center; justify-content: center; width: 40px; cursor: pointer; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 16px; }
+.chat-picked { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chat-chip { display: inline-flex; align-items: center; gap: 6px; background: #eef0f6; border-radius: 12px; padding: 3px 10px; font-size: 12px; max-width: 100%; word-break: break-all; }
+.chat-chip-x { border: none; background: none; cursor: pointer; font-size: 14px; line-height: 1; color: var(--text-muted); padding: 0; }
+.chat-dialog { border: none; border-radius: 12px; padding: 20px; max-width: 420px; width: calc(100% - 32px); box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+.chat-dialog::backdrop { background: rgba(0,0,0,0.35); }
+.chat-dialog h3 { margin: 0 0 12px; font-size: 16px; }
+.chat-dialog-field { display: block; font-size: 13px; margin-bottom: 12px; }
+.chat-dialog-field input[type="text"] { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+.chat-group-members { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow-y: auto; margin-top: 4px; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
+.chat-check { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; cursor: pointer; }
+.chat-group-current { margin-top: 4px; font-size: 14px; }
+.chat-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.chat-dialog-actions button { padding: 8px 16px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: #fff; }
+.chat-dialog-actions .chat-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chat-dialog-actions .chat-leave-btn { margin-right: auto; color: #e0245e; border-color: #e0245e; }
+.voice-panel { margin-top: 16px; }
+.voice-peers .chat-peer { max-width: 360px; }
+.voice-peers .talk-btn { margin-left: auto; }
+
 /* ---- B: ボード・カレンダー・スマホ表示の調整 ---- */
 .kanban-list:not(:has(.kanban-card))::before {
   content: "タスクなし";
@@ -1331,6 +1365,7 @@ table.sheet-table.readonly td {
 }
 @media (max-width: 640px) {
   .chat-layout { grid-template-columns: 1fr; }
+  .chat-side { max-height: 200px; }
   .chat-log { height: 220px; }
   .voice-bar { flex-wrap: wrap; }
 }

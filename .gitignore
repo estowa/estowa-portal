@@ -7,3 +7,4 @@ db/sessions.db
 .env
 public/uploads/
 .superpowers/
+db/chat-files/
