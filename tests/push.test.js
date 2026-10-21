@@ -142,7 +142,7 @@ test('PUSH_DISABLED=1 のときは送らない', async () => {
   assert.strictEqual(sent.length, 0);
 });
 
-test('チャット: 接続していない人にだけ onOfflineMessage が呼ばれる', () => {
+test('チャット: その部屋を見ていない人にだけ onOfflineMessage が呼ばれる', () => {
   const db = makeDb();
   const store = require('../lib/chatStore');
   const calls = [];
@@ -153,9 +153,10 @@ test('チャット: 接続していない人にだけ onOfflineMessage が呼ば
   hub.connect('a', sa);
   hub.connect('b', sb);
   const room = store.getOrCreateDm(db, 'a', 'b');
+  hub.handle('b', sb, JSON.stringify({ type: 'viewing', room: room.id }));
   hub.handle('a', sa, JSON.stringify({ type: 'chat', room: room.id, body: 'こんにちは' }));
   assert.strictEqual(calls.length, 0);
-  hub.disconnect('b', sb);
+  hub.handle('b', sb, JSON.stringify({ type: 'viewing', room: null }));
   hub.handle('a', sa, JSON.stringify({ type: 'chat', room: room.id, body: 'いますか' }));
   assert.strictEqual(calls.length, 1);
   assert.deepStrictEqual(calls[0].offline, ['b']);

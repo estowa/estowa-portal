@@ -119,17 +119,18 @@ test('既読にすると未読が消える。メンバーでない部屋の既�
   assert.strictEqual(home.of('error')[0].code, 'forbidden');
 });
 
-test('接続のないメンバーにだけ onOfflineMessage が呼ばれる（送信者は除く）', () => {
+test('その部屋を見ていないメンバーにだけ onOfflineMessage が呼ばれる（送信者は除く）', () => {
   const calls = [];
-  const { hub, db } = makeEnv({ onOfflineMessage: (m, offline) => calls.push({ m, offline }) });
+  const { hub, db } = makeEnv({ onOfflineMessage: (m, offline) => calls.push(offline) });
   const a = fakeSocket(), b = fakeSocket();
   hub.connect('a', a); hub.connect('b', b);
   const g = store.createGroup(db, 'a', 'チーム', ['b', 'home']);
+  send(hub, 'b', b, { type: 'viewing', room: g.id });
   send(hub, 'a', a, { type: 'chat', room: g.id, body: 'こんにちは' });
-  assert.deepStrictEqual(calls[0].offline, ['home']);
+  assert.deepStrictEqual(calls[0], ['home']);
   hub.disconnect('b', b);
   send(hub, 'a', a, { type: 'chat', room: g.id, body: 'いますか' });
-  assert.deepStrictEqual(calls[1].offline.sort(), ['b', 'home']);
+  assert.deepStrictEqual(calls[1].sort(), ['b', 'home']);
 });
 
 test('publish: HTTPで保存された添付つきメッセージも同じように配られる', () => {
@@ -151,21 +152,23 @@ test('notifyRooms: 指定した人の全接続に rooms を送る', () => {
   assert.strictEqual(b.of('rooms').length, 0);
 });
 
-test('画面が見えていない接続（スマホのバックグラウンドなど）だけの人は、プッシュ通知の対象になる', () => {
+test('その部屋を画面で見ている人にだけ、通知を送らない。見ていなければ、PCを開いていても通知する', () => {
   const calls = [];
   const { hub, db } = makeEnv({ onOfflineMessage: (m, offline) => calls.push(offline) });
   const a = fakeSocket(), bPc = fakeSocket(), bPhone = fakeSocket();
   hub.connect('a', a); hub.connect('b', bPc); hub.connect('b', bPhone);
   const room = store.getOrCreateDm(db, 'a', 'b');
+  const other = store.getOrCreateDm(db, 'a', 'home');
   send(hub, 'a', a, { type: 'chat', room: room.id, body: '1' });
-  assert.deepStrictEqual(calls, []);                          // 見えている接続があれば、通知しない
-  send(hub, 'b', bPc, { type: 'visible', on: false });
+  assert.deepStrictEqual(calls, [['b']]);                     // 誰も部屋を見ていなければ通知する（PCを開いているだけでも）
+  send(hub, 'b', bPc, { type: 'viewing', room: room.id });
   send(hub, 'a', a, { type: 'chat', room: room.id, body: '2' });
-  assert.deepStrictEqual(calls, []);                          // もう1つが見えているので、まだ通知しない
-  send(hub, 'b', bPhone, { type: 'visible', on: false });
+  assert.strictEqual(calls.length, 1);                        // PCでこの部屋を見ているので、通知しない
+  send(hub, 'b', bPc, { type: 'viewing', room: other.id });   // メンバーでない部屋は無効（見ている扱いにならない）
   send(hub, 'a', a, { type: 'chat', room: room.id, body: '3' });
-  assert.deepStrictEqual(calls, [['b']]);                     // どれも見えていなければ通知する
-  send(hub, 'b', bPc, { type: 'visible', on: true });
+  assert.strictEqual(calls.length, 2);
+  send(hub, 'b', bPc, { type: 'viewing', room: room.id });
+  send(hub, 'b', bPc, { type: 'viewing', room: null });       // 隠れた・たたんだ・別の部屋に移った
   send(hub, 'a', a, { type: 'chat', room: room.id, body: '4' });
-  assert.strictEqual(calls.length, 1);                        // 見えるようになれば、また通知しない
+  assert.strictEqual(calls.length, 3);
 });

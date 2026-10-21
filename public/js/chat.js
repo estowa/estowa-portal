@@ -157,6 +157,7 @@
 
   function closeRoom() {
     active = null;
+    sendViewing();
     titleEl.textContent = '相手かグループを選んでください';
     logEl.textContent = '';
     inputEl.disabled = true;
@@ -179,6 +180,7 @@
 
   async function openRoom(roomId, title, isGroup) {
     active = roomId;
+    sendViewing();
     activeTitle = isGroup ? 'グループ「' + title + '」' : title;
     titleEl.textContent = activeTitle;
     inputEl.disabled = false;
@@ -244,7 +246,7 @@
     ws.onopen = () => {
       retry = 0;
       showError('');
-      sendVisible();
+      sendViewing();
       if (active) { // 切断中の取りこぼしを読み直す
         const g = state.groups.find((x) => x.room_id === active);
         const d = state.dms.find((x) => x.room_id === active);
@@ -275,11 +277,16 @@
     };
   }
 
-  // 画面が見えているかをサーバーへ伝える（見えていない端末には、プッシュ通知が届く）
-  function sendVisible() { send({ type: 'visible', on: !document.hidden }); }
-  document.addEventListener('visibilitychange', sendVisible);
-  window.addEventListener('pagehide', () => send({ type: 'visible', on: false }));
-  window.addEventListener('pageshow', sendVisible);
+  // 「今この部屋を見ている」ことをサーバーへ伝える。見ていない部屋のメッセージは、PCを開いていてもプッシュ通知が届く
+  const chatBodyEl = document.getElementById('chat-body');
+  function sendViewing() {
+    const viewing = active && !document.hidden && !chatBodyEl.hidden;
+    send({ type: 'viewing', room: viewing ? active : null });
+  }
+  document.addEventListener('visibilitychange', sendViewing);
+  window.addEventListener('pagehide', () => send({ type: 'viewing', room: null }));
+  window.addEventListener('pageshow', sendViewing);
+  document.getElementById('chat-toggle').addEventListener('click', () => setTimeout(sendViewing, 0));
 
   // ---- 添付 ----
   function renderPicked() {
