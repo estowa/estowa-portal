@@ -126,8 +126,8 @@
   function fileNode(f) {
     const url = '/chat/files/' + f.id;
     const box = el('div', 'chat-attachment');
-    if (f.deleted) { // 期限（15日）で削除された画像
-      box.appendChild(el('div', 'chat-file-gone', '🖼 ' + f.name + '（15日たったので削除されました）'));
+    if (f.deleted) { // 期限（15日）で削除された添付
+      box.appendChild(el('div', 'chat-file-gone', '🗑 ' + f.name + '（15日たったので削除されました）'));
       return box;
     }
     if (f.is_image) {
