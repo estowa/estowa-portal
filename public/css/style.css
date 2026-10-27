@@ -492,8 +492,27 @@ a.calendar-cell:hover { background: var(--bg); }
 @media (min-width: 901px) {
   .kanban-grid { grid-template-rows: minmax(0, 1fr); height: calc(100vh - 160px); }
   .kanban-column { display: flex; flex-direction: column; overflow: hidden; }
-  .kanban-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+  /* 列の中は縦スクロールのみ（横スクロールは出さない）。スクロールバーは細くして、列の右端に寄せる */
+  .kanban-list {
+    flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+    margin-right: -10px; padding-right: 10px;
+  }
+  .kanban-list::-webkit-scrollbar { width: 6px; }
+  .kanban-list::-webkit-scrollbar-track { background: transparent; }
+  .kanban-list::-webkit-scrollbar-thumb { background: #c4c7d4; border-radius: 3px; }
+  .kanban-list::-webkit-scrollbar-thumb:hover { background: #a9adbd; }
+  /* 下に固定される、ボード全体の横スクロールバーも細くする */
+  .kanban-grid::-webkit-scrollbar { height: 8px; }
+  .kanban-grid::-webkit-scrollbar-track { background: transparent; }
+  .kanban-grid::-webkit-scrollbar-thumb { background: #c4c7d4; border-radius: 4px; }
+  .kanban-grid::-webkit-scrollbar-thumb:hover { background: #a9adbd; }
+  /* Firefoxなど、上の指定が使えないブラウザ（標準の指定は、使えるブラウザでは上の細さを打ち消すため、分けている） */
+  @supports not selector(::-webkit-scrollbar) {
+    .kanban-list, .kanban-grid { scrollbar-width: thin; scrollbar-color: #c4c7d4 transparent; }
+  }
 }
+/* カードの長い文字列（スペースなしの英数字など）は、はみ出さずに折り返す */
+.kanban-card, .kanban-card-title, .kanban-card-meta { min-width: 0; overflow-wrap: anywhere; }
 
 .kanban-card:hover { border-color: var(--primary); }
 
