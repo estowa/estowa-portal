@@ -22,7 +22,7 @@ test('在宅未設定でも、チャットの相手（全員）は返る。通�
   const db = makeDb();
   const s = buildChatState(db, 'a', {});
   assert.strictEqual(s.remoteConfigured, false);
-  assert.deepStrictEqual(s.dms.map((d) => d.user_id), ['home', 'b']);
+  assert.deepStrictEqual(s.dms.map((d) => d.user_id), ['a', 'home', 'b']); // 先頭は自分のメモ
   assert.deepStrictEqual(s.voicePeers, []);
 });
 
@@ -35,7 +35,7 @@ test('チャットは全員が相手。通話の相手は、在宅の人には�
   const a = buildChatState(db, 'a', {});
   assert.strictEqual(a.me.isRemote, false);
   assert.deepStrictEqual(a.voicePeers.map((p) => p.user_id), ['home']);
-  assert.deepStrictEqual(a.dms.map((d) => d.user_id), ['home', 'b']);
+  assert.deepStrictEqual(a.dms.map((d) => d.user_id), ['a', 'home', 'b']);
 });
 
 test('未読数は1対1とグループそれぞれに付く', () => {

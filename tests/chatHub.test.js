@@ -175,3 +175,15 @@ test('その部屋を画面で見ている人にだけ、通知を送らない�
   send(hub, 'a', a, { type: 'chat', room: room.id, body: '4' });
   assert.strictEqual(calls.length, 3);
 });
+
+test('自分宛てのメモは、自分の全接続に届き、通知は送らない', () => {
+  const calls = [];
+  const { hub, db } = makeEnv({ onOfflineMessage: (m, offline) => calls.push(offline) });
+  const a1 = fakeSocket(), a2 = fakeSocket();
+  hub.connect('a', a1); hub.connect('a', a2);
+  const memo = store.getOrCreateDm(db, 'a', 'a');
+  send(hub, 'a', a1, { type: 'chat', room: memo.id, body: 'メモ' });
+  assert.strictEqual(a1.of('chat').length, 1);
+  assert.strictEqual(a2.of('chat').length, 1);
+  assert.deepStrictEqual(calls, []);
+});

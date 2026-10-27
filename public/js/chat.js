@@ -90,8 +90,8 @@
     peersEl.textContent = '';
     state.dms.forEach((d) => {
       const li = el('li', 'chat-peer' + (d.room_id && d.room_id === active ? ' active' : ''));
-      li.appendChild(el('span', 'chat-dot' + (online[d.user_id] ? ' on' : '')));
-      const name = el('span', 'chat-peer-name', d.display_name);
+      li.appendChild(el('span', 'chat-dot' + (online[d.user_id] && !d.self ? ' on' : '')));
+      const name = el('span', 'chat-peer-name', d.self ? '自分（メモ）' : d.display_name);
       name.addEventListener('click', () => openDm(d));
       li.appendChild(name);
       if (d.unread > 0) li.appendChild(el('span', 'chat-unread', String(d.unread)));
@@ -198,7 +198,7 @@
       roomId = (await res.json()).room_id;
       d.room_id = roomId;
     }
-    openRoom(roomId, d.display_name + ' さんとのチャット', false);
+    openRoom(roomId, d.self ? '自分のメモ' : d.display_name + ' さんとのチャット', false);
   }
 
   async function openRoom(roomId, title, isGroup) {
@@ -288,7 +288,7 @@
           const g = state.groups.find((x) => x.room_id === active);
           const d = state.dms.find((x) => x.room_id === active);
           if (g) openRoom(g.room_id, g.name, true);
-          else if (d) openRoom(d.room_id, d.display_name + ' さんとのチャット', false);
+          else if (d) openRoom(d.room_id, d.self ? '自分のメモ' : d.display_name + ' さんとのチャット', false);
         });
       }
     };
@@ -444,7 +444,7 @@
   }
   function renderMemberChoices(excludeIds) {
     membersEl.textContent = '';
-    const candidates = state.dms.filter((d) => !excludeIds.includes(d.user_id));
+    const candidates = state.dms.filter((d) => !d.self && !excludeIds.includes(d.user_id));
     if (candidates.length === 0) membersEl.appendChild(el('div', 'chat-empty', '追加できる人がいません'));
     candidates.forEach((d) => {
       const label = el('label', 'chat-check');

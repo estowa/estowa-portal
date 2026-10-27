@@ -22,8 +22,8 @@ test('1対1は社内同士でも作れ、同じ組み合わせは同じ部屋に
   const r2 = store.getOrCreateDm(db, 'b', 'a');
   assert.strictEqual(r1.id, r2.id);
   assert.deepStrictEqual(store.memberIds(db, r1.id).sort(), ['a', 'b']);
-  assert.throws(() => store.getOrCreateDm(db, 'a', 'a'), /forbidden/);
   assert.throws(() => store.getOrCreateDm(db, 'a', 'nobody'), /forbidden/);
+  assert.throws(() => store.getOrCreateDm(db, '', 'a'), /forbidden/);
 });
 
 test('保存した本文は前後の空白が除かれ、送信者名とJST時刻が付く', () => {
@@ -132,8 +132,10 @@ test('画面用の一覧: 自分以外の全員の1対1と、入っているグ�
   store.saveMessage(db, g1.id, 'b', 'こんにちは');
   const { groups, dms } = store.listForUser(db, 'a');
   assert.deepStrictEqual(groups.map((g) => [g.name, g.unread]), [['Aのグループ', 1]]);
-  assert.deepStrictEqual(dms.map((d) => d.user_id), ['home', 'b', 'c']);
-  assert.strictEqual(dms[0].room_id, null);
+  assert.deepStrictEqual(dms.map((d) => d.user_id), ['a', 'home', 'b', 'c']); // 先頭は、自分のメモ
+  assert.strictEqual(dms[0].self, true);
+  assert.deepStrictEqual(dms.slice(1).map((d) => d.self), [false, false, false]);
+  assert.strictEqual(dms[1].room_id, null);
 });
 
 test('添付をダウンロードできるのは、その部屋のメンバーだけ', () => {
@@ -166,4 +168,20 @@ test('旧チャットの履歴は1対1の部屋へ一度だけ引き継がれ、
   assert.deepStrictEqual(store.unreadByRoom(db, 'a'), { [dm.id]: 1 });
   assert.deepStrictEqual(store.unreadByRoom(db, 'home'), {});
   assert.strictEqual(db.prepare('SELECT COUNT(*) c FROM chat_messages').get().c, 3); // 旧データは残す
+});
+
+test('自分宛てのメモ: 自分だけの部屋ができ、同じ部屋を使い回し、未読にならず、他の人は読めない', () => {
+  const db = makeDb();
+  const memo = store.getOrCreateDm(db, 'a', 'a');
+  assert.strictEqual(store.getOrCreateDm(db, 'a', 'a').id, memo.id);
+  assert.deepStrictEqual(store.memberIds(db, memo.id), ['a']);
+  const m = store.saveMessage(db, memo.id, 'a', 'あとで電話', [{ originalName: 'メモ.pdf', storedName: 'm1.pdf', size: 1 }]);
+  assert.strictEqual(m.body, 'あとで電話');
+  assert.strictEqual(store.totalUnread(db, 'a'), 0);                         // 自分の発言は未読にならない
+  assert.throws(() => store.saveMessage(db, memo.id, 'b', 'のぞき見'), /forbidden/);
+  assert.strictEqual(store.getFileForUser(db, m.files[0].id, 'b'), null);     // 添付も他の人は開けない
+  assert.strictEqual(store.getFileForUser(db, m.files[0].id, 'a').stored_name, 'm1.pdf');
+  const listed = store.listForUser(db, 'a').dms[0];
+  assert.deepStrictEqual([listed.user_id, listed.self, listed.room_id], ['a', true, memo.id]);
+  assert.strictEqual(store.listForUser(db, 'b').dms.find((d) => d.user_id === 'a').room_id, null); // 他の人の一覧に、自分のメモの部屋は出ない
 });
