@@ -19,11 +19,10 @@
   const endBtn = document.getElementById('voice-end');
 
   let audioEnabled = false;
-  let audioCtx = null;         // 着信音用
+  let ringAudio = null;        // 着信音（音声ファイルを繰り返し再生する。背景のタブでも、タイマーに頼らず鳴る）
   let call = null;             // { peerId, role: 'caller'|'callee', state: 'calling'|'ringing'|'active', stream, startedAt }
   let notice = '';             // 通話が終わった理由など、少しの間だけ出す文
   let noticeTimer = null;
-  let ringTimer = null;
   let titleTimer = null;
   let tickTimer = null;
   let savedTitle = null;
@@ -53,11 +52,12 @@
     chat.send({ type: 'voice', ready: audioEnabled, visible: !document.hidden });
   }
   function enableAudio() {
-    if (!audioCtx) {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (Ctx) audioCtx = new Ctx();
+    if (!ringAudio) { // この操作の中で一度鳴らして止め、あとから自動で鳴らせるようにする（ブラウザの決まり）
+      ringAudio = new Audio(makeRingUrl());
+      ringAudio.loop = true;
+      ringAudio.volume = volume;
+      ringAudio.play().then(() => ringAudio.pause()).catch(() => {});
     }
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
     if (audioEnabled) return;
     audioEnabled = true;
     enableBtn.textContent = '音声ON済み';
@@ -74,39 +74,52 @@
   volumeEl.addEventListener('input', () => {
     volume = Number(volumeEl.value) / 100;
     conns.forEach((c) => { c.audio.volume = volume; });
+    if (ringAudio) ringAudio.volume = volume;
     try { localStorage.setItem('estowaVoiceVolume', String(volume)); } catch (e) { /* 無視 */ }
   });
 
   // ---- 着信音・タブの見出し ----
-  function beep() {
-    if (!audioCtx) return;
-    const t = audioCtx.currentTime;
-    [[0, 440], [0.35, 554]].forEach(([offset, freq]) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.frequency.value = freq;
-      gain.gain.value = 0.3 * volume;
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(t + offset);
-      osc.stop(t + offset + 0.28);
-    });
+  // 着信音: 電話の呼び出し音のような「ブルルル、ブルルル」を、3秒ぶんの音声ファイルとして作り、繰り返し再生する
+  function makeRingUrl() {
+    const rate = 16000;
+    const seconds = 3;
+    const samples = new Int16Array(rate * seconds);
+    for (let i = 0; i < samples.length; i++) {
+      const t = i / rate;
+      const inBurst = (t < 0.8) || (t >= 1.0 && t < 1.8); // 0.8秒鳴って、0.2秒休み、もう一度。残りは無音
+      if (!inBurst) continue;
+      const wobble = 0.5 + 0.5 * Math.sin(2 * Math.PI * 20 * t); // 震える感じ
+      const v = (Math.sin(2 * Math.PI * 440 * t) + Math.sin(2 * Math.PI * 480 * t)) / 2;
+      samples[i] = Math.round(v * (0.55 + 0.45 * wobble) * 0.85 * 32767);
+    }
+    const buf = new ArrayBuffer(44 + samples.length * 2);
+    const view = new DataView(buf);
+    const write = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+    write(0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true); write(8, 'WAVE');
+    write(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+    write(36, 'data'); view.setUint32(40, samples.length * 2, true);
+    new Int16Array(buf, 44).set(samples);
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
   }
   function startRing(name) {
     stopRing();
-    beep();
-    ringTimer = setInterval(beep, 2200);
+    if (ringAudio) {
+      ringAudio.currentTime = 0;
+      ringAudio.volume = volume;
+      ringAudio.play().catch(() => {});
+    }
     savedTitle = document.title;
-    let flip = false;
+    document.title = `📞 ${name}さんから通話`;
+    let flip = true;
     titleTimer = setInterval(() => {
       flip = !flip;
       document.title = flip ? `📞 ${name}さんから通話` : savedTitle;
     }, 900);
   }
   function stopRing() {
-    clearInterval(ringTimer);
+    if (ringAudio) ringAudio.pause();
     clearInterval(titleTimer);
-    ringTimer = null;
     titleTimer = null;
     if (savedTitle !== null) { document.title = savedTitle; savedTitle = null; }
   }
