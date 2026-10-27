@@ -488,6 +488,13 @@ a.calendar-cell:hover { background: var(--bg); }
   .kanban-column { min-width: unset; }
 }
 
+/* PC幅: ボードの高さは画面の下端まで（高さはJSが正確に合わせる）。各列は、中身が多いとき、列の中だけ縦にスクロール */
+@media (min-width: 901px) {
+  .kanban-grid { grid-template-rows: minmax(0, 1fr); height: calc(100vh - 160px); }
+  .kanban-column { display: flex; flex-direction: column; overflow: hidden; }
+  .kanban-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+}
+
 .kanban-card:hover { border-color: var(--primary); }
 
 /* ---- タスク: 担当者チェックリスト ---- */

@@ -35,11 +35,25 @@
     panel.classList.remove('open');
   }
 
+  // ボードの高さを、画面の下端までにそろえる（PC幅）。これで横スクロールバーが画面の下に固定され、
+  // 各列は、中身が多いときに、列の中だけが縦にスクロールする。900px以下（縦積み）は、ふつうのページスクロール
+  function fitBoard() {
+    const grid = root.querySelector('.kanban-grid');
+    if (!grid) return;
+    if (window.innerWidth <= 900 || grid.offsetParent === null) { grid.style.height = ''; return; }
+    const docTop = grid.getBoundingClientRect().top + window.scrollY;
+    grid.style.height = Math.max(320, window.innerHeight - docTop - 24) + 'px'; // 24px = ページ下の余白
+  }
+  window.addEventListener('resize', fitBoard);
+  window.addEventListener('load', fitBoard);
+  fitBoard();
+
   function refreshBoard() {
     fetch(window.location.href, { headers: { 'X-Requested-With': 'fetch' } })
       .then((res) => res.text())
       .then((html) => {
         root.innerHTML = html;
+        fitBoard();
       });
   }
 
@@ -77,6 +91,7 @@
       const calendarView = document.getElementById('calendar-view');
       boardView.style.display = view === 'calendar' ? 'none' : '';
       calendarView.style.display = view === 'calendar' ? '' : 'none';
+      fitBoard();
 
       const url = new URL(window.location);
       url.searchParams.set('view', view);
