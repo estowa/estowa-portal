@@ -1120,6 +1120,15 @@ table.sheet-table.readonly td {
 }
 .file-list-item .file-download-link:hover { color: var(--primary-dark); }
 
+/* ---- タスクの詳細（パネルと、単独のページ）: 長いタイトル・URL・ファイル名で、画面より広がらないようにする ---- */
+.task-detail-panel { overflow-x: hidden; max-width: 100vw; }
+.task-detail-header, .task-detail-header > div { min-width: 0; }
+.page-header h1.task-title { white-space: normal; overflow-wrap: anywhere; min-width: 0; } /* スマホ幅の「折り返さない」設定より優先する */
+.task-detail-panel .page-header h1.task-title { padding-right: 40px; } /* 右の「×」と重ならないように */
+.task-detail-panel .timeline-item, .task-detail-panel .timeline-item-body,
+.task-detail-panel .file-list-item .file-name, .task-detail-panel .attachment-name,
+.task-detail-panel .updated-by-line { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+
 /* ---- 外注先リスト(カテゴリごとにグルーピング表示) ---- */
 .vendor-category-panel { margin-bottom: 20px; }
 .vendor-category-head {
