@@ -279,7 +279,7 @@ table.user-table th, table.user-table td {
 .kanban-grid {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(130px, 1fr);
+  grid-auto-columns: minmax(236px, 1fr); /* 1920px幅で、メニューと7列が収まる幅。それより狭いときは、列を細くせず横スクロール（900px以下はスマホ用の縦積み） */
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -291,7 +291,7 @@ table.user-table th, table.user-table td {
   border: 1px solid var(--border);
   padding: 12px;
   min-height: 200px;
-  min-width: 130px;
+  min-width: 236px;
 }
 .kanban-column h3 {
   font-size: 14px;
