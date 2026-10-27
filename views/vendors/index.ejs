@@ -5,8 +5,17 @@
   <a href="/vendors/new" class="new-toggle-btn">+ 新規登録</a>
 </div>
 
-<% groups.forEach(group => { %>
-  <div class="panel vendor-category-panel">
+<%# 上部のカテゴリ一覧: 押すと、そのカテゴリへ移動する %>
+<nav class="vendor-nav" aria-label="カテゴリ">
+  <% groups.forEach((group, i) => { %>
+    <a href="#vendor-cat-<%= i %>" class="vendor-nav-chip<%= group.vendors.length === 0 ? ' is-empty' : '' %>">
+      <span class="vendor-nav-dot" style="background: <%= group.color %>;"></span><%= group.name %><span class="vendor-nav-count"><%= group.vendors.length %></span>
+    </a>
+  <% }) %>
+</nav>
+
+<% groups.forEach((group, i) => { %>
+  <div class="panel vendor-category-panel" id="vendor-cat-<%= i %>">
     <div class="vendor-category-head">
       <span class="badge" style="background: <%= group.color %>; color: white;"><%= group.name %></span>
       <span class="vendor-category-count">(<%= group.vendors.length %>)</span>
@@ -16,11 +25,17 @@
     <% if (group.vendors.length === 0) { %>
       <div class="empty-note">登録されている外注先はありません</div>
     <% } else { %>
-      <table class="user-table">
+      <%# 列の幅は全カテゴリで同じ（vendor-table）。URLは表示せず、社名のリンクにする %>
+      <table class="user-table vendor-table">
+        <colgroup>
+          <col class="vendor-col-name" />
+          <col class="vendor-col-use" />
+          <col class="vendor-col-remarks" />
+          <col class="vendor-col-actions" />
+        </colgroup>
         <thead>
           <tr>
             <th>社名</th>
-            <th>URL</th>
             <th>用途</th>
             <th>備考</th>
             <th></th>
@@ -29,18 +44,17 @@
         <tbody>
           <% group.vendors.forEach(v => { %>
             <tr>
-              <td><%= v.name %></td>
-              <td>
+              <td class="vendor-name" data-label="社名">
                 <% if (v.url) { %>
-                  <a href="<%= /^https?:\/\//.test(v.url) ? v.url : 'https://' + v.url %>" target="_blank" rel="noopener"><%= v.url %></a>
+                  <a href="<%= /^https?:\/\//.test(v.url) ? v.url : 'https://' + v.url %>" target="_blank" rel="noopener" class="link-title"><%= v.name %></a>
                 <% } else { %>
-                  -
+                  <%= v.name %>
                 <% } %>
               </td>
-              <td><%= v.notes || '-' %></td>
-              <td><%= v.remarks || '-' %></td>
-              <td>
-                <div style="display:flex; gap:6px;">
+              <td data-label="用途"><%= v.notes || '-' %></td>
+              <td data-label="備考"><%= v.remarks || '-' %></td>
+              <td class="vendor-actions-cell">
+                <div class="vendor-actions">
                   <a href="/vendors/<%= v.id %>/edit" class="mini-btn">編集</a>
                   <form method="POST" action="/vendors/<%= v.id %>/delete" onsubmit="return confirm('削除しますか？');">
                     <button type="submit" class="mini-btn">削除</button>

@@ -1108,6 +1108,49 @@ table.sheet-table.readonly td {
 }
 .vendor-category-count { color: var(--text-muted); font-size: 13px; }
 
+/* 外注先リスト: 上部のカテゴリ一覧 */
+.vendor-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.vendor-nav-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 14px;
+  border: 1px solid var(--border); border-radius: 18px; background: #fff; color: var(--text);
+  font-size: 14px; text-decoration: none;
+}
+.vendor-nav-chip:hover { background: var(--bg); }
+.vendor-nav-chip.is-empty { color: var(--text-muted); }
+.vendor-nav-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.vendor-nav-count { font-size: 12px; color: var(--text-muted); }
+.vendor-category-panel { scroll-margin-top: 72px; } /* 固定のヘッダーに隠れないように */
+
+/* 外注先リスト: 列の位置と幅を、全カテゴリで揃える（PC） */
+table.vendor-table { table-layout: fixed; width: 100%; }
+.vendor-table .vendor-col-name { width: 28%; }
+.vendor-table .vendor-col-use { width: 28%; }
+.vendor-table .vendor-col-remarks { width: auto; }
+.vendor-table .vendor-col-actions { width: 132px; }
+.vendor-table td, .vendor-table th { overflow-wrap: anywhere; vertical-align: top; }
+.vendor-table .vendor-name { font-weight: 600; }
+.vendor-table .vendor-actions { display: flex; gap: 6px; }
+.vendor-table .vendor-actions form { margin: 0; }
+.vendor-table .vendor-actions .mini-btn { white-space: nowrap; }
+
+/* 外注先リスト: スマホは、外注先ごとのカードにする */
+@media (max-width: 640px) {
+  .vendor-nav { flex-wrap: nowrap; overflow-x: auto; margin: 0 -14px 14px; padding: 2px 14px 6px; -webkit-overflow-scrolling: touch; }
+  .vendor-nav-chip { flex: none; }
+  .vendor-category-panel { scroll-margin-top: 64px; }
+  .vendor-table, .vendor-table tbody { display: block; }
+  .vendor-table colgroup, .vendor-table thead { display: none; }
+  .vendor-table tr { display: block; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+  .vendor-table td { display: flex; gap: 10px; padding: 3px 0; border-bottom: none; }
+  .vendor-table td::before { content: attr(data-label); flex: none; width: 3em; color: var(--text-muted); font-size: 13px; font-weight: 400; }
+  .vendor-table td.vendor-name { display: block; font-size: 16px; padding-bottom: 6px; }
+  .vendor-table td.vendor-name::before { display: none; }
+  table.vendor-table td.vendor-actions-cell { display: block; padding-top: 8px; border-bottom: none; }
+  .vendor-category-head .mini-btn { white-space: nowrap; display: inline-flex; align-items: center; min-height: 36px; }
+  .vendor-table td.vendor-actions-cell::before { display: none; }
+  .vendor-table .vendor-actions .mini-btn { min-height: 40px; padding: 0 16px; display: inline-flex; align-items: center; }
+}
+
 /* ---- 共有シート(タイトルのみのカード表示。横並びにせず縦に積む) ---- */
 .link-card-grid {
   display: flex;
