@@ -69,8 +69,8 @@ router.get('/', requireLogin, (req, res) => {
   }
 
   // イベントカレンダー(表示のみ。追加・編集・削除はEC売上ページで行う)
-  const calYear = parseInt(req.query.cal_year, 10) || today.getFullYear();
-  const calMonth = parseInt(req.query.cal_month, 10) || today.getMonth() + 1;
+  const calYear = parseInt(req.query.cal_year, 10) || nowYm.year;
+  const calMonth = parseInt(req.query.cal_month, 10) || nowYm.month;
   const { eventsByDay: calEventsByDay, lastDay: calLastDay, firstWeekday: calFirstWeekday } =
     eventsByDayForMonth(calYear, calMonth);
   let calPrevMonth = calMonth - 1, calPrevYear = calYear;
