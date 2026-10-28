@@ -17,6 +17,8 @@
   const declineBtn = document.getElementById('voice-decline');
   const micBtn = document.getElementById('voice-mic');
   const endBtn = document.getElementById('voice-end');
+  const chipBtn = document.getElementById('voice-chip');
+  const ON_KEY = 'estowaVoiceOn'; // 「音声ON」を押したことを、ブラウザを閉じるまで覚える（ページを再読み込みしても、自動でONに戻すため）
 
   let audioEnabled = false;
   let ringAudio = null;        // 着信音（音声ファイルを繰り返し再生する。背景のタブでも、タイマーに頼らず鳴る）
@@ -51,23 +53,41 @@
   function sendVoiceState() {
     chat.send({ type: 'voice', ready: audioEnabled, visible: !document.hidden });
   }
-  function enableAudio() {
-    if (!ringAudio) { // この操作の中で一度鳴らして止め、あとから自動で鳴らせるようにする（ブラウザの決まり）
-      ringAudio = new Audio(makeRingUrl());
-      ringAudio.loop = true;
-      ringAudio.volume = volume;
-      ringAudio.play().then(() => ringAudio.pause()).catch(() => {});
-    }
+  function savedOn() {
+    try { return sessionStorage.getItem(ON_KEY) === '1'; } catch (e) { return false; }
+  }
+  function makeRing() {
+    ringAudio = new Audio(makeRingUrl());
+    ringAudio.loop = true;
+    ringAudio.volume = volume;
+  }
+  // 音声ONの状態にする（画面の表示・通話の受け口・ONの記憶）
+  function activateAudio() {
     if (audioEnabled) return;
     audioEnabled = true;
     enableBtn.textContent = '音声ON済み';
     enableBtn.disabled = true;
     noteEl.textContent = '着信音が鳴ります。PCの音量が小さい／ミュートの場合は、PC側で調整してください。';
+    try { sessionStorage.setItem(ON_KEY, '1'); } catch (e) { /* 覚えられなくても動く */ }
     conns.forEach((c) => c.audio.play().catch(() => {}));
     sendVoiceState(); // この画面を、通話の受け口にする
     render();
   }
+  function enableAudio() {
+    if (!ringAudio) { // この操作の中で一度鳴らして止め、あとから自動で鳴らせるようにする（ブラウザの決まり）
+      makeRing();
+      ringAudio.play().then(() => ringAudio.pause()).catch(() => {});
+    }
+    activateAudio();
+  }
+  // ページを開き直したとき、前にONにしていたら、操作なしで戻す。ブラウザに止められたら、バーの案内から押してもらう
+  function restoreAudio() {
+    if (audioEnabled || !savedOn()) return;
+    if (!ringAudio) makeRing();
+    ringAudio.play().then(() => { ringAudio.pause(); activateAudio(); }).catch(() => { render(); });
+  }
   enableBtn.addEventListener('click', enableAudio);
+  chipBtn.addEventListener('click', enableAudio);
   chat.onOpen(sendVoiceState);
   document.addEventListener('visibilitychange', sendVoiceState);
 
@@ -424,6 +444,7 @@
     });
   }
   function render() {
+    chipBtn.hidden = audioEnabled || !savedOn();
     renderPeers();
     renderCallText();
     callBox.hidden = !call && !notice;
@@ -437,7 +458,10 @@
     renderMic();
   }
 
+  window.estowaVoiceBusy = () => !!call;
+
   chat.onReady(() => {
+    restoreAudio();
     render();
     if (me().isRemote) voicePeers().forEach((p) => { if (chat.isOnline(p.user_id)) maybeOffer(p.user_id); });
   });

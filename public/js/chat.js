@@ -42,7 +42,7 @@
   let ready = false;
   const readyHandlers = [];
   const handlers = { signal: [], ptt: [], presence: [], call: [], open: [] };
-  const baseTitle = document.title;
+  let baseTitle = document.title; // ページを移動したら、nav.js が setBaseTitle で更新する
 
   // 本文は必ず textContent で入れる（HTMLとして解釈させない）
   function el(tag, className, text) {
@@ -62,6 +62,11 @@
   function sizeText(n) {
     if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + 'MB';
     return Math.max(1, Math.round(n / 1024)) + 'KB';
+  }
+
+  function panelVisible() {
+    const slot = document.getElementById('chat-slot');
+    return !!slot && slot.contains(root);
   }
 
   function totalUnread() {
@@ -276,7 +281,7 @@
   }
   // 画面が見えていて、チャットを開いていて、その部屋を表示しているときだけ「見ている」
   function isViewing() {
-    return !!active && !document.hidden && !chatBodyEl.hidden;
+    return !!active && !document.hidden && !chatBodyEl.hidden && panelVisible();
   }
   function markActiveRead() {
     if (!isViewing()) return;
@@ -354,7 +359,7 @@
 
   // 「今この部屋を見ている」ことをサーバーへ伝える。見ていない部屋のメッセージは、PCを開いていてもプッシュ通知が届く
   function sendViewing() {
-    const viewing = active && !document.hidden && !chatBodyEl.hidden;
+    const viewing = active && !document.hidden && !chatBodyEl.hidden && panelVisible();
     send({ type: 'viewing', room: viewing ? active : null });
     if (viewing) markActiveRead(); // 隠れていた画面を見た・チャットをひらいた、その時点で既読にする
   }
@@ -578,7 +583,20 @@
   document.getElementById('chat-group-cancel').addEventListener('click', () => dialog.close());
 
   // 通話（voice.js）が使う窓口
+  // ページを入れ替えて、チャットの画面がホームの枠に入った・出たとき（nav.js が呼ぶ）
+  function onPlacementChange() {
+    if (panelVisible()) logEl.scrollTop = logEl.scrollHeight;
+    sendViewing();
+    if (state) renderLists();
+  }
+  function setBaseTitle(t) {
+    baseTitle = t;
+    if (state) updateUnreadViews();
+  }
+
   window.estowaChat = {
+    onPlacementChange,
+    setBaseTitle,
     send,
     getState: () => state,
     onReady: (h) => { readyHandlers.push(h); if (ready) h(); },

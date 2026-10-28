@@ -5,16 +5,6 @@
     <label class="voice-volume">音量 <input type="range" id="voice-volume" min="0" max="100" value="80" /></label>
     <span class="voice-note" id="voice-note">先に「音声ON」を押すと、着信音が鳴ります。PCのミュートを解除し、音量を上げておいてください。</span>
   </div>
-  <div class="voice-call" id="voice-call" hidden>
-    <div class="voice-call-text" id="voice-call-text"></div>
-    <div class="voice-call-actions">
-      <button type="button" id="voice-accept" class="voice-accept" hidden>応答する</button>
-      <button type="button" id="voice-decline" class="voice-decline" hidden>断る</button>
-      <button type="button" id="voice-mic" class="voice-mic" hidden aria-pressed="false">マイクを消す</button>
-      <button type="button" id="voice-end" class="voice-end" hidden>通話を終える</button>
-    </div>
-  </div>
-  <div class="voice-error" id="voice-error" hidden></div>
   <ul class="chat-peers voice-peers" id="voice-peers"></ul>
 </div>
 <script src="/js/voice.js"></script>

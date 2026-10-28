@@ -1,8 +1,30 @@
   </main>
 </div>
-<% if (currentUser) { %>
 <script>
-  // ホーム画面アイコンの赤い数字（未読の合計）。対応していない端末では何もしない
+  // ここから先は、ページを入れ替えても動かし続けるもの（page-scope.js の記録をやめる）
+  if (window.__pageScope) window.__pageScope.stop();
+</script>
+<% if (currentUser) { %>
+<%# 通話の表示（全ページ共通。呼び出し・着信・通話中のバー）。voice.js が使う %>
+<div class="voice-callbar" id="voice-callbar">
+  <div class="voice-call" id="voice-call" hidden>
+    <div class="voice-call-text" id="voice-call-text"></div>
+    <div class="voice-call-actions">
+      <button type="button" id="voice-accept" class="voice-accept" hidden>応答する</button>
+      <button type="button" id="voice-decline" class="voice-decline" hidden>断る</button>
+      <button type="button" id="voice-mic" class="voice-mic" hidden aria-pressed="false">マイクを消す</button>
+      <button type="button" id="voice-end" class="voice-end" hidden>通話を終える</button>
+    </div>
+  </div>
+  <div class="voice-error" id="voice-error" hidden></div>
+  <button type="button" class="voice-chip" id="voice-chip" hidden>🔇 押すと着信音が鳴ります（音声ON）</button>
+</div>
+<%# チャット・通話の本体。ホームでは、home.ejs の枠（slot）に入れて見せる。ほかのページでは、ここ（画面の外）に置いたまま動かし続ける %>
+<div id="realtime-holder" hidden>
+  <%- include('chat') %>
+  <%- include('voice') %>
+</div>
+（未読の合計）。対応していない端末では何もしない
   (function () {
     function setBadge(n) {
       if (!navigator.setAppBadge) return;
@@ -79,8 +101,8 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
   })();
 
-  // 現在のページに応じてサイドバーのハイライトを切り替え
-  (function () {
+  // 現在のページに応じてサイドバーのハイライトを切り替え（ページを入れ替えたあとにも、nav.js が呼ぶ）
+  window.updateNavActive = function () {
     const path = window.location.pathname;
     document.querySelectorAll('.sidebar .nav-item').forEach((link) => {
       const href = link.getAttribute('href');
@@ -88,7 +110,9 @@
       const isMatch = href === '/' ? path === '/' : path.startsWith(href);
       link.classList.toggle('active', isMatch);
     });
-  })();
+  };
+  window.updateNavActive();
 </script>
+<% if (currentUser) { %><script src="/js/nav.js"></script><% } %>
 </body>
 </html>

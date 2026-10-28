@@ -1430,6 +1430,15 @@ table.vendor-table { table-layout: fixed; width: 100%; }
 .chat-dialog-actions .chat-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 .chat-dialog-actions .chat-leave-btn { margin-right: auto; color: #e0245e; border-color: #e0245e; }
 .voice-panel { margin-top: 16px; }
+/* チャット・通話のパネルを入れる枠。枠自体は見えない（中のパネルが、直接の子のように並ぶ） */
+.rt-slot { display: contents; }
+/* 通話バー: どのページでも、画面の下に出る */
+.voice-callbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); z-index: 1200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.voice-callbar > * { pointer-events: auto; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+.voice-callbar .voice-call { margin: 0; }
+.voice-callbar .voice-error { background: #fdecee; color: #b3123f; border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+.voice-callbar .voice-error[hidden], .voice-chip[hidden] { display: none; }
+.voice-chip { align-self: center; border: 1px solid var(--primary); background: #fff; color: var(--primary); border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
 .voice-call { border-radius: 10px; padding: 12px 14px; margin: 8px 0; background: #eef0f6; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .voice-call.ringing { background: #fff4d6; animation: voice-ring 1s ease-in-out infinite; }
 .voice-call.active { background: #e8f7ec; }
