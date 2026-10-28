@@ -90,11 +90,17 @@
     link: function () {
       var url = window.prompt('リンク先のURL（https:// から）', 'https://');
       if (!url || url === 'https://') return;
+      url = url.trim();
       var c = sel();
       var text = c.v.slice(c.s, c.e);
-      var md = '[' + text + '](' + url.trim() + ')';
-      // 文字を選んでいたらリンクの後ろに、なければ[ ]の中にカーソルを置く
-      var caret = text ? c.s + md.length : c.s + 1;
+      // 文字を選んでいなければ、リンクに表示する文字を聞く（空のままなら、URLをそのまま表示する）
+      if (!text) {
+        var typed = window.prompt('リンクに表示する文字（空のままなら、URLを表示します）', '');
+        if (typed === null) return;
+        text = typed.trim() || url;
+      }
+      var md = '[' + text + '](' + url + ')';
+      var caret = c.s + md.length;
       setText(c.v.slice(0, c.s) + md + c.v.slice(c.e), caret, caret);
     },
     callout: function (name) {
@@ -112,6 +118,28 @@
     ev.preventDefault();
     var act = actions[btn.getAttribute('data-act')];
     if (act) act(btn.getAttribute('data-name'));
+  });
+
+  // 番号リスト・箇条書きの続き書き。IMEで変換中のEnter（確定）には反応しない
+  ta.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' || ev.isComposing || ev.keyCode === 229 || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    var c = sel();
+    if (c.s !== c.e) return;
+    var lineStart = c.v.lastIndexOf('\n', c.s - 1) + 1;
+    var lineEndIdx = c.v.indexOf('\n', c.s);
+    var lineEnd = lineEndIdx === -1 ? c.v.length : lineEndIdx;
+    var m = c.v.slice(lineStart, lineEnd).match(/^(\s*)(\d+\.|[-*])[ \t]+(.*)$/);
+    if (!m) return;
+    // カーソルが記号より前（行の先頭付近）にあるときは、ふつうの改行にする
+    if (c.s < lineStart + m[1].length + m[2].length + 1) return;
+    ev.preventDefault();
+    if (m[3].trim() === '') { // 中身が空の項目でEnter: 記号を消し、空行を1つ入れて、リストを終える（空行がないと、次の行が前の項目の続きになる）
+      setText(c.v.slice(0, lineStart) + '\n' + c.v.slice(lineEnd), lineStart + 1, lineStart + 1);
+      return;
+    }
+    var next = /^\d+\.$/.test(m[2]) ? (parseInt(m[2], 10) + 1) + '. ' : m[2] + ' ';
+    var ins = '\n' + m[1] + next;
+    setText(c.v.slice(0, c.s) + ins + c.v.slice(c.s), c.s + ins.length, c.s + ins.length);
   });
 
   // ---- プレビュー ----

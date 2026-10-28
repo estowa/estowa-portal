@@ -68,3 +68,15 @@ test('改行を保つ設定でも、枠・表・リストは崩れない', () =>
   assert.match(html, /<table>/);
   assert.match(html, /<li>x<\/li>/);
 });
+
+test('表示する文字のないリンク [](URL) は、URLを表示する文字にする', () => {
+  const { html } = renderKnowledgeMarkdown('[](https://estowa.jp/)');
+  assert.match(html, /<a [^>]*href="https:\/\/estowa\.jp\/"[^>]*>https:\/\/estowa\.jp\/<\/a>/);
+  assert.match(renderKnowledgeMarkdown('[自社サイト](https://estowa.jp/)').html, />自社サイト<\/a>/);
+});
+
+test('番号リストは、1. 2. 3. と続けて書ける（2. 以降も番号つきの一覧になる）', () => {
+  const { html } = renderKnowledgeMarkdown('1. 見る\n2. 選ぶ\n3. 決める');
+  assert.match(html, /<ol>/);
+  assert.strictEqual((html.match(/<li>/g) || []).length, 3);
+});
