@@ -111,6 +111,7 @@ app.use(require('./routes/install'));
 app.use(searchRoutes);
 ensureMaintenanceSchema(db);
 require('./lib/pushSchema').ensurePushSchema(db);
+require('./lib/ecSchema').ensureEcSchema(db);
 app.use(createMaintenanceRouter(db));
 
 app.use((req, res) => {

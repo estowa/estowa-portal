@@ -1,208 +1,198 @@
 const express = require('express');
 const multer = require('multer');
-const iconv = require('iconv-lite');
-const { parse } = require('csv-parse/sync');
 const db = require('../db/connection');
-const { requireLogin } = require('../middleware/auth');
+const { requireLogin, requireAdmin } = require('../middleware/auth');
 const { eventsByDayForMonth } = require('../lib/events');
+const { nowJstYearMonth } = require('../lib/jst');
+const ec = require('../lib/ecSales');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
-// 店舗ID(ROBOTIN出力の「店舗ID」列)からモール名への対応表
-const STORE_ID_TO_MALL = {
-  296: '楽天',
-  1070: 'ヤフー',
-  4646736: 'Qoo10',
-  7588758: 'カウシェ',
-  15056676: 'メルカリ',
-  8669150: 'ギフトモール',
-};
+const MAX_COMPARE_YEARS = 5;
 
-const MALL_ORDER = ['楽天', 'ヤフー', 'Qoo10', 'カウシェ', 'メルカリ', 'ギフトモール'];
-
-function normalizeDate(raw) {
-  if (!raw) return null;
-  const s = raw.trim().replace(/\//g, '-');
-  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (!m) return null;
-  const [, y, mo, d] = m;
-  return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+// ブラウザによってはファイル名がlatin1で届くので、日本語に直す
+function fileNameOf(file) {
+  return Buffer.from(file.originalname, 'latin1').toString('utf8');
 }
 
-function monthLabel(y, m) {
-  return `${y}-${String(m).padStart(2, '0')}`;
+function redirectWith(res, params) {
+  const q = new URLSearchParams(params).toString();
+  res.redirect(`/sales?${q}`);
 }
 
 router.get('/sales', requireLogin, (req, res) => {
-  const today = new Date();
-  const year = parseInt(req.query.year, 10) || today.getFullYear();
-  const month = parseInt(req.query.month, 10) || today.getMonth() + 1;
-  const monthStr = monthLabel(year, month);
+  const now = nowJstYearMonth();
+  const year = parseInt(req.query.year, 10) || now.year;
+  const month = Math.min(12, Math.max(1, parseInt(req.query.month, 10) || now.month));
+  const monthStr = ec.monthStr(year, month);
+  const compareYears = Math.min(MAX_COMPARE_YEARS, Math.max(1, parseInt(req.query.cmp, 10) || 1));
+  const baseYear = year - compareYears;
+  const baseStr = ec.monthStr(baseYear, month);
 
-  // 前月
   let prevMonth = month - 1, prevYear = year;
   if (prevMonth < 1) { prevMonth = 12; prevYear -= 1; }
-  const prevMonthStr = monthLabel(prevYear, prevMonth);
-
   let nextMonth = month + 1, nextYear = year;
   if (nextMonth > 12) { nextMonth = 1; nextYear += 1; }
 
-  const currentTotal = db
-    .prepare("SELECT COALESCE(SUM(amount),0) AS total, COUNT(*) AS cnt FROM sales_orders WHERE strftime('%Y-%m', order_date) = ?")
-    .get(monthStr);
-  const prevTotal = db
-    .prepare("SELECT COALESCE(SUM(amount),0) AS total FROM sales_orders WHERE strftime('%Y-%m', order_date) = ?")
-    .get(prevMonthStr);
+  const cur = ec.mallTotalsForMonth(db, monthStr);
+  const base = ec.mallTotalsForMonth(db, baseStr);
 
-  const changePct = prevTotal.total > 0
-    ? Math.round(((currentTotal.total - prevTotal.total) / prevTotal.total) * 1000) / 10
-    : null;
-
-  // モール別内訳（当月）
-  const mallRows = db
-    .prepare("SELECT mall, COALESCE(SUM(amount),0) AS total FROM sales_orders WHERE strftime('%Y-%m', order_date) = ? GROUP BY mall")
-    .all(monthStr);
-  const mallTotals = {};
-  mallRows.forEach((r) => { mallTotals[r.mall] = r.total; });
-  const maxMallTotal = Math.max(1, ...Object.values(mallTotals));
-
-  const mallBreakdown = MALL_ORDER.map((mall, i) => ({
-    mall,
-    total: mallTotals[mall] || 0,
-    colorSlot: i + 1,
-  })).filter((m) => m.total > 0 || mallTotals[m.mall] !== undefined);
-  // 未知のモール名（CSVに新しいモールがあった場合）も追加
-  Object.keys(mallTotals).forEach((mall) => {
-    if (!MALL_ORDER.includes(mall)) {
-      mallBreakdown.push({ mall, total: mallTotals[mall], colorSlot: (mallBreakdown.length % 8) + 1 });
-    }
+  // モール別（当月と比較年の月）
+  const mallNames = [...ec.MALL_ORDER];
+  [...Object.keys(cur.malls), ...Object.keys(base.malls)].forEach((m) => {
+    if (!mallNames.includes(m)) mallNames.push(m);
   });
+  const mallRows = mallNames
+    .map((mall, i) => {
+      const c = cur.malls[mall];
+      const b = base.malls[mall];
+      return {
+        mall,
+        colorSlot: (i % 8) + 1,
+        amount: c ? c.amount : 0,
+        count: c ? c.count : null,
+        baseAmount: b ? b.amount : 0,
+        hasCurrent: !!c,
+        hasBase: !!b,
+        changePct: c && b ? ec.changePercent(c.amount, b.amount) : null,
+      };
+    })
+    .filter((r) => r.hasCurrent || r.hasBase);
+  const maxMallAmount = Math.max(1, ...mallRows.map((r) => Math.max(r.amount, r.baseAmount)));
 
-  // 月別推移（過去6か月）
-  const trend = db
-    .prepare(
-      `SELECT strftime('%Y-%m', order_date) AS ym, COALESCE(SUM(amount),0) AS total
-       FROM sales_orders
-       GROUP BY ym
-       ORDER BY ym DESC
-       LIMIT 6`
-    )
-    .all()
-    .reverse();
-  const maxTrendTotal = Math.max(1, ...trend.map((t) => t.total));
+  // 商品別（注文明細のある月だけ）。比較年に明細があれば昨対も出す
+  let productRows = [];
+  let unregistered = [];
+  if (cur.source === 'orders') {
+    const baseProducts = new Map();
+    if (base.source === 'orders') {
+      ec.productTotalsForMonth(db, baseStr).forEach((p) => baseProducts.set(p.code, p.amount));
+    }
+    productRows = ec.productTotalsForMonth(db, monthStr).map((p) => ({
+      ...p,
+      share: cur.total > 0 ? Math.round((p.amount / cur.total) * 1000) / 10 : null,
+      baseAmount: baseProducts.has(p.code) ? baseProducts.get(p.code) : null,
+      changePct: baseProducts.has(p.code) ? ec.changePercent(p.amount, baseProducts.get(p.code)) : null,
+    }));
+    unregistered = productRows.filter((p) => !p.registered).map((p) => p.code || '(コードなし)');
+  }
+  const productCount = db.prepare('SELECT COUNT(*) AS n FROM ec_products').get().n;
 
-  // イベントカレンダー(各モールのセール期間などを記録。同じ年月ナビゲーションを共用)
+  // 月別推移（直近12か月と、比較年の同じ月）
+  const trend = ec.lastMonths(year, month, 12).map((ym) => {
+    const [y, m] = ym.split('-');
+    const baseYm = ec.monthStr(parseInt(y, 10) - compareYears, parseInt(m, 10));
+    const t = ec.mallTotalsForMonth(db, ym);
+    const b = ec.mallTotalsForMonth(db, baseYm);
+    return {
+      ym,
+      total: t.total,
+      hasData: t.source !== 'none',
+      baseTotal: b.total,
+      hasBase: b.source !== 'none',
+    };
+  });
+  const maxTrendTotal = Math.max(1, ...trend.map((t) => Math.max(t.total, t.baseTotal)));
+
   const { eventsByDay, lastDay: calLastDay, firstWeekday: calFirstWeekday } = eventsByDayForMonth(year, month);
 
   res.render('sales/index', {
     year,
     month,
     monthStr,
+    baseYear,
+    baseStr,
+    compareYears,
+    maxCompareYears: MAX_COMPARE_YEARS,
     prevYear,
     prevMonth,
     nextYear,
     nextMonth,
-    currentTotal: currentTotal.total,
-    currentCount: currentTotal.cnt,
-    changePct,
-    mallBreakdown,
-    maxMallTotal,
+    cur,
+    base,
+    changePct: cur.source !== 'none' && base.source !== 'none' ? ec.changePercent(cur.total, base.total) : null,
+    mallRows,
+    maxMallAmount,
+    productRows,
+    unregistered,
+    productCount,
     trend,
     maxTrendTotal,
     eventsByDay,
     calLastDay,
     calFirstWeekday,
-    importResult: req.query.imported !== undefined
-      ? { imported: parseInt(req.query.imported, 10) || 0, skipped: parseInt(req.query.skipped, 10) || 0 }
-      : null,
+    isAdmin: req.session.user.role === 'admin',
+    thisYear: now.year,
+    thisMonth: now.month,
+    notice: req.query.notice || null,
     error: req.query.importError || null,
   });
 });
 
-// CSVのバイト列から文字コードを判定して文字列にデコードする
-// (ROBOTIN出力はShift_JIS(CP932)、それ以外の手入力CSVなどはUTF-8を想定)
-function decodeCsvBuffer(buffer) {
-  const utf8Text = buffer.toString('utf-8');
-  // UTF-8として解釈できないバイト列は置換文字(U+FFFD)に化けるため、
-  // それが含まれていればShift_JISとして読み直す
-  if (utf8Text.includes('�')) {
-    return iconv.decode(buffer, 'cp932');
+// 売上CSV（新仕様）の取り込み。発送月は画面で指定（空ならファイル名から推測）
+router.post('/sales/import', requireLogin, requireAdmin, upload.single('csvfile'), (req, res) => {
+  if (!req.file) return res.redirect('/sales');
+  let year = parseInt(req.body.ship_year, 10);
+  let month = parseInt(req.body.ship_month, 10);
+  if (!year || !month) {
+    const guess = ec.guessShipMonth(fileNameOf(req.file));
+    if (!guess) return redirectWith(res, { importError: '発送月が分かりません。年と月を入れてください' });
+    ({ year, month } = guess);
   }
-  return utf8Text;
-}
-
-// 行オブジェクトから、複数の列名候補のうち最初に値が入っているものを取り出す
-// (CSVの出力元によって列名が異なるため)
-function firstNonEmpty(row, keys) {
-  for (const key of keys) {
-    const value = row[key];
-    if (value !== undefined && String(value).trim() !== '') return String(value).trim();
+  if (month < 1 || month > 12 || year < 2000 || year > 2100) {
+    return redirectWith(res, { importError: '発送月が正しくありません' });
   }
-  return '';
-}
-
-// 店舗IDからモール名を求める。対応表にない店舗IDの場合はID自体を表示名にする
-function mallFromStoreId(storeId) {
-  const idNum = parseInt(storeId, 10);
-  if (STORE_ID_TO_MALL[idNum]) return STORE_ID_TO_MALL[idNum];
-  return `店舗ID:${storeId}`;
-}
-
-router.post('/sales/import', requireLogin, upload.single('csvfile'), (req, res) => {
-  if (!req.file) {
-    return res.redirect('/sales');
-  }
-
-  const content = decodeCsvBuffer(req.file.buffer);
-  let records;
+  let parsed;
   try {
-    records = parse(content, { columns: true, skip_empty_lines: true, trim: true, bom: true });
+    parsed = ec.parseOrderCsv(req.file.buffer);
   } catch (e) {
-    return res.redirect('/sales?importError=CSVの読み込みに失敗しました');
+    return redirectWith(res, { importError: 'CSVの読み込みに失敗しました' });
   }
-
-  let imported = 0;
-  let skipped = 0;
-
-  const insert = db.prepare(
-    `INSERT INTO sales_orders (order_date, customer_name, mall, product_name, shipping_address, amount, imported_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  );
-
-  const insertMany = db.transaction((rows) => {
-    rows.forEach((row) => {
-      const orderDate = normalizeDate(firstNonEmpty(row, ['受注日時', '受注日']));
-      const amount = parseInt(firstNonEmpty(row, ['請求金額', '金額']).replace(/[^\d-]/g, ''), 10) || 0;
-
-      // 店舗ID(ROBOTIN出力)があればそれをモール判定に使う。
-      // なければ従来のモール列/店舗名列で判定する(手入力CSVなど)
-      const storeId = firstNonEmpty(row, ['店舗ID']);
-      const mall = storeId
-        ? mallFromStoreId(storeId)
-        : firstNonEmpty(row, ['モール', '店舗名']);
-
-      if (!orderDate || !mall) {
-        skipped += 1;
-        return;
-      }
-
-      insert.run(
-        orderDate,
-        firstNonEmpty(row, ['注文者氏名', '配送先氏名', '氏名']),
-        mall,
-        firstNonEmpty(row, ['商品名', '商品コード']),
-        firstNonEmpty(row, ['配送先住所', '送付先']),
-        amount,
-        req.session.user.user_id
-      );
-      imported += 1;
-    });
+  if (parsed.rows.length === 0) {
+    return redirectWith(res, { importError: '取り込める行がありませんでした（受注番号・店舗名・請求金額の列を確認してください）' });
+  }
+  const r = ec.importOrders(db, parsed.rows, ec.monthStr(year, month), req.session.user.user_id);
+  const skip = parsed.skipped > 0 ? `、${parsed.skipped}件は形式不正のためスキップ` : '';
+  redirectWith(res, {
+    year,
+    month,
+    notice: `${year}年${month}月発送分: 新規${r.inserted}件、上書き${r.updated}件を取り込みました${skip}`,
   });
+});
 
-  insertMany(records);
+// 商品コード一覧（全部入れ替え）
+router.post('/sales/products/import', requireLogin, requireAdmin, upload.single('csvfile'), (req, res) => {
+  if (!req.file) return res.redirect('/sales');
+  let parsed;
+  try {
+    parsed = ec.parseProductCsv(req.file.buffer);
+  } catch (e) {
+    return redirectWith(res, { importError: 'CSVの読み込みに失敗しました' });
+  }
+  if (parsed.rows.length === 0) {
+    return redirectWith(res, { importError: '取り込める行がありませんでした（商品番号・商品名の列を確認してください）' });
+  }
+  const n = ec.replaceProducts(db, parsed.rows);
+  const skip = parsed.skipped > 0 ? `（${parsed.skipped}件は形式不正のためスキップ）` : '';
+  redirectWith(res, { notice: `商品コード一覧を入れ替えました（${n}件）${skip}` });
+});
 
-  res.redirect(`/sales?imported=${imported}&skipped=${skipped}`);
+// 過去分のモール別月次売上
+router.post('/sales/monthly/import', requireLogin, requireAdmin, upload.single('csvfile'), (req, res) => {
+  if (!req.file) return res.redirect('/sales');
+  let parsed;
+  try {
+    parsed = ec.parseMonthlyCsv(req.file.buffer);
+  } catch (e) {
+    return redirectWith(res, { importError: 'CSVの読み込みに失敗しました' });
+  }
+  if (parsed.rows.length === 0) {
+    return redirectWith(res, { importError: '取り込める行がありませんでした（月・モール・税込売上の列を確認してください）' });
+  }
+  const n = ec.upsertMonthly(db, parsed.rows);
+  const skip = parsed.skipped > 0 ? `（${parsed.skipped}件は形式不正のためスキップ）` : '';
+  redirectWith(res, { notice: `過去分のモール別売上を取り込みました（${n}件）${skip}` });
 });
 
 module.exports = router;

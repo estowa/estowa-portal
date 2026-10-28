@@ -7,6 +7,7 @@ const Database = require('better-sqlite3');
 const { ensureChatSchema } = require('../lib/chatSchema');
 const { ensureMaintenanceSchema } = require('../lib/maintenanceSchema');
 const { ensurePushSchema } = require('../lib/pushSchema');
+const { ensureEcSchema } = require('../lib/ecSchema');
 
 const dbPath = path.join(__dirname, 'estowa.db');
 const db = new Database(dbPath);
@@ -36,6 +37,7 @@ if (!userColumns.includes('email')) {
 ensureChatSchema(db);
 ensureMaintenanceSchema(db);
 ensurePushSchema(db);
+ensureEcSchema(db);
 
 // 既存DBに avatar_emoji / avatar_color 列がない場合は追加(マイグレーション)
 // タスク一覧・お知らせでの視認性向上のため、担当者/投稿者をアイコン表示できるようにする
@@ -263,6 +265,15 @@ db.exec(`
     imported_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// 旧テーブル sales_orders の売上を、月×モールの集計にして ec_monthly_mall へ写す(個人情報は写さない)。
+// すでにある月・モールは上書きしない。旧テーブルは残す
+ensureEcSchema(db);
+const legacyCopied = db.prepare(
+  `INSERT OR IGNORE INTO ec_monthly_mall (month, mall, amount)
+   SELECT strftime('%Y-%m', order_date), mall, SUM(amount) FROM sales_orders GROUP BY 1, 2`
+).run().changes;
+if (legacyCopied > 0) console.log(`旧EC売上を月次モール売上に ${legacyCopied} 件写しました`);
 
 // イベントカレンダー（EC売上ページ下部。各モールのセール期間などを記録する）
 db.exec(`

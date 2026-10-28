@@ -1,7 +1,8 @@
 const express = require('express');
 const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
-const { toJstParts, nowJstDateStr } = require('../lib/jst');
+const { toJstParts, nowJstDateStr, nowJstYearMonth } = require('../lib/jst');
+const { mallTotalsForMonth } = require('../lib/ecSales');
 const { eventsByDayForMonth } = require('../lib/events');
 
 const router = express.Router();
@@ -36,14 +37,11 @@ router.get('/', requireLogin, (req, res) => {
     .get(user.user_id);
   const isCheckedIn = lastLog && lastLog.type === 'in';
 
-  // 売上サマリー（今月の合計。sales_ordersにデータがなければnull表示）
-  const today = new Date();
-  const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  const salesRow = db
-    .prepare("SELECT COALESCE(SUM(amount),0) AS total, COUNT(*) AS cnt FROM sales_orders WHERE strftime('%Y-%m', order_date) = ?")
-    .get(monthStr);
+  // 売上サマリー（今月の発送分の合計。データがなければnull表示）
+  const nowYm = nowJstYearMonth();
+  const salesTotals = mallTotalsForMonth(db, `${nowYm.year}-${String(nowYm.month).padStart(2, '0')}`);
   const salesSummary = {
-    monthlyTotal: salesRow.cnt > 0 ? salesRow.total : null,
+    monthlyTotal: salesTotals.source !== 'none' ? salesTotals.total : null,
   };
 
   // 管理者向け: 本日のメンバー出勤状況（管理者は打刻不要なため代わりに表示）

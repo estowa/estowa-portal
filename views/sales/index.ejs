@@ -1,52 +1,119 @@
 <%- include('../partials/header') %>
 
+<%
+  const yen = (n) => '¥' + Number(n).toLocaleString();
+  const pctText = (p) => (p === null || p === undefined) ? '―' : (p >= 0 ? '+' : '') + p + '%';
+  const pctColor = (p) => (p === null || p === undefined) ? 'var(--text-muted)' : (p >= 0 ? '#0ca30c' : '#d03b3b');
+  const diffText = (a, b) => (a - b >= 0 ? '+' : '-') + yen(Math.abs(a - b));
+%>
+
 <div class="page-header">
   <h1>EC関連</h1>
+  <% if (isAdmin) { %>
   <details class="new-toggle">
     <summary>+ CSVインポート</summary>
     <div class="new-form-panel">
-      <h2>CSVインポート（ROBOTIN出力）</h2>
       <% if (error) { %><div class="error-text"><%= error %></div><% } %>
-      <% if (importResult) { %>
-        <div class="success-text">
-          <%= importResult.imported %>件を取り込みました
-          <% if (importResult.skipped > 0) { %>（<%= importResult.skipped %>件は形式不正のためスキップ）<% } %>
-        </div>
-      <% } %>
-      <form method="POST" action="/sales/import" enctype="multipart/form-data">
+
+      <h2>売上CSV（発送分）</h2>
+      <form method="POST" action="/sales/import" enctype="multipart/form-data" class="form-inline" id="ec-orders-form">
+        <input type="file" name="csvfile" accept=".csv" required id="ec-orders-file" />
+        <label>発送月</label>
+        <input type="number" name="ship_year" min="2000" max="2100" placeholder="年" style="width:80px;" id="ec-ship-year" />
+        <span>年</span>
+        <input type="number" name="ship_month" min="1" max="12" placeholder="月" style="width:60px;" id="ec-ship-month" />
+        <span>月</span>
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">取り込む</button>
+      </form>
+      <div style="font-size:12px; color:var(--text-muted); margin:6px 0 16px;">
+        ファイル名に「10月発送分」などがあれば、発送月は自動で入ります。店舗名からモールを判定し、<b>受注番号が同じ注文は上書き</b>されます（二重計上されません）。金額は請求金額（税込）です。個人情報の列は読み込みません（アップ前に削除してください）。
+      </div>
+
+      <h2>商品コード一覧</h2>
+      <form method="POST" action="/sales/products/import" enctype="multipart/form-data" class="form-inline">
+        <input type="file" name="csvfile" accept=".csv" required />
+        <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">入れ替える</button>
+      </form>
+      <div style="font-size:12px; color:var(--text-muted); margin:6px 0 16px;">
+        商品番号・商品名のCSV。アップするたびに、いまの一覧が全部入れ替わります（登録中：<%= productCount %>件）。
+      </div>
+
+      <h2>過去分のモール別売上</h2>
+      <form method="POST" action="/sales/monthly/import" enctype="multipart/form-data" class="form-inline">
         <input type="file" name="csvfile" accept=".csv" required />
         <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">取り込む</button>
       </form>
-      <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">
-        ROBOTINの受注CSV(Shift_JIS)をそのまま取り込めます。店舗IDでモールを自動判定します（296:楽天 / 1070:ヤフー / 4646736:Qoo10 / 7588758:カウシェ / 15056676:メルカリ / 8669150:ギフトモール）。
+      <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+        「月（2021-10の形）、モール、税込売上」の3列のCSV。同じ月・モールは上書きされます。昨対比や過去の比較に使います（最大5年分が目安）。
       </div>
     </div>
   </details>
+  <script>
+    (function () {
+      var file = document.getElementById('ec-orders-file');
+      if (!file) return;
+      file.addEventListener('change', function () {
+        var name = file.files[0] ? file.files[0].name : '';
+        var y = document.getElementById('ec-ship-year');
+        var m = document.getElementById('ec-ship-month');
+        var full = name.match(/(\d{4})\s*[年\-_.]\s*(\d{1,2})/);
+        var only = name.match(/(\d{1,2})\s*月/);
+        if (full) { y.value = full[1]; m.value = parseInt(full[2], 10); }
+        else if (only) {
+          var mm = parseInt(only[1], 10);
+          var now = new Date();
+          var yy = now.getFullYear();
+          if (mm > now.getMonth() + 1) yy -= 1;
+          y.value = yy; m.value = mm;
+        }
+      });
+    })();
+  </script>
+  <% } %>
 </div>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-  <a href="/sales?year=<%= prevYear %>&month=<%= prevMonth %>" class="mini-btn">← 前月</a>
-  <h2 style="margin:0; font-size:16px;"><%= year %>年<%= month %>月</h2>
-  <a href="/sales?year=<%= nextYear %>&month=<%= nextMonth %>" class="mini-btn">次月 →</a>
+<% if (notice) { %><div class="success-text"><%= notice %></div><% } %>
+<% if (error && !isAdmin) { %><div class="error-text"><%= error %></div><% } %>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
+  <a href="/sales?year=<%= prevYear %>&month=<%= prevMonth %>&cmp=<%= compareYears %>" class="mini-btn">← 前月</a>
+  <h2 style="margin:0; font-size:16px;"><%= year %>年<%= month %>月 発送分（税込）</h2>
+  <a href="/sales?year=<%= nextYear %>&month=<%= nextMonth %>&cmp=<%= compareYears %>" class="mini-btn">次月 →</a>
 </div>
+<form method="GET" action="/sales" class="form-inline" style="margin-bottom:14px; justify-content:center;">
+  <input type="hidden" name="year" value="<%= year %>" />
+  <input type="hidden" name="month" value="<%= month %>" />
+  <label for="ec-cmp">比較する年</label>
+  <select name="cmp" id="ec-cmp" onchange="this.form.submit()">
+    <% for (let i = 1; i <= maxCompareYears; i++) { %>
+      <option value="<%= i %>" <%= i === compareYears ? 'selected' : '' %>><%= i === 1 ? '昨年' : i + '年前' %>（<%= year - i %>年<%= month %>月）</option>
+    <% } %>
+  </select>
+</form>
 
 <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
   <div class="kpi-card">
-    <div class="label">今月の売上</div>
-    <div class="value">¥<%= currentTotal.toLocaleString() %></div>
+    <div class="label">売上（税込）</div>
+    <% if (cur.source === 'none') { %>
+      <div class="value placeholder">データなし</div>
+    <% } else { %>
+      <div class="value"><%= yen(cur.total) %></div>
+    <% } %>
   </div>
   <div class="kpi-card">
     <div class="label">受注件数</div>
-    <div class="value"><%= currentCount %> 件</div>
+    <% if (cur.count === null) { %>
+      <div class="value placeholder">―</div>
+    <% } else { %>
+      <div class="value"><%= cur.count %> 件</div>
+    <% } %>
   </div>
   <div class="kpi-card">
-    <div class="label">前月比</div>
+    <div class="label"><%= compareYears === 1 ? '昨対比' : compareYears + '年前比' %></div>
     <% if (changePct === null) { %>
-      <div class="value placeholder">前月データなし</div>
+      <div class="value placeholder"><%= base.source === 'none' ? '比較データなし' : '―' %></div>
     <% } else { %>
-      <div class="value" style="color: <%= changePct >= 0 ? '#0ca30c' : '#d03b3b' %>;">
-        <%= changePct >= 0 ? '+' : '' %><%= changePct %>%
-      </div>
+      <div class="value" style="color: <%= pctColor(changePct) %>;"><%= pctText(changePct) %></div>
     <% } %>
   </div>
 </div>
@@ -68,6 +135,7 @@
     --series-6: #008300;
     --series-7: #4a3aa7;
     --series-8: #e34948;
+    --base-bar: #b9b7ae;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) .viz-root {
@@ -79,47 +147,115 @@
       --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
       --series-4: #c98500; --series-5: #d55181; --series-6: #008300;
       --series-7: #9085e9; --series-8: #e66767;
+      --base-bar: #5d5c56;
     }
   }
-  .viz-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .viz-bar-label { width: 130px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
-  .viz-bar-track { flex: 1; background: var(--gridline); border-radius: 4px; height: 14px; overflow: hidden; }
+  .viz-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .viz-bar-label { width: 110px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+  .viz-bar-track { flex: 1; background: var(--gridline); border-radius: 4px; height: 12px; overflow: hidden; }
   .viz-bar-fill { height: 100%; border-radius: 4px; }
-  .viz-bar-value { width: 100px; text-align: right; font-size: 13px; color: var(--text-primary); flex-shrink: 0; }
+  .viz-bar-value { width: 110px; text-align: right; font-size: 13px; color: var(--text-primary); flex-shrink: 0; }
+  .ec-table-wrap { overflow-x: auto; }
+  table.ec-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.ec-table th, table.ec-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+  table.ec-table th:first-child, table.ec-table td:first-child { text-align: left; white-space: normal; }
+  table.ec-table th { color: var(--text-secondary); font-weight: 600; }
+  .ec-legend { font-size: 12px; color: var(--text-muted); margin: 0 0 10px; }
+  .ec-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .ec-warn { background: #fff4e5; color: #8a4b00; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
 </style>
 
   <div class="panel">
     <h2>モール別売上（<%= year %>年<%= month %>月）</h2>
-    <% if (mallBreakdown.length === 0) { %>
+    <% if (mallRows.length === 0) { %>
       <div class="empty-note">この月のデータはまだありません</div>
     <% } else { %>
-      <% mallBreakdown.forEach(m => { %>
-        <div class="viz-bar-row">
-          <div class="viz-bar-label"><%= m.mall %></div>
-          <div class="viz-bar-track">
-            <div class="viz-bar-fill" style="width: <%= Math.round((m.total / maxMallTotal) * 100) %>%; background: var(--series-<%= m.colorSlot %>);"></div>
+      <div class="ec-table-wrap">
+      <table class="ec-table">
+        <thead>
+          <tr><th>モール</th><th>売上</th><th>件数</th><th><%= baseYear %>年<%= month %>月</th><th>差額</th><th>増減</th></tr>
+        </thead>
+        <tbody>
+          <% mallRows.forEach(r => { %>
+            <tr>
+              <td><%= r.mall %></td>
+              <td><%= r.hasCurrent ? yen(r.amount) : '―' %></td>
+              <td><%= r.count === null ? '―' : r.count %></td>
+              <td><%= r.hasBase ? yen(r.baseAmount) : '―' %></td>
+              <td style="color: <%= pctColor(r.changePct) %>;"><%= r.hasCurrent && r.hasBase ? diffText(r.amount, r.baseAmount) : '―' %></td>
+              <td style="color: <%= pctColor(r.changePct) %>;"><%= pctText(r.changePct) %></td>
+            </tr>
+          <% }) %>
+          <tr style="font-weight:600;">
+            <td>合計</td>
+            <td><%= cur.source === 'none' ? '―' : yen(cur.total) %></td>
+            <td><%= cur.count === null ? '―' : cur.count %></td>
+            <td><%= base.source === 'none' ? '―' : yen(base.total) %></td>
+            <td style="color: <%= pctColor(changePct) %>;"><%= cur.source !== 'none' && base.source !== 'none' ? diffText(cur.total, base.total) : '―' %></td>
+            <td style="color: <%= pctColor(changePct) %>;"><%= pctText(changePct) %></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div style="margin-top:12px;">
+        <% mallRows.forEach(r => { %>
+          <div class="viz-bar-row">
+            <div class="viz-bar-label"><%= r.mall %></div>
+            <div style="flex:1;">
+              <div class="viz-bar-track" style="margin-bottom:3px;"><div class="viz-bar-fill" style="width: <%= Math.round((r.amount / maxMallAmount) * 100) %>%; background: var(--series-<%= r.colorSlot %>);"></div></div>
+              <div class="viz-bar-track" style="height:6px;"><div class="viz-bar-fill" style="width: <%= Math.round((r.baseAmount / maxMallAmount) * 100) %>%; background: var(--base-bar);"></div></div>
+            </div>
           </div>
-          <div class="viz-bar-value">¥<%= m.total.toLocaleString() %></div>
-        </div>
-      <% }) %>
+        <% }) %>
+        <div class="ec-legend">太い棒＝<%= year %>年<%= month %>月　細い灰色の棒＝<%= baseYear %>年<%= month %>月</div>
+      </div>
     <% } %>
   </div>
 
   <div class="panel">
-    <h2>月別推移（直近6か月）</h2>
-    <% if (trend.length === 0) { %>
-      <div class="empty-note">データがまだありません</div>
+    <h2>商品別売上（商品コード別）</h2>
+    <% if (cur.source !== 'orders') { %>
+      <div class="empty-note"><%= cur.source === 'monthly' ? 'この月は、商品別のデータがありません（商品別は新しい形式のCSVを取り込んだ月から表示されます）' : 'この月のデータはまだありません' %></div>
     <% } else { %>
-      <% trend.forEach(t => { %>
-        <div class="viz-bar-row">
-          <div class="viz-bar-label"><%= t.ym %></div>
-          <div class="viz-bar-track">
-            <div class="viz-bar-fill" style="width: <%= Math.round((t.total / maxTrendTotal) * 100) %>%; background: var(--series-1);"></div>
-          </div>
-          <div class="viz-bar-value">¥<%= t.total.toLocaleString() %></div>
-        </div>
-      <% }) %>
+      <% if (unregistered.length > 0) { %>
+        <div class="ec-warn">商品コード一覧にないコードがあります（<%= unregistered.length %>件）：<%= unregistered.join('、') %>。商品コード一覧を最新にして取り込み直してください。</div>
+      <% } %>
+      <div class="ec-table-wrap">
+      <table class="ec-table">
+        <thead>
+          <tr><th>商品名</th><th>売上</th><th>件数</th><th>構成比</th><th><%= baseYear %>年<%= month %>月</th><th>増減</th></tr>
+        </thead>
+        <tbody>
+          <% productRows.forEach(p => { %>
+            <tr>
+              <td><%= p.registered ? p.name : '（未登録）' %><div style="font-size:11px; color:var(--text-muted);"><%= p.code || '(コードなし)' %></div></td>
+              <td><%= yen(p.amount) %></td>
+              <td><%= p.count %></td>
+              <td><%= p.share === null ? '―' : p.share + '%' %></td>
+              <td><%= p.baseAmount === null ? '前年なし' : yen(p.baseAmount) %></td>
+              <td style="color: <%= pctColor(p.changePct) %>;"><%= pctText(p.changePct) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+      <div class="ec-legend" style="margin-top:8px;">売上は請求金額（税込）の合計です。0円の注文（ポイント全額払いなど）は件数に含みます。</div>
     <% } %>
+  </div>
+
+  <div class="panel">
+    <h2>月別推移（直近12か月）</h2>
+    <div class="ec-legend"><i style="background:var(--series-1);"></i>その月　<i style="background:var(--base-bar);"></i><%= compareYears === 1 ? '昨年の同じ月' : compareYears + '年前の同じ月' %></div>
+    <% trend.forEach(t => { %>
+      <div class="viz-bar-row">
+        <div class="viz-bar-label"><%= t.ym %></div>
+        <div style="flex:1;">
+          <div class="viz-bar-track" style="margin-bottom:3px;"><div class="viz-bar-fill" style="width: <%= Math.round((t.total / maxTrendTotal) * 100) %>%; background: var(--series-1);"></div></div>
+          <div class="viz-bar-track" style="height:6px;"><div class="viz-bar-fill" style="width: <%= Math.round((t.baseTotal / maxTrendTotal) * 100) %>%; background: var(--base-bar);"></div></div>
+        </div>
+        <div class="viz-bar-value"><%= t.hasData ? yen(t.total) : '―' %><div style="font-size:11px; color:var(--text-muted);"><%= t.hasBase ? yen(t.baseTotal) : '―' %></div></div>
+      </div>
+    <% }) %>
   </div>
 </div>
 

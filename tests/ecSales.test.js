@@ -1,0 +1,130 @@
+const test = require('node:test');
+const assert = require('node:assert');
+const iconv = require('iconv-lite');
+const Database = require('better-sqlite3');
+const { ensureEcSchema } = require('../lib/ecSchema');
+const ec = require('../lib/ecSales');
+
+function makeDb() {
+  const db = new Database(':memory:');
+  ensureEcSchema(db);
+  return db;
+}
+// 実データは使わず、ダミーの注文だけで作る（Shift_JIS）
+const sjis = (text) => iconv.encode(text, 'cp932');
+
+const ORDER_HEADER = 'コントロールカラム,受注番号,受注日時,店舗名,商品コード,商品名,配送先氏名,配送先郵便番号,配送先住所,配送先電話番号,注文者氏名,注文者メールアドレス,請求金額,支払方法,ステータスコード,取引ID,受ID,店舗ID';
+
+test('モール名は店舗名の文字から決まり、店舗IDは予備', () => {
+  assert.strictEqual(ec.mallFromStore('みんなのメール【楽天市場店】', ''), '楽天');
+  assert.strictEqual(ec.mallFromStore('みんなのメール【Yahoo!店】', ''), 'ヤフー');
+  assert.strictEqual(ec.mallFromStore('カウシェ', ''), 'カウシェ');
+  assert.strictEqual(ec.mallFromStore('みんなのメール【メルカリShops店】', ''), 'メルカリ');
+  assert.strictEqual(ec.mallFromStore('不明な店', '296'), '楽天');
+  assert.strictEqual(ec.mallFromStore('不明な店', ''), '不明な店');
+});
+
+test('売上CSV(Shift_JIS)を読む: 個人情報の列は無視し、0円も取り込む', () => {
+  const csv = [
+    ORDER_HEADER,
+    'U,A-001,2026-10-27 08:29:17,みんなのメール【楽天市場店】,10020200610-2,チーズ,,,,,,,1980,カード,2,1,2,296',
+    'U,A-002,2026-10-27 01:33:21,みんなのメール【楽天市場店】,10020200616,りんご,,,,,,,0,ポイント全額,2,1,2,296',
+    'U,A-003,2026-10-26 10:28:00,カウシェ,ss-1004,ぴんど,,,,,,,"1,776",カード,2,1,2,7588758',
+    'U,,2026-10-26 10:28:00,カウシェ,ss-1004,受注番号なし,,,,,,,800,カード,2,1,2,7588758',
+  ].join('\n');
+  const { rows, skipped } = ec.parseOrderCsv(sjis(csv));
+  assert.strictEqual(skipped, 1);
+  assert.deepStrictEqual(rows, [
+    { orderNo: 'A-001', mall: '楽天', productCode: '10020200610-2', amount: 1980 },
+    { orderNo: 'A-002', mall: '楽天', productCode: '10020200616', amount: 0 },
+    { orderNo: 'A-003', mall: 'カウシェ', productCode: 'ss-1004', amount: 1776 },
+  ]);
+  assert.strictEqual(JSON.stringify(rows).includes('配送先'), false);
+});
+
+test('同じ受注番号を再アップしても二重計上しない(上書き)', () => {
+  const db = makeDb();
+  const rows = [
+    { orderNo: 'A-001', mall: '楽天', productCode: 'p1', amount: 1000 },
+    { orderNo: 'A-002', mall: 'ヤフー', productCode: 'p2', amount: 500 },
+  ];
+  assert.deepStrictEqual(ec.importOrders(db, rows, '2026-10', 'admin'), { inserted: 2, updated: 0 });
+  assert.deepStrictEqual(ec.importOrders(db, rows, '2026-10', 'admin'), { inserted: 0, updated: 2 });
+  const t = ec.mallTotalsForMonth(db, '2026-10');
+  assert.strictEqual(t.total, 1500);
+  assert.strictEqual(t.count, 2);
+  // 金額が直った再アップは新しい値になる
+  ec.importOrders(db, [{ orderNo: 'A-001', mall: '楽天', productCode: 'p1', amount: 1200 }], '2026-10');
+  assert.strictEqual(ec.mallTotalsForMonth(db, '2026-10').malls['楽天'].amount, 1200);
+});
+
+test('別の月で再アップすると、その注文は新しい月に移る', () => {
+  const db = makeDb();
+  const r = [{ orderNo: 'A-001', mall: '楽天', productCode: 'p1', amount: 1000 }];
+  ec.importOrders(db, r, '2026-10');
+  ec.importOrders(db, r, '2026-11');
+  assert.strictEqual(ec.mallTotalsForMonth(db, '2026-10').source, 'none');
+  assert.strictEqual(ec.mallTotalsForMonth(db, '2026-11').total, 1000);
+});
+
+test('商品コード一覧は全部入れ替わり、商品別は商品名で出る(未登録も分かる)', () => {
+  const db = makeDb();
+  ec.replaceProducts(db, [{ code: 'p1', name: 'チーズ' }, { code: 'old', name: '旧商品' }]);
+  ec.replaceProducts(db, [{ code: 'p1', name: 'チーズ' }, { code: 'p2', name: 'りんご' }]);
+  assert.strictEqual(db.prepare('SELECT count(*) n FROM ec_products').get().n, 2);
+  ec.importOrders(db, [
+    { orderNo: '1', mall: '楽天', productCode: 'p1', amount: 1000 },
+    { orderNo: '2', mall: 'ヤフー', productCode: 'p1', amount: 0 },
+    { orderNo: '3', mall: '楽天', productCode: 'p2', amount: 3000 },
+    { orderNo: '4', mall: '楽天', productCode: 'zzz', amount: 10 },
+  ], '2026-10');
+  const rows = ec.productTotalsForMonth(db, '2026-10');
+  assert.deepStrictEqual(rows.map((r) => [r.code, r.name, r.amount, r.count, r.registered]), [
+    ['p2', 'りんご', 3000, 1, true],
+    ['p1', 'チーズ', 1000, 2, true],
+    ['zzz', '', 10, 1, false],
+  ]);
+});
+
+test('商品コード一覧CSV(Shift_JIS)を読む', () => {
+  const { rows } = ec.parseProductCsv(sjis('コントロールカラム,商品番号,商品名\nu,p1,チーズ\nu,p2,りんご\nu,,名前だけ'));
+  assert.deepStrictEqual(rows, [{ code: 'p1', name: 'チーズ' }, { code: 'p2', name: 'りんご' }]);
+});
+
+test('過去分CSV: 表記ゆれをそろえ、同じ月・モールは上書き', () => {
+  const csv = '月,モール,税込売上\n2021-10,楽天,1000\n2021-10,Yahoo,200\n2021-10,メルカリShops,30\n2021/11,楽天,5\n2021-13,楽天,1\n2021-10,楽天,1500\n2021-10,楽天,abc';
+  const { rows, skipped } = ec.parseMonthlyCsv(Buffer.from(csv, 'utf-8'));
+  assert.strictEqual(skipped, 2);
+  const db = makeDb();
+  ec.upsertMonthly(db, rows);
+  const t = ec.mallTotalsForMonth(db, '2021-10');
+  assert.strictEqual(t.source, 'monthly');
+  assert.deepStrictEqual(Object.keys(t.malls).sort(), ['ヤフー', 'メルカリ', '楽天'].sort());
+  assert.strictEqual(t.malls['楽天'].amount, 1500);
+  assert.strictEqual(t.total, 1730);
+  assert.strictEqual(ec.mallTotalsForMonth(db, '2021-11').malls['楽天'].amount, 5);
+});
+
+test('同じ月に明細と過去分がある場合は明細を使う(二重にしない)', () => {
+  const db = makeDb();
+  ec.upsertMonthly(db, [{ month: '2026-10', mall: '楽天', amount: 99999 }]);
+  ec.importOrders(db, [{ orderNo: '1', mall: '楽天', productCode: 'p', amount: 100 }], '2026-10');
+  const t = ec.mallTotalsForMonth(db, '2026-10');
+  assert.strictEqual(t.source, 'orders');
+  assert.strictEqual(t.total, 100);
+});
+
+test('ファイル名から発送月を推測する', () => {
+  const now = new Date(2026, 9, 28); // 2026-10-28
+  assert.deepStrictEqual(ec.guessShipMonth('10月発送分.csv', now), { year: 2026, month: 10 });
+  assert.deepStrictEqual(ec.guessShipMonth('12月発送分.csv', now), { year: 2025, month: 12 });
+  assert.deepStrictEqual(ec.guessShipMonth('2026年9月発送分.csv', now), { year: 2026, month: 9 });
+  assert.strictEqual(ec.guessShipMonth('売上.csv', now), null);
+});
+
+test('昨対比と、さかのぼる月の一覧', () => {
+  assert.strictEqual(ec.changePercent(120, 100), 20);
+  assert.strictEqual(ec.changePercent(80, 100), -20);
+  assert.strictEqual(ec.changePercent(100, 0), null);
+  assert.deepStrictEqual(ec.lastMonths(2026, 2, 3), ['2025-12', '2026-01', '2026-02']);
+});
