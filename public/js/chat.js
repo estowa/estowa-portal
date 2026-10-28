@@ -35,7 +35,7 @@
   let online = {};             // user_id -> 接続番号
   let active = null;           // 開いている部屋のid
   let activeTitle = '';
-  let shown = new Set();       // 画面に出したメッセージid（二重表示の防止）
+  let shown = new Map();       // 画面に出したメッセージ id -> { m: メッセージ, row: 行の要素 }（二重表示の防止・取り消しの差し替え）
   let picked = [];             // 添付に選んだファイル
   let ws = null;
   let retry = 0;
@@ -159,19 +159,61 @@
     return box;
   }
 
-  function appendMessage(m) {
-    if (shown.has(m.id)) return;
-    shown.add(m.id);
+  function buildRow(m) {
     const mine = m.sender_id === state.me.user_id;
-    const row = el('div', 'chat-msg ' + (mine ? 'mine' : 'theirs'));
+    const row = el('div', 'chat-msg ' + (mine ? 'mine' : 'theirs') + (m.deleted ? ' deleted' : ''));
     if (!mine && activeIsGroup()) row.appendChild(el('div', 'chat-sender', m.sender_name));
+    if (m.deleted) { // 取り消されたメッセージ（本文・添付はサーバーで消えている）
+      row.appendChild(el('div', 'chat-bubble', (mine ? '' : m.sender_name + 'さんが') + 'メッセージを取り消しました'));
+      row.appendChild(el('div', 'chat-time', m.created_at));
+      return row;
+    }
     const bubble = el('div', 'chat-bubble');
     if (m.body) bubble.appendChild(el('div', 'chat-text', m.body));
     (m.files || []).forEach((f) => bubble.appendChild(fileNode(f)));
     row.appendChild(bubble);
-    row.appendChild(el('div', 'chat-time', m.created_at));
+    const meta = el('div', 'chat-time', m.created_at);
+    if (mine) {
+      const del = el('button', 'chat-del', '取り消す');
+      del.type = 'button';
+      del.addEventListener('click', () => deleteMessage(m));
+      meta.appendChild(del);
+    }
+    row.appendChild(meta);
+    return row;
+  }
+
+  function appendMessage(m) {
+    if (shown.has(m.id)) return;
+    const row = buildRow(m);
+    shown.set(m.id, { m, row });
     logEl.appendChild(row);
     logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  // 取り消されたメッセージを、その場で「取り消しました」の表示に置き換える
+  function markDeleted(id) {
+    const item = shown.get(id);
+    if (!item || item.m.deleted) return;
+    item.m = { ...item.m, deleted: true, body: '', files: [] };
+    const row = buildRow(item.m);
+    item.row.replaceWith(row);
+    item.row = row;
+  }
+
+  async function deleteMessage(m) {
+    if (!window.confirm('このメッセージを取り消しますか？（相手の画面からも消えます）')) return;
+    const r = await postJson('/chat/messages/' + m.id + '/delete');
+    if (!r.ok) return showError('取り消せませんでした');
+    showError('');
+    // 自分の画面は、サーバーからの通知を待たずに切り替える（通知が届いても二重にはならない）
+    markDeleted(m.id);
+  }
+
+  function onChatDeleted(msg) {
+    if (msg.room_id === active) markDeleted(msg.id);
+    // 未読の数が変わることがあるので、一覧を取り直す
+    refreshState().then(refreshBadgeSoon);
   }
 
   function activeIsGroup() {
@@ -209,7 +251,7 @@
     inputEl.disabled = false;
     sendEl.disabled = false;
     logEl.textContent = '';
-    shown = new Set();
+    shown = new Map();
     showError('');
     renderSettingsButton();
     const res = await fetch('/chat/rooms/' + roomId + '/messages');
@@ -296,6 +338,7 @@
       let msg;
       try { msg = JSON.parse(ev.data); } catch (e) { return; }
       if (msg.type === 'chat') onChat(msg.message);
+      else if (msg.type === 'chat_deleted') onChatDeleted(msg);
       else if (msg.type === 'rooms') refreshState();
       else if (msg.type === 'presence') {
         online = msg.online || {};

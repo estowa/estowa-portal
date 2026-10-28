@@ -137,6 +137,19 @@ router.post('/chat/rooms/:id/messages', requireLogin, (req, res) => {
   });
 });
 
+// 自分が送ったメッセージの取り消し。本文と添付の実体を消し、部屋の全員の画面に知らせる
+router.post('/chat/messages/:id/delete', requireLogin, (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { message, storedNames } = store.deleteMessage(db, Number.isInteger(id) ? id : 0, req.session.user.user_id);
+    storedNames.forEach((name) => fs.unlink(path.join(CHAT_FILES_DIR, path.basename(name)), () => {}));
+    chatBus.publishDeleted(message.room_id, message.id);
+    res.json({ ok: true });
+  } catch (e) {
+    fail(res, e);
+  }
+});
+
 // 添付のダウンロード。画像（png/jpg/gif/webp）とPDFは、そのまま開いて見られる。それ以外は保存させる。
 // ?download=1 を付けると、画像・PDFも保存（ダウンロード）になる
 router.get('/chat/files/:id', requireLogin, (req, res) => {

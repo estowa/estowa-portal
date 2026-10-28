@@ -187,3 +187,19 @@ test('自分宛てのメモは、自分の全接続に届き、通知は送ら�
   assert.strictEqual(a2.of('chat').length, 1);
   assert.deepStrictEqual(calls, []);
 });
+
+test('publishDeleted: 部屋のメンバーの全接続にだけ chat_deleted を送り、通知は送らない', () => {
+  let notified = 0;
+  const { hub, db } = makeEnv({ onOfflineMessage() { notified += 1; } });
+  const a1 = fakeSocket(), a2 = fakeSocket(), b = fakeSocket(), home = fakeSocket();
+  hub.connect('a', a1); hub.connect('a', a2); hub.connect('b', b); hub.connect('home', home);
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  send(hub, 'a', a1, { type: 'chat', room: room.id, body: 'まちがえた' });
+  const id = b.of('chat')[0].message.id;
+  const before = notified;
+  store.deleteMessage(db, id, 'a');
+  hub.publishDeleted(room.id, id);
+  for (const s of [a1, a2, b]) assert.deepStrictEqual(s.of('chat_deleted'), [{ type: 'chat_deleted', room_id: room.id, id }]);
+  assert.strictEqual(home.of('chat_deleted').length, 0);
+  assert.strictEqual(notified, before);
+});

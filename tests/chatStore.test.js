@@ -185,3 +185,56 @@ test('自分宛てのメモ: 自分だけの部屋ができ、同じ部屋を使
   assert.deepStrictEqual([listed.user_id, listed.self, listed.room_id], ['a', true, memo.id]);
   assert.strictEqual(store.listForUser(db, 'b').dms.find((d) => d.user_id === 'a').room_id, null); // 他の人の一覧に、自分のメモの部屋は出ない
 });
+
+test('取り消し: 送った本人だけができ、本文と添付が消え、一覧には取り消し済みとして残る', () => {
+  const db = makeDb();
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  const m = store.saveMessage(db, room.id, 'a', '秘密の話', [{ originalName: 'a.pdf', storedName: 'x.pdf', size: 1 }]);
+  assert.throws(() => store.deleteMessage(db, m.id, 'b'), /forbidden/);      // 相手は取り消せない
+  assert.throws(() => store.deleteMessage(db, m.id, 'c'), /forbidden/);      // 部屋の外の人も不可
+  assert.throws(() => store.deleteMessage(db, 99999, 'a'), /forbidden/);     // 存在しないid
+  const r = store.deleteMessage(db, m.id, 'a');
+  assert.deepStrictEqual(r.storedNames, ['x.pdf']);
+  assert.deepStrictEqual([r.message.deleted, r.message.body, r.message.files], [true, '', []]);
+  const listed = store.listMessages(db, room.id);
+  assert.deepStrictEqual(listed.map((x) => [x.id, x.deleted, x.body, x.files]), [[m.id, true, '', []]]);
+  assert.strictEqual(db.prepare('SELECT body FROM chat_msgs WHERE id = ?').get(m.id).body, ''); // DBにも本文は残らない
+  assert.strictEqual(store.getFileForUser(db, m.files[0].id, 'b'), null);     // 添付は開けない
+  assert.deepStrictEqual(store.deleteMessage(db, m.id, 'a').storedNames, []); // 2回目は何もしない
+});
+
+test('取り消したメッセージは未読に数えない', () => {
+  const db = makeDb();
+  const room = store.getOrCreateDm(db, 'a', 'b');
+  const m1 = store.saveMessage(db, room.id, 'a', '1');
+  store.saveMessage(db, room.id, 'a', '2');
+  assert.strictEqual(store.totalUnread(db, 'b'), 2);
+  store.deleteMessage(db, m1.id, 'a');
+  assert.strictEqual(store.totalUnread(db, 'b'), 1);
+});
+
+test('自分宛てのメモの発言も取り消せる', () => {
+  const db = makeDb();
+  const memo = store.getOrCreateDm(db, 'a', 'a');
+  const m = store.saveMessage(db, memo.id, 'a', 'あとで');
+  assert.strictEqual(store.deleteMessage(db, m.id, 'a').message.deleted, true);
+});
+
+test('抜けたグループの発言は、取り消せない', () => {
+  const db = makeDb();
+  const g = store.createGroup(db, 'a', 'チーム', ['b']);
+  const m = store.saveMessage(db, g.id, 'b', 'x');
+  store.leaveGroup(db, g.id, 'b');
+  assert.throws(() => store.deleteMessage(db, m.id, 'b'), /forbidden/);
+});
+
+test('取り消し列は、旧いDBにも一度だけ追加される', () => {
+  const db = new Database(':memory:');
+  db.exec(`CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL DEFAULT 'x', display_name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member')`);
+  db.exec(`CREATE TABLE chat_msgs (id INTEGER PRIMARY KEY AUTOINCREMENT, room_id INTEGER NOT NULL, sender_id TEXT NOT NULL,
+    body TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now')))`);
+  ensureChatSchema(db);
+  ensureChatSchema(db);
+  assert.ok(db.prepare('PRAGMA table_info(chat_msgs)').all().some((c) => c.name === 'deleted_at'));
+});
