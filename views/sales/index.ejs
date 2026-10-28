@@ -154,7 +154,9 @@
   table.ec-subtable { width: 100%; border-collapse: collapse; font-size: 12px; }
   table.ec-subtable th, table.ec-subtable td { padding: 4px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
   table.ec-subtable th:first-child, table.ec-subtable td:first-child { text-align: left; }
-  .ec-ad-table td.ec-ad-text { text-align: left; white-space: normal; min-width: 120px; }
+  table.ec-ad-table th, table.ec-ad-table td { text-align: left; vertical-align: top; }
+  .ec-ad-table td.ec-ad-text { white-space: normal; min-width: 120px; }
+  .ec-ad-table td.ec-ad-actions { text-align: right; }
   .ec-ad-edit > summary, .ec-ad-add > summary { list-style: none; cursor: pointer; display: inline-block; }
   .ec-ad-edit > summary::-webkit-details-marker, .ec-ad-add > summary::-webkit-details-marker { display: none; }
   .ec-ad-add { margin-top: 12px; }
@@ -213,18 +215,18 @@
         <% if (unregistered.length > 0) { %>
           <div class="ec-warn">商品コード一覧にないコードがあります（<%= unregistered.length %>件）：<%= unregistered.join('、') %>。商品コード一覧を最新にして取り込み直してください。</div>
         <% } %>
-        <div class="ec-legend">商品名をクリックすると、モール別の件数と売上が開きます。</div>
+        <div class="ec-legend">商品名をクリックすると、モール別の個数と売上が開きます。</div>
         <div class="ec-table-wrap">
         <table class="ec-table" id="ec-product-table">
           <thead>
-            <tr><th>商品名</th><th>売上</th><th>件数</th><th>構成比</th><th><%= baseYear %>年<%= month %>月</th><th>増減</th></tr>
+            <tr><th>商品名</th><th>売上</th><th>個数</th><th>構成比</th><th><%= baseYear %>年<%= month %>月</th><th>増減</th></tr>
           </thead>
           <tbody>
             <% productRows.forEach(p => { %>
               <tr class="ec-prod">
                 <td><button type="button" class="ec-name-btn" aria-expanded="false"><span class="ec-caret">▸</span><%= p.registered ? p.name : '（未登録）' %></button><div class="ec-code"><%= p.code || '(コードなし)' %></div></td>
                 <td><%= yen(p.amount) %></td>
-                <td><%= p.count %></td>
+                <td><%= p.qty %>個</td>
                 <td><%= p.share === null ? '―' : p.share + '%' %></td>
                 <td><%= p.baseAmount === null ? '前年なし' : yen(p.baseAmount) %></td>
                 <td style="color: <%= pctColor(p.changePct) %>;"><%= pctText(p.changePct) %></td>
@@ -232,12 +234,12 @@
               <tr class="ec-sub" hidden>
                 <td colspan="6">
                   <table class="ec-subtable">
-                    <thead><tr><th>モール</th><th>件数</th><th>売上</th><th>この商品の中の割合</th></tr></thead>
+                    <thead><tr><th>モール</th><th>個数</th><th>売上</th><th>この商品の中の割合</th></tr></thead>
                     <tbody>
                       <% (breakdown[p.code] || []).forEach(b => { %>
                         <tr>
                           <td><%= b.mall %></td>
-                          <td><%= b.count %>件</td>
+                          <td><%= b.qty %>個</td>
                           <td><%= yen(b.amount) %></td>
                           <td><%= p.amount > 0 ? (Math.round((b.amount / p.amount) * 1000) / 10) + '%' : '―' %></td>
                         </tr>
@@ -250,7 +252,7 @@
           </tbody>
         </table>
         </div>
-        <div class="ec-legend" style="margin-top:8px;">売上は請求金額（税込）の合計です。0円の注文（ポイント全額払いなど）は件数に含みます。数量の列がCSVにないため、個数ではなく件数（注文の行数）で表示しています。</div>
+        <div class="ec-legend" style="margin-top:8px;">売上は請求金額（税込）の合計です。個数はCSVの数量の合計です。0円の注文（ポイント全額払いなど）も個数に含みます。</div>
       </details>
       <script>
         (function () {
@@ -288,7 +290,7 @@
               <td class="ec-ad-text"><%= a.title %></td>
               <td class="ec-ad-text"><%= a.content %></td>
               <td><%= a.price %></td>
-              <td><details class="ec-ad-edit"><summary class="mini-btn">編集</summary>
+              <td class="ec-ad-actions"><details class="ec-ad-edit"><summary class="mini-btn">編集</summary>
                 <div class="ec-ad-form">
                   <form method="POST" action="/sales/ads/<%= a.id %>">
                     <input type="hidden" name="redirect_year" value="<%= year %>" /><input type="hidden" name="redirect_month" value="<%= month %>" />

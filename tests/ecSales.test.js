@@ -35,9 +35,9 @@ test('売上CSV(Shift_JIS)を読む: 個人情報の列は無視し、0円も取
   const { rows, skipped } = ec.parseOrderCsv(sjis(csv));
   assert.strictEqual(skipped, 1);
   assert.deepStrictEqual(rows, [
-    { orderNo: 'A-001', mall: '楽天', productCode: '10020200610-2', amount: 1980, orderMonth: '2026-10' },
-    { orderNo: 'A-002', mall: '楽天', productCode: '10020200616', amount: 0, orderMonth: '2026-10' },
-    { orderNo: 'A-003', mall: 'カウシェ', productCode: 'ss-1004', amount: 1776, orderMonth: '2026-10' },
+    { orderNo: 'A-001', mall: '楽天', productCode: '10020200610-2', amount: 1980, quantity: 1, orderMonth: '2026-10' },
+    { orderNo: 'A-002', mall: '楽天', productCode: '10020200616', amount: 0, quantity: 1, orderMonth: '2026-10' },
+    { orderNo: 'A-003', mall: 'カウシェ', productCode: 'ss-1004', amount: 1776, quantity: 1, orderMonth: '2026-10' },
   ]);
   assert.strictEqual(JSON.stringify(rows).includes('配送先'), false);
 });
@@ -160,10 +160,10 @@ test('商品ごとの、モール別の件数と売上', () => {
   ], '2026-11');
   const b = ec.productMallBreakdown(db, '2026-11');
   assert.deepStrictEqual(b.p1, [
-    { mall: '楽天', count: 2, amount: 1500 },
-    { mall: 'ヤフー', count: 1, amount: 0 },
+    { mall: '楽天', count: 2, qty: 2, amount: 1500 },
+    { mall: 'ヤフー', count: 1, qty: 1, amount: 0 },
   ]);
-  assert.deepStrictEqual(b.p2, [{ mall: 'ヤフー', count: 1, amount: 300 }]);
+  assert.deepStrictEqual(b.p2, [{ mall: 'ヤフー', count: 1, qty: 1, amount: 300 }]);
 });
 
 test('広告: 必須項目の検査、追加・編集・削除、月と重なるものだけ表示', () => {
@@ -182,4 +182,33 @@ test('広告: 必須項目の検査、追加・編集・削除、月と重なる
   assert.strictEqual(ec.adsForMonth(db, '2026-10')[0].title, '更新後');
   ec.deleteAd(db, id);
   assert.strictEqual(ec.adsForMonth(db, '2026-10').length, 0);
+});
+
+test('数量は個数として集計し、1注文に複数の商品行があっても取りこぼさない', () => {
+  const header = 'コントロールカラム,受注番号,受注日時,店舗名,商品コード,商品名,数量,請求金額,支払方法,ステータスコード,明細ID,受注ID,店舗ID';
+  const csv = [
+    header,
+    'U,A-1,2026-11-01 08:00:00,みんなのメール【楽天市場店】,p1,x,3,3000,カード,2,501,1,296',
+    'U,A-1,2026-11-01 08:00:00,みんなのメール【楽天市場店】,p2,y,1,500,カード,2,502,1,296',
+    'U,A-2,2026-11-02 08:00:00,みんなのメール【Yahoo!店】,p1,x,,0,ポイント,2,503,2,1070',
+  ].join('\n');
+  const { rows } = ec.parseOrderCsv(sjis(csv));
+  assert.deepStrictEqual(rows.map((r) => [r.orderNo, r.quantity]), [['A-1#501', 3], ['A-1#502', 1], ['A-2#503', 1]]);
+  const db = makeDb();
+  ec.importOrders(db, rows, '2026-11');
+  ec.importOrders(db, rows, '2026-11'); // 再アップしても増えない
+  const t = ec.mallTotalsForMonth(db, '2026-11');
+  assert.strictEqual(t.count, 3);
+  assert.strictEqual(t.total, 3500);
+  const p1 = ec.productTotalsForMonth(db, '2026-11').find((r) => r.code === 'p1');
+  assert.strictEqual(p1.qty, 4);
+  assert.deepStrictEqual(ec.productMallBreakdown(db, '2026-11').p1.map((b) => [b.mall, b.qty]), [['楽天', 3], ['ヤフー', 1]]);
+});
+
+test('数量の列がない古いDBにも列が追加される', () => {
+  const db = new Database(':memory:');
+  db.exec("CREATE TABLE ec_order_items (order_no TEXT PRIMARY KEY, ship_month TEXT NOT NULL, mall TEXT NOT NULL, product_code TEXT NOT NULL DEFAULT '', amount INTEGER NOT NULL DEFAULT 0, imported_by TEXT, imported_at TEXT NOT NULL DEFAULT (datetime('now')))");
+  db.prepare("INSERT INTO ec_order_items (order_no, ship_month, mall, amount) VALUES ('1', '2026-10', '楽天', 100)").run();
+  ensureEcSchema(db);
+  assert.strictEqual(db.prepare('SELECT quantity FROM ec_order_items').get().quantity, 1);
 });
