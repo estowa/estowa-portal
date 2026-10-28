@@ -138,6 +138,33 @@
   table.ec-table th { color: var(--text-secondary); font-weight: 600; }
   .ec-legend { font-size: 12px; color: var(--text-muted); margin: 0 0 10px; }
   .ec-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .ec-fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; }
+  .ec-fold > summary::-webkit-details-marker { display: none; }
+  .ec-fold > summary h2 { margin: 0; display: flex; align-items: center; gap: 10px; }
+  .ec-fold > summary h2::before { content: "▶"; font-size: 11px; color: var(--text-muted); transition: transform .15s; }
+  .ec-fold[open] > summary h2::before { transform: rotate(90deg); }
+  .ec-fold[open] > summary { margin-bottom: 10px; }
+  .ec-fold-count { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+  .ec-name-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--primary); cursor: pointer; text-align: left; }
+  .ec-name-btn:hover { text-decoration: underline; }
+  .ec-caret { display: inline-block; width: 14px; transition: transform .15s; }
+  tr.ec-prod.open .ec-caret { transform: rotate(90deg); }
+  .ec-code { font-size: 11px; color: var(--text-muted); margin-left: 14px; }
+  tr.ec-sub > td { background: var(--gridline); padding: 6px 10px 10px 24px; }
+  table.ec-subtable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.ec-subtable th, table.ec-subtable td { padding: 4px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
+  table.ec-subtable th:first-child, table.ec-subtable td:first-child { text-align: left; }
+  .ec-ad-table td.ec-ad-text { text-align: left; white-space: normal; min-width: 120px; }
+  .ec-ad-edit > summary, .ec-ad-add > summary { list-style: none; cursor: pointer; display: inline-block; }
+  .ec-ad-edit > summary::-webkit-details-marker, .ec-ad-add > summary::-webkit-details-marker { display: none; }
+  .ec-ad-add { margin-top: 12px; }
+  .ec-ad-form { margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: left; white-space: normal; min-width: 240px; }
+  .ec-ad-form form { display: flex; flex-direction: column; gap: 4px; }
+  .ec-ad-form label { font-size: 12px; color: var(--text-secondary); }
+  .ec-ad-form input, .ec-ad-form select, .ec-ad-form textarea { padding: 6px; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+  .ec-ad-form button { margin-top: 6px; padding: 8px 12px; background: var(--primary); color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+  .ec-ad-form .event-delete-btn { background: #d03b3b; }
+  .ec-ad-form form + form { margin-top: 6px; }
   .ec-warn { background: #fff4e5; color: #8a4b00; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
 </style>
 
@@ -173,50 +200,134 @@
         </tbody>
       </table>
       </div>
-      <div style="margin-top:12px;">
-        <% mallRows.forEach(r => { %>
-          <div class="viz-bar-row">
-            <div class="viz-bar-label"><%= r.mall %></div>
-            <div style="flex:1;">
-              <div class="viz-bar-track" style="margin-bottom:3px;"><div class="viz-bar-fill" style="width: <%= Math.round((r.amount / maxMallAmount) * 100) %>%; background: var(--series-<%= r.colorSlot %>);"></div></div>
-              <div class="viz-bar-track" style="height:6px;"><div class="viz-bar-fill" style="width: <%= Math.round((r.baseAmount / maxMallAmount) * 100) %>%; background: var(--base-bar);"></div></div>
-            </div>
-          </div>
-        <% }) %>
-        <div class="ec-legend">太い棒＝<%= year %>年<%= month %>月　細い灰色の棒＝<%= baseYear %>年<%= month %>月</div>
-      </div>
     <% } %>
   </div>
 
   <div class="panel">
-    <h2>商品別売上（商品コード別）</h2>
     <% if (cur.source !== 'orders') { %>
+      <h2>商品別売上（商品コード別）</h2>
       <div class="empty-note"><%= cur.source === 'monthly' ? 'この月は、商品別のデータがありません（商品別は新しい形式のCSVを取り込んだ月から表示されます）' : 'この月のデータはまだありません' %></div>
     <% } else { %>
-      <% if (unregistered.length > 0) { %>
-        <div class="ec-warn">商品コード一覧にないコードがあります（<%= unregistered.length %>件）：<%= unregistered.join('、') %>。商品コード一覧を最新にして取り込み直してください。</div>
-      <% } %>
+      <details class="ec-fold" id="ec-products">
+        <summary><h2>商品別売上（商品コード別）<span class="ec-fold-count"><%= productRows.length %>商品</span></h2></summary>
+        <% if (unregistered.length > 0) { %>
+          <div class="ec-warn">商品コード一覧にないコードがあります（<%= unregistered.length %>件）：<%= unregistered.join('、') %>。商品コード一覧を最新にして取り込み直してください。</div>
+        <% } %>
+        <div class="ec-legend">商品名をクリックすると、モール別の件数と売上が開きます。</div>
+        <div class="ec-table-wrap">
+        <table class="ec-table" id="ec-product-table">
+          <thead>
+            <tr><th>商品名</th><th>売上</th><th>件数</th><th>構成比</th><th><%= baseYear %>年<%= month %>月</th><th>増減</th></tr>
+          </thead>
+          <tbody>
+            <% productRows.forEach(p => { %>
+              <tr class="ec-prod">
+                <td><button type="button" class="ec-name-btn" aria-expanded="false"><span class="ec-caret">▸</span><%= p.registered ? p.name : '（未登録）' %></button><div class="ec-code"><%= p.code || '(コードなし)' %></div></td>
+                <td><%= yen(p.amount) %></td>
+                <td><%= p.count %></td>
+                <td><%= p.share === null ? '―' : p.share + '%' %></td>
+                <td><%= p.baseAmount === null ? '前年なし' : yen(p.baseAmount) %></td>
+                <td style="color: <%= pctColor(p.changePct) %>;"><%= pctText(p.changePct) %></td>
+              </tr>
+              <tr class="ec-sub" hidden>
+                <td colspan="6">
+                  <table class="ec-subtable">
+                    <thead><tr><th>モール</th><th>件数</th><th>売上</th><th>この商品の中の割合</th></tr></thead>
+                    <tbody>
+                      <% (breakdown[p.code] || []).forEach(b => { %>
+                        <tr>
+                          <td><%= b.mall %></td>
+                          <td><%= b.count %>件</td>
+                          <td><%= yen(b.amount) %></td>
+                          <td><%= p.amount > 0 ? (Math.round((b.amount / p.amount) * 1000) / 10) + '%' : '―' %></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        </div>
+        <div class="ec-legend" style="margin-top:8px;">売上は請求金額（税込）の合計です。0円の注文（ポイント全額払いなど）は件数に含みます。数量の列がCSVにないため、個数ではなく件数（注文の行数）で表示しています。</div>
+      </details>
+      <script>
+        (function () {
+          var table = document.getElementById('ec-product-table');
+          if (!table) return;
+          table.addEventListener('click', function (e) {
+            var row = e.target.closest('tr.ec-prod');
+            if (!row) return;
+            var sub = row.nextElementSibling;
+            var btn = row.querySelector('.ec-name-btn');
+            var open = sub.hasAttribute('hidden');
+            if (open) sub.removeAttribute('hidden'); else sub.setAttribute('hidden', '');
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            row.classList.toggle('open', open);
+          });
+        })();
+      </script>
+    <% } %>
+  </div>
+
+  <div class="panel" id="ads">
+    <h2>実施している広告・販促（<%= year %>年<%= month %>月）</h2>
+    <div class="ec-legend">この月と期間が重なるものを表示します。同じモールで複数あるときは行を追加してください。</div>
+    <% if (ads.length === 0) { %>
+      <div class="empty-note">この月に登録された広告・販促はありません</div>
+    <% } else { %>
       <div class="ec-table-wrap">
-      <table class="ec-table">
-        <thead>
-          <tr><th>商品名</th><th>売上</th><th>件数</th><th>構成比</th><th><%= baseYear %>年<%= month %>月</th><th>増減</th></tr>
-        </thead>
+      <table class="ec-table ec-ad-table">
+        <thead><tr><th>モール</th><th>期間</th><th>タイトル</th><th>内容</th><th>価格</th><th></th></tr></thead>
         <tbody>
-          <% productRows.forEach(p => { %>
+          <% ads.forEach(a => { %>
             <tr>
-              <td><%= p.registered ? p.name : '（未登録）' %><div style="font-size:11px; color:var(--text-muted);"><%= p.code || '(コードなし)' %></div></td>
-              <td><%= yen(p.amount) %></td>
-              <td><%= p.count %></td>
-              <td><%= p.share === null ? '―' : p.share + '%' %></td>
-              <td><%= p.baseAmount === null ? '前年なし' : yen(p.baseAmount) %></td>
-              <td style="color: <%= pctColor(p.changePct) %>;"><%= pctText(p.changePct) %></td>
+              <td><%= a.mall %></td>
+              <td><%= a.start_date.slice(5).replace('-', '/') %><%= a.end_date !== a.start_date ? '〜' + a.end_date.slice(5).replace('-', '/') : '' %></td>
+              <td class="ec-ad-text"><%= a.title %></td>
+              <td class="ec-ad-text"><%= a.content %></td>
+              <td><%= a.price %></td>
+              <td><details class="ec-ad-edit"><summary class="mini-btn">編集</summary>
+                <div class="ec-ad-form">
+                  <form method="POST" action="/sales/ads/<%= a.id %>">
+                    <input type="hidden" name="redirect_year" value="<%= year %>" /><input type="hidden" name="redirect_month" value="<%= month %>" />
+                    <label>モール</label>
+                    <select name="mall"><% adMalls.forEach(m => { %><option value="<%= m %>" <%= m === a.mall ? 'selected' : '' %>><%= m %></option><% }) %></select>
+                    <label>開始日</label><input type="date" name="start_date" value="<%= a.start_date %>" required />
+                    <label>終了日</label><input type="date" name="end_date" value="<%= a.end_date %>" />
+                    <label>タイトル</label><input type="text" name="title" value="<%= a.title %>" required />
+                    <label>内容</label><textarea name="content" rows="2"><%= a.content %></textarea>
+                    <label>価格</label><input type="text" name="price" value="<%= a.price %>" />
+                    <button type="submit">保存する</button>
+                  </form>
+                  <form method="POST" action="/sales/ads/<%= a.id %>/delete" onsubmit="return confirm('この広告を削除しますか？');">
+                    <input type="hidden" name="redirect_year" value="<%= year %>" /><input type="hidden" name="redirect_month" value="<%= month %>" />
+                    <button type="submit" class="event-delete-btn">削除する</button>
+                  </form>
+                </div></details></td>
             </tr>
           <% }) %>
         </tbody>
       </table>
       </div>
-      <div class="ec-legend" style="margin-top:8px;">売上は請求金額（税込）の合計です。0円の注文（ポイント全額払いなど）は件数に含みます。</div>
     <% } %>
+    <details class="ec-ad-add">
+      <summary class="mini-btn">＋ 行を追加</summary>
+      <div class="ec-ad-form">
+        <form method="POST" action="/sales/ads">
+          <input type="hidden" name="redirect_year" value="<%= year %>" /><input type="hidden" name="redirect_month" value="<%= month %>" />
+          <label>モール</label>
+          <select name="mall"><% adMalls.forEach(m => { %><option value="<%= m %>"><%= m %></option><% }) %></select>
+          <label>開始日</label><input type="date" name="start_date" value="<%= monthStr %>-01" required />
+          <label>終了日（単日なら空欄）</label><input type="date" name="end_date" />
+          <label>タイトル</label><input type="text" name="title" placeholder="例: 楽天スーパーSALE クーポン" required />
+          <label>内容</label><textarea name="content" rows="2" placeholder="例: 全品10%OFFクーポン配布"></textarea>
+          <label>価格</label><input type="text" name="price" placeholder="例: ¥3,980 / 20%OFF" />
+          <button type="submit">追加する</button>
+        </form>
+      </div>
+    </details>
   </div>
 
   <div class="panel">

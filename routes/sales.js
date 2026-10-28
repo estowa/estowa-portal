@@ -77,6 +77,8 @@ router.get('/sales', requireLogin, (req, res) => {
     }));
     unregistered = productRows.filter((p) => !p.registered).map((p) => p.code || '(コードなし)');
   }
+  const breakdown = cur.source === 'orders' ? ec.productMallBreakdown(db, monthStr) : {};
+  const ads = ec.adsForMonth(db, monthStr);
   const productCount = db.prepare('SELECT COUNT(*) AS n FROM ec_products').get().n;
 
   // 月別推移（直近12か月と、比較年の同じ月）
@@ -115,6 +117,9 @@ router.get('/sales', requireLogin, (req, res) => {
     mallRows,
     maxMallAmount,
     productRows,
+    breakdown,
+    ads,
+    adMalls: ec.MALL_ORDER,
     unregistered,
     productCount,
     trend,
@@ -204,6 +209,30 @@ router.post('/sales/monthly/import', requireLogin, upload.single('csvfile'), (re
   const n = ec.upsertMonthly(db, parsed.rows);
   const skip = parsed.skipped > 0 ? `（${parsed.skipped}件は形式不正のためスキップ）` : '';
   redirectWith(res, { notice: `過去分のモール別売上を取り込みました（${n}件）${skip}` });
+});
+
+// 広告・販促（モールごとに複数行。追加・編集・削除はログインしていれば誰でも）
+function adsDest(body) {
+  const y = parseInt(body.redirect_year, 10);
+  const m = parseInt(body.redirect_month, 10);
+  return y && m ? `/sales?year=${y}&month=${m}#ads` : '/sales#ads';
+}
+
+router.post('/sales/ads', requireLogin, (req, res) => {
+  const ad = ec.normalizeAd(req.body);
+  if (ad) ec.addAd(db, ad, req.session.user.user_id);
+  res.redirect(adsDest(req.body));
+});
+
+router.post('/sales/ads/:id', requireLogin, (req, res) => {
+  const ad = ec.normalizeAd(req.body);
+  if (ad) ec.updateAd(db, req.params.id, ad, req.session.user.user_id);
+  res.redirect(adsDest(req.body));
+});
+
+router.post('/sales/ads/:id/delete', requireLogin, (req, res) => {
+  ec.deleteAd(db, req.params.id);
+  res.redirect(adsDest(req.body));
 });
 
 module.exports = router;

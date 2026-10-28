@@ -149,3 +149,37 @@ test('過去分(月次)のある月かどうかが分かる', () => {
   assert.strictEqual(ec.hasMonthlyData(db, '2026-10'), true);
   assert.strictEqual(ec.hasMonthlyData(db, '2026-11'), false);
 });
+
+test('商品ごとの、モール別の件数と売上', () => {
+  const db = makeDb();
+  ec.importOrders(db, [
+    { orderNo: '1', mall: '楽天', productCode: 'p1', amount: 1000 },
+    { orderNo: '2', mall: '楽天', productCode: 'p1', amount: 500 },
+    { orderNo: '3', mall: 'ヤフー', productCode: 'p1', amount: 0 },
+    { orderNo: '4', mall: 'ヤフー', productCode: 'p2', amount: 300 },
+  ], '2026-11');
+  const b = ec.productMallBreakdown(db, '2026-11');
+  assert.deepStrictEqual(b.p1, [
+    { mall: '楽天', count: 2, amount: 1500 },
+    { mall: 'ヤフー', count: 1, amount: 0 },
+  ]);
+  assert.deepStrictEqual(b.p2, [{ mall: 'ヤフー', count: 1, amount: 300 }]);
+});
+
+test('広告: 必須項目の検査、追加・編集・削除、月と重なるものだけ表示', () => {
+  const db = makeDb();
+  assert.strictEqual(ec.normalizeAd({ mall: '楽天', title: '', start_date: '2026-11-01' }), null);
+  assert.strictEqual(ec.normalizeAd({ mall: '楽天', title: 'a', start_date: 'x' }), null);
+  const ad = ec.normalizeAd({ mall: '楽天', title: ' クーポン ', start_date: '2026-10-28', end_date: '2026-11-05', price: '20%OFF' });
+  assert.strictEqual(ad.title, 'クーポン');
+  const id = ec.addAd(db, ad, 'admin');
+  ec.addAd(db, ec.normalizeAd({ mall: 'ヤフー', title: '単日', start_date: '2026-11-10', end_date: '2026-11-01' }), 'admin');
+  ec.addAd(db, ec.normalizeAd({ mall: 'ヤフー', title: '12月だけ', start_date: '2026-12-01' }), 'admin');
+  assert.deepStrictEqual(ec.adsForMonth(db, '2026-11').map((a) => a.title), ['クーポン', '単日']);
+  assert.deepStrictEqual(ec.adsForMonth(db, '2026-10').map((a) => a.title), ['クーポン']);
+  assert.strictEqual(ec.adsForMonth(db, '2026-11')[1].end_date, '2026-11-10');
+  ec.updateAd(db, id, { ...ad, title: '更新後' }, 'admin');
+  assert.strictEqual(ec.adsForMonth(db, '2026-10')[0].title, '更新後');
+  ec.deleteAd(db, id);
+  assert.strictEqual(ec.adsForMonth(db, '2026-10').length, 0);
+});
