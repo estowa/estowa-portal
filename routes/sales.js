@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const db = require('../db/connection');
-const { requireLogin, requireAdmin } = require('../middleware/auth');
+const { requireLogin } = require('../middleware/auth');
 const { eventsByDayForMonth } = require('../lib/events');
 const { nowJstYearMonth } = require('../lib/jst');
 const ec = require('../lib/ecSales');
@@ -122,7 +122,6 @@ router.get('/sales', requireLogin, (req, res) => {
     eventsByDay,
     calLastDay,
     calFirstWeekday,
-    isAdmin: req.session.user.role === 'admin',
     thisYear: now.year,
     thisMonth: now.month,
     notice: req.query.notice || null,
@@ -131,7 +130,7 @@ router.get('/sales', requireLogin, (req, res) => {
 });
 
 // 売上CSV（新仕様）の取り込み。発送月は画面で指定（空ならファイル名から推測）
-router.post('/sales/import', requireLogin, requireAdmin, upload.single('csvfile'), (req, res) => {
+router.post('/sales/import', requireLogin, upload.single('csvfile'), (req, res) => {
   if (!req.file) return res.redirect('/sales');
   let year = parseInt(req.body.ship_year, 10);
   let month = parseInt(req.body.ship_month, 10);
@@ -162,7 +161,7 @@ router.post('/sales/import', requireLogin, requireAdmin, upload.single('csvfile'
 });
 
 // 商品コード一覧（全部入れ替え）
-router.post('/sales/products/import', requireLogin, requireAdmin, upload.single('csvfile'), (req, res) => {
+router.post('/sales/products/import', requireLogin, upload.single('csvfile'), (req, res) => {
   if (!req.file) return res.redirect('/sales');
   let parsed;
   try {
@@ -179,7 +178,7 @@ router.post('/sales/products/import', requireLogin, requireAdmin, upload.single(
 });
 
 // 過去分のモール別月次売上
-router.post('/sales/monthly/import', requireLogin, requireAdmin, upload.single('csvfile'), (req, res) => {
+router.post('/sales/monthly/import', requireLogin, upload.single('csvfile'), (req, res) => {
   if (!req.file) return res.redirect('/sales');
   let parsed;
   try {

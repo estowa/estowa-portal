@@ -9,7 +9,6 @@
 
 <div class="page-header">
   <h1>EC関連</h1>
-  <% if (isAdmin) { %>
   <details class="new-toggle">
     <summary>+ CSVインポート</summary>
     <div class="new-form-panel">
@@ -69,11 +68,9 @@
       });
     })();
   </script>
-  <% } %>
 </div>
 
 <% if (notice) { %><div class="success-text"><%= notice %></div><% } %>
-<% if (error && !isAdmin) { %><div class="error-text"><%= error %></div><% } %>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
   <a href="/sales?year=<%= prevYear %>&month=<%= prevMonth %>&cmp=<%= compareYears %>" class="mini-btn">← 前月</a>
