@@ -17,7 +17,7 @@
       <h2>売上CSV（発送分）</h2>
       <form method="POST" action="/sales/import" enctype="multipart/form-data" class="form-inline" id="ec-orders-form">
         <input type="file" name="csvfile" accept=".csv" required id="ec-orders-file" />
-        <label>発送月</label>
+        <label>発送月（空欄なら自動）</label>
         <input type="number" name="ship_year" min="2000" max="2100" placeholder="年" style="width:80px;" id="ec-ship-year" />
         <span>年</span>
         <input type="number" name="ship_month" min="1" max="12" placeholder="月" style="width:60px;" id="ec-ship-month" />
@@ -25,7 +25,7 @@
         <button type="submit" style="padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer;">取り込む</button>
       </form>
       <div style="font-size:12px; color:var(--text-muted); margin:6px 0 16px;">
-        ファイル名に「10月発送分」などがあれば、発送月は自動で入ります。店舗名からモールを判定し、<b>受注番号が同じ注文は上書き</b>されます（二重計上されません）。金額は請求金額（税込）です。個人情報の列は読み込みません（アップ前に削除してください）。
+        発送月は、空欄のままで自動で決まります（ファイル名に「11月発送分」などがあればそれ、なければ受注日のいちばん多い月）。店舗名からモールを判定し、<b>受注番号が同じ注文は上書き</b>されます（二重計上されません）。金額は請求金額（税込）です。個人情報の列は読み込みません（アップ前に削除してください）。
       </div>
 
       <h2>商品コード一覧</h2>
@@ -47,27 +47,6 @@
       </div>
     </div>
   </details>
-  <script>
-    (function () {
-      var file = document.getElementById('ec-orders-file');
-      if (!file) return;
-      file.addEventListener('change', function () {
-        var name = file.files[0] ? file.files[0].name : '';
-        var y = document.getElementById('ec-ship-year');
-        var m = document.getElementById('ec-ship-month');
-        var full = name.match(/(\d{4})\s*[年\-_.]\s*(\d{1,2})/);
-        var only = name.match(/(\d{1,2})\s*月/);
-        if (full) { y.value = full[1]; m.value = parseInt(full[2], 10); }
-        else if (only) {
-          var mm = parseInt(only[1], 10);
-          var now = new Date();
-          var yy = now.getFullYear();
-          if (mm > now.getMonth() + 1) yy -= 1;
-          y.value = yy; m.value = mm;
-        }
-      });
-    })();
-  </script>
 </div>
 
 <% if (notice) { %><div class="success-text"><%= notice %></div><% } %>

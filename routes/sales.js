@@ -132,16 +132,6 @@ router.get('/sales', requireLogin, (req, res) => {
 // 売上CSV（新仕様）の取り込み。発送月は画面で指定（空ならファイル名から推測）
 router.post('/sales/import', requireLogin, upload.single('csvfile'), (req, res) => {
   if (!req.file) return res.redirect('/sales');
-  let year = parseInt(req.body.ship_year, 10);
-  let month = parseInt(req.body.ship_month, 10);
-  if (!year || !month) {
-    const guess = ec.guessShipMonth(fileNameOf(req.file));
-    if (!guess) return redirectWith(res, { importError: '発送月が分かりません。年と月を入れてください' });
-    ({ year, month } = guess);
-  }
-  if (month < 1 || month > 12 || year < 2000 || year > 2100) {
-    return redirectWith(res, { importError: '発送月が正しくありません' });
-  }
   let parsed;
   try {
     parsed = ec.parseOrderCsv(req.file.buffer);
@@ -151,12 +141,34 @@ router.post('/sales/import', requireLogin, upload.single('csvfile'), (req, res) 
   if (parsed.rows.length === 0) {
     return redirectWith(res, { importError: '取り込める行がありませんでした（受注番号・店舗名・請求金額の列を確認してください）' });
   }
+  // 発送月: 画面で指定があればそれ、なければファイル名（「11月発送分」など）、なければ受注日のいちばん多い月
+  let year = parseInt(req.body.ship_year, 10);
+  let month = parseInt(req.body.ship_month, 10);
+  let basis = '指定';
+  if (!year || !month) {
+    const guess = ec.guessShipMonth(fileNameOf(req.file));
+    if (guess) {
+      ({ year, month } = guess);
+      basis = 'ファイル名';
+    } else {
+      const ym = ec.detectShipMonthFromOrders(parsed.rows);
+      if (!ym) return redirectWith(res, { importError: '発送月が分かりません。年と月を入れてください' });
+      [year, month] = ym.split('-').map((n) => parseInt(n, 10));
+      basis = '受注日';
+    }
+  }
+  if (month < 1 || month > 12 || year < 2000 || year > 2100) {
+    return redirectWith(res, { importError: '発送月が正しくありません' });
+  }
   const r = ec.importOrders(db, parsed.rows, ec.monthStr(year, month), req.session.user.user_id);
   const skip = parsed.skipped > 0 ? `、${parsed.skipped}件は形式不正のためスキップ` : '';
+  const warn = ec.hasMonthlyData(db, ec.monthStr(year, month))
+    ? ' ※この月は過去分（月次）のデータもあります。明細が優先され、過去分は使われません。意図しない月なら発送月を指定して取り込み直してください'
+    : '';
   redirectWith(res, {
     year,
     month,
-    notice: `${year}年${month}月発送分: 新規${r.inserted}件、上書き${r.updated}件を取り込みました${skip}`,
+    notice: `${year}年${month}月発送分（${basis}で判定）: 新規${r.inserted}件、上書き${r.updated}件を取り込みました${skip}${warn}`,
   });
 });
 

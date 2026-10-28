@@ -35,9 +35,9 @@ test('売上CSV(Shift_JIS)を読む: 個人情報の列は無視し、0円も取
   const { rows, skipped } = ec.parseOrderCsv(sjis(csv));
   assert.strictEqual(skipped, 1);
   assert.deepStrictEqual(rows, [
-    { orderNo: 'A-001', mall: '楽天', productCode: '10020200610-2', amount: 1980 },
-    { orderNo: 'A-002', mall: '楽天', productCode: '10020200616', amount: 0 },
-    { orderNo: 'A-003', mall: 'カウシェ', productCode: 'ss-1004', amount: 1776 },
+    { orderNo: 'A-001', mall: '楽天', productCode: '10020200610-2', amount: 1980, orderMonth: '2026-10' },
+    { orderNo: 'A-002', mall: '楽天', productCode: '10020200616', amount: 0, orderMonth: '2026-10' },
+    { orderNo: 'A-003', mall: 'カウシェ', productCode: 'ss-1004', amount: 1776, orderMonth: '2026-10' },
   ]);
   assert.strictEqual(JSON.stringify(rows).includes('配送先'), false);
 });
@@ -127,4 +127,25 @@ test('昨対比と、さかのぼる月の一覧', () => {
   assert.strictEqual(ec.changePercent(80, 100), -20);
   assert.strictEqual(ec.changePercent(100, 0), null);
   assert.deepStrictEqual(ec.lastMonths(2026, 2, 3), ['2025-12', '2026-01', '2026-02']);
+});
+
+test('発送月は受注日のいちばん多い月で、ファイル全体で1つに決まる', () => {
+  const csv = [
+    ORDER_HEADER,
+    'U,A-1,2026-10-31 23:00:00,みんなのメール【楽天市場店】,p1,x,,,,,,,100,カード,2,1,2,296',
+    'U,A-2,2026-11-01 08:00:00,みんなのメール【楽天市場店】,p1,x,,,,,,,100,カード,2,1,2,296',
+    'U,A-3,2026-11-02 08:00:00,みんなのメール【楽天市場店】,p1,x,,,,,,,100,カード,2,1,2,296',
+  ].join('\n');
+  const { rows } = ec.parseOrderCsv(sjis(csv));
+  assert.deepStrictEqual(rows.map((r) => r.orderMonth), ['2026-10', '2026-11', '2026-11']);
+  assert.strictEqual(ec.detectShipMonthFromOrders(rows), '2026-11');
+  assert.strictEqual(ec.detectShipMonthFromOrders([{ orderMonth: '2026-10' }, { orderMonth: '2026-11' }]), '2026-11');
+  assert.strictEqual(ec.detectShipMonthFromOrders([{ orderMonth: '' }]), null);
+});
+
+test('過去分(月次)のある月かどうかが分かる', () => {
+  const db = makeDb();
+  ec.upsertMonthly(db, [{ month: '2026-10', mall: '楽天', amount: 1 }]);
+  assert.strictEqual(ec.hasMonthlyData(db, '2026-10'), true);
+  assert.strictEqual(ec.hasMonthlyData(db, '2026-11'), false);
 });
