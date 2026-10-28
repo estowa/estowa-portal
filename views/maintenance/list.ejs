@@ -72,7 +72,9 @@
             <td data-label="状態" data-sort-value="<%= fmt.levelRank(r.status.level) %>"><%- include('_badge', { status: r.status }) %></td>
             <td data-label="SSL期限" data-sort-value="<%= r.sslExpires || '9999-12-31' %>" class="<%= fmt.partClass(p.ssl) %>"><%= fmt.expiryText(p.ssl, r.sslExpires) %></td>
             <td data-label="ドメイン期限" data-sort-value="<%= r.domainExpires || '9999-12-31' %>" class="<%= fmt.partClass(p.domain) %>"><%= fmt.expiryText(p.domain, r.domainExpires) %></td>
-            <td data-label="バックアップ" data-sort-value="<%= r.lastBackup || '0000-00-00' %>" class="<%= fmt.partClass(p.backup) %>"><%= fmt.staleText(p.backup, r.lastBackup) %></td>
+            <td data-label="バックアップ" data-sort-value="<%= r.lastBackup || '0000-00-00' %>" class="<%= fmt.partClass(p.backup) %>"><%= fmt.staleText(p.backup, r.lastBackup) %>
+              <% if (r.pcFetched) { %><div class="mt-sub">PC取得済み<%= r.pcBackup && r.pcBackup.size ? ' ・ ' + fmt.sizeText(r.pcBackup.size) : '' %></div><% } %>
+              <% if (r.pcBackup && !r.pcBackup.ok) { %><div class="mt-sub mt-warn-text">PC取得に失敗</div><% } %></td>
             <td data-label="最終点検" data-sort-value="<%= r.lastInspect || '0000-00-00' %>" class="<%= fmt.partClass(p.inspect) %>"><%= fmt.staleText(p.inspect, r.lastInspect) %></td>
           </tr>
         <% }) %>

@@ -26,6 +26,12 @@
         <tr><th scope="row">SSL期限</th><td><%= row.sslExpires || '—' %>（<%= fmt.expiryText(p.ssl, row.sslExpires) %>）</td></tr>
         <tr><th scope="row">ドメイン期限</th><td><%= row.domainExpires || '—' %>（<%= fmt.expiryText(p.domain, row.domainExpires) %>）<%= site.domain_expires_manual ? ' ※手入力' : '' %></td></tr>
         <tr><th scope="row">バックアップ</th><td><%= fmt.staleText(p.backup, row.lastBackup) %></td></tr>
+        <tr><th scope="row">PC取得</th><td>
+          <% if (!row.pcBackup) { %>まだ結果が届いていません
+          <% } else if (row.pcBackup.ok) { %>成功（<%= formatJst(row.pcBackup.reportAt) %> に受信）<%= row.pcBackup.size ? ' ・ ' + fmt.sizeText(row.pcBackup.size) : '' %>
+          <% } else { %><span class="mt-warn-text">失敗（<%= fmt.PC_ERROR_TEXT[row.pcBackup.error] || fmt.PC_ERROR_TEXT.other %>）</span>（<%= formatJst(row.pcBackup.reportAt) %> に受信）
+          <% } %>
+        </td></tr>
         <tr><th scope="row">最終点検</th><td><%= fmt.staleText(p.inspect, row.lastInspect) %></td></tr>
         <tr><th scope="row">最終確認</th><td><%= row.lastCheckedAt ? formatJst(row.lastCheckedAt) : 'まだ確認していません' %></td></tr>
       </table>

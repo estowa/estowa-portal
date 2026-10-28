@@ -39,6 +39,8 @@ const PORT = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// PCのバックアップ取得の結果の受け口（トークン認証。専用のJSON解析を持つので、全体のbody解析より先に置く）
+app.use('/api/maintenance', require('./routes/maintenanceBackupApi').createBackupApiRouter(db));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
