@@ -24,7 +24,8 @@
   <%- include('chat') %>
   <%- include('voice') %>
 </div>
-（未読の合計）。対応していない端末では何もしない
+<script>
+  // ホーム画面アイコンの赤い数字（未読の合計）。対応していない端末では何もしない
   (function () {
     function setBadge(n) {
       if (!navigator.setAppBadge) return;
