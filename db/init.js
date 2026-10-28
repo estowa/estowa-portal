@@ -123,6 +123,13 @@ if (!taskColumns.includes('due_at')) {
   }
 }
 
+// ボード内の手動の並び順(2026-10-28追加。NULLは未設定=列の一番上に出る)
+taskColumns = db.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+if (!taskColumns.includes('sort_order')) {
+  db.exec('ALTER TABLE tasks ADD COLUMN sort_order REAL');
+  console.log('tasksテーブルに sort_order 列を追加しました');
+}
+
 // 担当者(複数人)テーブル
 db.exec(`
   CREATE TABLE IF NOT EXISTS task_assignees (

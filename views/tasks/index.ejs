@@ -159,13 +159,15 @@
       .catch(() => {});
   });
 
-  // ---------- カンバンのドラッグ&ドロップでステータス変更 ----------
+  // ---------- カンバンのドラッグ&ドロップで列の移動・列内の並べ替え ----------
   // (HTML5のネイティブDrag&Dropはリンク要素とiOS Safariの相性が悪く、
   //  タッチ操作でうまく動作しないためPointer Eventsで自前実装している。
   //  パネル表示の追加に伴い、一覧の再描画後も動作するよう委譲イベントで実装)
   const THRESHOLD = 8; // これ以上動いたらドラッグとみなす(px)
+  const EDGE = 48;     // 列・画面の端からこの距離に近づけたら、自動でスクロールする(px)
   let downX = 0, downY = 0, dragging = false, activeCard = null;
-  let clone = null, offsetX = 0, offsetY = 0, originalList = null;
+  let clone = null, offsetX = 0, offsetY = 0, originalList = null, originalNext = null;
+  let lastX = 0, lastY = 0, scrollRaf = 0, activePointerId = null;
 
   function findListUnder(x, y) {
     const el = document.elementFromPoint(x, y);
@@ -185,14 +187,52 @@
     if (countEl) countEl.textContent = '(' + list.querySelectorAll('.kanban-card').length + ')';
   }
 
+  // ドラッグ中のカード（薄く残した元のカード）を、ポインタの位置に合わせて列の中で動かす
+  function placeActiveCard(list, y) {
+    const others = Array.from(list.querySelectorAll('.kanban-card')).filter((c) => c !== activeCard);
+    const next = others.find((c) => {
+      const r = c.getBoundingClientRect();
+      return y < r.top + r.height / 2;
+    }) || null;
+    if (activeCard.parentNode === list && activeCard.nextElementSibling === next) return;
+    const from = activeCard.closest('.kanban-list');
+    list.insertBefore(activeCard, next);
+    // 要素をDOM内で動かすと、ポインタの捕捉が外れて動きが届かなくなるため、つかみ直す
+    try { activeCard.setPointerCapture(activePointerId); } catch (err) { /* 失われていれば、そのまま */ }
+    updateColumnCount(from);
+    updateColumnCount(list);
+  }
+
+  // 端に近いときは、列（なければ画面）を自動でスクロールする。長い列の端までカードを運べるように
+  function autoScroll() {
+    scrollRaf = 0;
+    if (!dragging) return;
+    const list = findListUnder(lastX, lastY);
+    let moved = false;
+    if (list && list.scrollHeight > list.clientHeight + 1) {
+      const r = list.getBoundingClientRect();
+      if (lastY < r.top + EDGE) { list.scrollTop -= 12; moved = true; }
+      else if (lastY > r.bottom - EDGE) { list.scrollTop += 12; moved = true; }
+    }
+    if (!moved) {
+      if (lastY < EDGE) window.scrollBy(0, -12);
+      else if (lastY > window.innerHeight - EDGE) window.scrollBy(0, 12);
+    }
+    if (list) placeActiveCard(list, lastY);
+    scrollRaf = requestAnimationFrame(autoScroll);
+  }
+
   root.addEventListener('pointerdown', (e) => {
     const card = e.target.closest('.kanban-card');
     if (!card) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // タッチ・ペンは、カード右端の「つまみ」からだけドラッグ。それ以外は、指でそのままスクロールできる
+    if (e.pointerType !== 'mouse' && !e.target.closest('.kanban-grip')) return;
     activeCard = card;
     downX = e.clientX;
     downY = e.clientY;
     dragging = false;
+    activePointerId = e.pointerId;
     card.setPointerCapture(e.pointerId);
   });
 
@@ -209,6 +249,7 @@
       offsetX = downX - rect.left;
       offsetY = downY - rect.top;
       originalList = activeCard.closest('.kanban-list');
+      originalNext = activeCard.nextElementSibling;
 
       clone = activeCard.cloneNode(true);
       clone.classList.add('kanban-card-dragging-clone');
@@ -218,18 +259,33 @@
       clone.style.width = rect.width + 'px';
       document.body.appendChild(clone);
       activeCard.classList.add('kanban-card-placeholder');
+      scrollRaf = requestAnimationFrame(autoScroll);
     }
 
     e.preventDefault();
+    lastX = e.clientX;
+    lastY = e.clientY;
     clone.style.left = (e.clientX - offsetX) + 'px';
     clone.style.top = (e.clientY - offsetY) + 'px';
 
     clearDragOver();
     const target = findListUnder(e.clientX, e.clientY);
-    if (target) target.classList.add('drag-over');
+    if (target) {
+      target.classList.add('drag-over');
+      placeActiveCard(target, e.clientY);
+    }
   });
 
+  // 元の列・元の位置にカードを戻す
+  function restoreCard(card) {
+    const from = card.closest('.kanban-list');
+    originalList.insertBefore(card, originalNext && originalNext.parentNode === originalList ? originalNext : null);
+    updateColumnCount(from);
+    updateColumnCount(originalList);
+  }
+
   async function finishDrag(e) {
+    cancelAnimationFrame(scrollRaf);
     if (!activeCard || !dragging) { activeCard = null; return; }
     e.preventDefault();
     dragging = false;
@@ -238,42 +294,39 @@
     if (clone) clone.remove();
     activeCard.classList.remove('kanban-card-placeholder');
 
-    const targetList = findListUnder(e.clientX, e.clientY);
     const card = activeCard;
     activeCard = null;
+    const targetList = card.closest('.kanban-list');
+    const next = card.nextElementSibling;
+    // 指を離した位置が列の外なら、元に戻す
+    if (!findListUnder(e.clientX, e.clientY)) return restoreCard(card);
+    // 列も位置も変わっていなければ、何もしない
+    if (targetList === originalList && next === originalNext) return;
 
-    if (targetList && targetList !== originalList) {
-      const status = targetList.dataset.status;
-
-      // ページ全体をリロードせず、カード自体を移動先の列にすぐ移す
-      // (体感を良くするため。失敗した場合は元の列に戻す)
-      targetList.appendChild(card);
-      updateColumnCount(originalList);
-      updateColumnCount(targetList);
-
-      try {
-        const res = await fetch('/tasks/' + card.dataset.id + '/status', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'fetch',
-          },
-          body: 'status=' + status,
-        });
-        if (!res.ok) throw new Error('status update failed');
-      } catch (err) {
-        // 失敗時は元の列に戻す
-        originalList.appendChild(card);
-        updateColumnCount(originalList);
-        updateColumnCount(targetList);
-      }
+    // カードは、ドラッグ中にすでに移動先に入っている。保存に失敗した場合は元に戻す
+    try {
+      const res = await fetch('/tasks/' + card.dataset.id + '/place', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'fetch',
+        },
+        body: 'status=' + encodeURIComponent(targetList.dataset.status) + '&before_id=' + (next ? next.dataset.id : ''),
+      });
+      if (!res.ok) throw new Error('place failed');
+    } catch (err) {
+      restoreCard(card);
     }
   }
 
   root.addEventListener('pointerup', finishDrag);
   root.addEventListener('pointercancel', () => {
+    cancelAnimationFrame(scrollRaf);
     if (clone) clone.remove();
-    if (activeCard) activeCard.classList.remove('kanban-card-placeholder');
+    if (activeCard) {
+      activeCard.classList.remove('kanban-card-placeholder');
+      if (dragging) restoreCard(activeCard);
+    }
     clearDragOver();
     dragging = false;
     activeCard = null;

@@ -7,6 +7,7 @@ const mailer = require('../lib/mailer');
 const push = require('../lib/push');
 const badge = require('../lib/badge');
 const { avatarFor } = require('../lib/avatar');
+const { TASK_ORDER_SQL, placeTask } = require('../lib/taskOrder');
 const { createUploader } = require('../lib/uploads');
 const { formatJst, nowJstDateTimeStr } = require('../lib/jst');
 
@@ -188,7 +189,7 @@ function attachAssignees(tasks) {
 router.get('/tasks', requireLogin, (req, res) => {
   const taskBoard = boardFrom(req.query.board);
   const allTasks = db
-    .prepare('SELECT * FROM tasks WHERE board = ? ORDER BY due_at IS NULL, due_at ASC, id DESC')
+    .prepare('SELECT * FROM tasks WHERE board = ? ORDER BY ' + TASK_ORDER_SQL)
     .all(taskBoard);
   attachAssignees(allTasks);
 
@@ -560,6 +561,28 @@ router.post('/tasks/:id/status', requireLogin, (req, res) => {
     return res.json({ ok: true });
   }
   res.redirect('/tasks');
+});
+
+// ボードでの移動（ドラッグ）。列の中の位置と、ステータスをまとめて保存する。before_id は、置いた位置のすぐ下のカード（なければ列の末尾）
+router.post('/tasks/:id/place', requireLogin, (req, res) => {
+  const { status, before_id } = req.body;
+  if (!STATUSES.includes(status)) return res.status(400).json({ error: '不正なステータスです' });
+  const before = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+  if (!before) return res.status(404).json({ error: 'タスクが見つかりません' });
+
+  placeTask(db, before.id, status, before_id);
+  if (before.status !== status) {
+    db.prepare("UPDATE tasks SET status = ?, updated_by = ?, updated_at = datetime('now') WHERE id = ?")
+      .run(status, req.session.user.user_id, before.id);
+    const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(before.id);
+    notifyTaskUpdate({
+      task: updatedTask,
+      actorUserId: req.session.user.user_id,
+      changeLines: [`ステータス: ${statusLabel(before.status)} → ${statusLabel(status)}`],
+    });
+    notifyTaskMoved(before, updatedTask, req.session.user.user_id);
+  }
+  res.json({ ok: true });
 });
 
 // タスク削除

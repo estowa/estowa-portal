@@ -314,12 +314,26 @@ table.user-table th, table.user-table td {
   margin-bottom: 10px;
   cursor: grab;
   font-size: 13px;
-  /* タッチ操作をブラウザのスクロールではなくドラッグ判定に使うため */
-  touch-action: none;
+  position: relative;
+  /* タッチは、カードの上ではふつうにスクロールできる。ドラッグは右端の「つまみ」（.kanban-grip）だけ */
+  touch-action: auto;
   user-select: none;
   -webkit-user-drag: none;
 }
 .kanban-card-title { font-weight: 600; margin-bottom: 4px; }
+/* 担当者のアイコンは、カードの中では少し大きくして見つけやすくする（名前の文字は、そのままの大きさ） */
+.kanban-card .avatar-xs { width: 24px; height: 24px; font-size: 14px; }
+/* ドラッグ用の「つまみ」。タッチ操作の端末だけに出す（マウスは、カードのどこでもドラッグできる） */
+.kanban-grip { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .kanban-card { padding-right: 44px; }
+  .kanban-grip {
+    display: flex; align-items: center; justify-content: center;
+    position: absolute; top: 0; right: 0; bottom: 0; width: 40px;
+    border-radius: 0 10px 10px 0; color: #7d839a; font-size: 20px; font-weight: 700; letter-spacing: -4px;
+    touch-action: none; cursor: grab;
+  }
+}
 .kanban-card-meta { color: var(--text-muted); font-size: 12px; }
 .kanban-card-meta .due-overdue { color: #d03b3b; font-weight: 600; }
 .kanban-card-placeholder { opacity: 0.35; }

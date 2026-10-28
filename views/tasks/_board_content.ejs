@@ -22,6 +22,7 @@
       <div class="kanban-list" data-status="<%= key %>">
         <% board[key].forEach(t => { %>
           <a href="/tasks/<%= t.id %>" class="kanban-card<%= (typeof unreadTaskIds !== 'undefined' && unreadTaskIds.has(t.id)) ? ' is-unread' : '' %>" data-id="<%= t.id %>">
+            <span class="kanban-grip" aria-hidden="true">⋮⋮</span>
             <div class="kanban-card-title"><span class="unread-dot" title="新着・更新があります" aria-label="新着・更新があります"></span><%= t.title %></div>
             <div class="kanban-card-meta">
               <div class="assignee-inline">
