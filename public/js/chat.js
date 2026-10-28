@@ -161,13 +161,8 @@
 
   function buildRow(m) {
     const mine = m.sender_id === state.me.user_id;
-    const row = el('div', 'chat-msg ' + (mine ? 'mine' : 'theirs') + (m.deleted ? ' deleted' : ''));
+    const row = el('div', 'chat-msg ' + (mine ? 'mine' : 'theirs'));
     if (!mine && activeIsGroup()) row.appendChild(el('div', 'chat-sender', m.sender_name));
-    if (m.deleted) { // 取り消されたメッセージ（本文・添付はサーバーで消えている）
-      row.appendChild(el('div', 'chat-bubble', (mine ? '' : m.sender_name + 'さんが') + 'メッセージを取り消しました'));
-      row.appendChild(el('div', 'chat-time', m.created_at));
-      return row;
-    }
     const bubble = el('div', 'chat-bubble');
     if (m.body) bubble.appendChild(el('div', 'chat-text', m.body));
     (m.files || []).forEach((f) => bubble.appendChild(fileNode(f)));
@@ -184,21 +179,19 @@
   }
 
   function appendMessage(m) {
-    if (shown.has(m.id)) return;
+    if (shown.has(m.id) || m.deleted) return; // 取り消されたものは出さない
     const row = buildRow(m);
     shown.set(m.id, { m, row });
     logEl.appendChild(row);
     logEl.scrollTop = logEl.scrollHeight;
   }
 
-  // 取り消されたメッセージを、その場で「取り消しました」の表示に置き換える
+  // 取り消されたメッセージを、その場で画面から消す（跡は残さない）
   function markDeleted(id) {
     const item = shown.get(id);
-    if (!item || item.m.deleted) return;
-    item.m = { ...item.m, deleted: true, body: '', files: [] };
-    const row = buildRow(item.m);
-    item.row.replaceWith(row);
-    item.row = row;
+    if (!item) return;
+    item.row.remove();
+    shown.delete(id);
   }
 
   async function deleteMessage(m) {

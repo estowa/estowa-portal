@@ -186,7 +186,7 @@ test('自分宛てのメモ: 自分だけの部屋ができ、同じ部屋を使
   assert.strictEqual(store.listForUser(db, 'b').dms.find((d) => d.user_id === 'a').room_id, null); // 他の人の一覧に、自分のメモの部屋は出ない
 });
 
-test('取り消し: 送った本人だけができ、本文と添付が消え、一覧には取り消し済みとして残る', () => {
+test('取り消し: 送った本人だけができ、本文と添付が消え、一覧には出なくなる', () => {
   const db = makeDb();
   const room = store.getOrCreateDm(db, 'a', 'b');
   const m = store.saveMessage(db, room.id, 'a', '秘密の話', [{ originalName: 'a.pdf', storedName: 'x.pdf', size: 1 }]);
@@ -197,7 +197,7 @@ test('取り消し: 送った本人だけができ、本文と添付が消え、
   assert.deepStrictEqual(r.storedNames, ['x.pdf']);
   assert.deepStrictEqual([r.message.deleted, r.message.body, r.message.files], [true, '', []]);
   const listed = store.listMessages(db, room.id);
-  assert.deepStrictEqual(listed.map((x) => [x.id, x.deleted, x.body, x.files]), [[m.id, true, '', []]]);
+  assert.deepStrictEqual(listed, []); // 一覧には出ない（跡は残さない）
   assert.strictEqual(db.prepare('SELECT body FROM chat_msgs WHERE id = ?').get(m.id).body, ''); // DBにも本文は残らない
   assert.strictEqual(store.getFileForUser(db, m.files[0].id, 'b'), null);     // 添付は開けない
   assert.deepStrictEqual(store.deleteMessage(db, m.id, 'a').storedNames, []); // 2回目は何もしない
