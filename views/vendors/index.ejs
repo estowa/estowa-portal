@@ -43,7 +43,7 @@
         </thead>
         <tbody>
           <% group.vendors.forEach(v => { %>
-            <tr>
+            <tr id="vendor-<%= v.id %>">
               <td class="vendor-name" data-label="社名">
                 <% if (v.url) { %>
                   <a href="<%= /^https?:\/\//.test(v.url) ? v.url : 'https://' + v.url %>" target="_blank" rel="noopener" class="link-title"><%= v.name %></a>

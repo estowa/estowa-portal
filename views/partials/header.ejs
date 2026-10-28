@@ -22,7 +22,7 @@
   </a>
   <form class="topbar-search" action="/search" method="get" role="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <input type="search" name="q" placeholder="タスク・お知らせ・ナレッジ・アイディアを検索" aria-label="全体検索" autocomplete="off" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>" />
+    <input type="search" name="q" placeholder="タスク・お知らせ・ナレッジ・アイディア・外注先を検索" aria-label="全体検索" autocomplete="off" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>" />
   </form>
   <% const nbTop = (typeof unreadBreakdown === 'function' && currentUser) ? unreadBreakdown() : null; %>
   <% const nbTotal = nbTop ? (nbTop.chat + nbTop.tasks + nbTop.announcements) : 0; %>

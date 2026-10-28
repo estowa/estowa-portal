@@ -1576,6 +1576,8 @@ body { font-size: 14px; line-height: 1.6; }
 }
 .search-row:last-child { border-bottom: none; }
 .search-row:hover { background: var(--bg); }
+/* 検索結果から開いた外注先の行を、目立たせる */
+.vendor-table tr:target td { background: #fff7d6; }
 .search-row-title { font-weight: 600; color: var(--primary); }
 .search-row-tag { font-size: 12px; background: #ececf1; color: var(--text-muted); border-radius: 10px; padding: 1px 8px; }
 .search-row-snippet { flex-basis: 100%; font-size: 13px; color: var(--text-muted); }
