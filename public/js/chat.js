@@ -164,12 +164,33 @@
     return box;
   }
 
+  // 本文のURL(http/https)をリンクにする。文字は text ノードで入れるのでHTMLにはならない。リンクは別タブで開く
+  const URL_RE = /https?:\/\/[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]+/g;
+  function textWithLinks(text) {
+    const box = el('div', 'chat-text');
+    let last = 0;
+    String(text).replace(URL_RE, (url, offset) => {
+      const m = url.match(/[.,;:!?)\]]+$/); // 文末の句読点・閉じかっこはリンクに含めない
+      const clean = m ? url.slice(0, -m[0].length) : url;
+      if (offset > last) box.appendChild(document.createTextNode(text.slice(last, offset)));
+      const a = el('a', 'chat-link', clean);
+      a.href = clean;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      box.appendChild(a);
+      last = offset + clean.length;
+      return url;
+    });
+    if (last < text.length) box.appendChild(document.createTextNode(text.slice(last)));
+    return box;
+  }
+
   function buildRow(m) {
     const mine = m.sender_id === state.me.user_id;
     const row = el('div', 'chat-msg ' + (mine ? 'mine' : 'theirs'));
     if (!mine && activeIsGroup()) row.appendChild(el('div', 'chat-sender', m.sender_name));
     const bubble = el('div', 'chat-bubble');
-    if (m.body) bubble.appendChild(el('div', 'chat-text', m.body));
+    if (m.body) bubble.appendChild(textWithLinks(m.body));
     (m.files || []).forEach((f) => bubble.appendChild(fileNode(f)));
     row.appendChild(bubble);
     const meta = el('div', 'chat-time', m.created_at);

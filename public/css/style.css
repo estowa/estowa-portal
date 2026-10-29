@@ -1809,3 +1809,7 @@ body:has(#tasks-board-root) { background: #ffffff; }
 /* ボードのカードは背景が白なので、アイコンの白い縁は付けず、その分アイコンを大きくする */
 .kanban-card .avatar-group { gap: 4px; }
 .kanban-card .avatar-group .avatar { border: 0; width: 30px; height: 30px; font-size: 15px; }
+
+/* チャットのURLリンク（別タブで開く） */
+.chat-link { color: var(--primary); text-decoration: underline; word-break: break-all; }
+.chat-msg.mine .chat-link { color: #fff; }
