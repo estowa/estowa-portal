@@ -1805,3 +1805,6 @@ body:has(#tasks-board-root) { background: #ffffff; }
 /* 完了の列に入ったカードは、全体を少し透過して完了感を出す（列の移動にも追従する） */
 .kanban-column[data-status="done"] .kanban-card { opacity: 0.55; }
 .kanban-column[data-status="done"] .kanban-card:hover { opacity: 0.85; }
+/* ボードのカードは背景が白なので、アイコンの白い縁は付けず、その分アイコンを大きくする */
+.kanban-card .avatar-group { gap: 4px; }
+.kanban-card .avatar-group .avatar { border: 0; width: 30px; height: 30px; font-size: 15px; }
