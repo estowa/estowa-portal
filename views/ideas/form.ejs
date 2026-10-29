@@ -67,14 +67,6 @@
   </form>
 </div>
 
-<% if (idea && idea.id) { %>
-  <div class="task-delete-row">
-    <form method="POST" action="/ideas/<%= idea.id %>/delete" onsubmit="return confirm('このアイディアを削除しますか？元に戻せません。');">
-      <button type="submit" class="task-delete-btn">アイディアを削除する</button>
-    </form>
-  </div>
-<% } %>
-
 <script src="/js/dropzone.js"></script>
 <script src="/js/knowledge-editor.js"></script>
 <%- include('../partials/footer') %>

@@ -5,6 +5,7 @@ const db = require('../db/connection');
 const { requireLogin } = require('../middleware/auth');
 const { createUploader } = require('../lib/uploads');
 const { CATEGORY_DEFS, colorForCategory } = require('../lib/ideaCategories');
+const { renderKnowledgeMarkdown } = require('../lib/knowledgeMarkdown');
 
 const router = express.Router();
 
@@ -95,12 +96,30 @@ router.post('/ideas', requireLogin, (req, res) => {
 
     insertAttachments(result.lastInsertRowid, req.files, req.session.user.user_id);
 
-    res.redirect('/ideas');
+    res.redirect('/ideas/' + result.lastInsertRowid);
   });
 });
 
-// 編集フォーム
+// 詳細表示
 router.get('/ideas/:id', requireLogin, (req, res) => {
+  const idea = db
+    .prepare(
+      `SELECT ideas.*, users.display_name AS author_name
+       FROM ideas
+       LEFT JOIN users ON users.user_id = ideas.created_by
+       WHERE ideas.id = ?`
+    )
+    .get(req.params.id);
+  if (!idea) {
+    return res.status(404).render('error', { message: 'アイディアが見つかりません', user: req.session.user });
+  }
+  idea.attachments = attachmentsFor(idea.id);
+  const { html: bodyHtml, toc } = renderKnowledgeMarkdown(idea.body);
+  res.render('ideas/show', { idea, bodyHtml, toc, colorForCategory });
+});
+
+// 編集フォーム
+router.get('/ideas/:id/edit', requireLogin, (req, res) => {
   const idea = db.prepare('SELECT * FROM ideas WHERE id = ?').get(req.params.id);
   if (!idea) {
     return res.status(404).render('error', { message: 'アイディアが見つかりません', user: req.session.user });
@@ -135,7 +154,7 @@ router.post('/ideas/:id', requireLogin, (req, res) => {
 
     insertAttachments(req.params.id, req.files, req.session.user.user_id);
 
-    res.redirect('/ideas/' + req.params.id);
+    res.redirect('/ideas/' + req.params.id + '/edit');
   });
 });
 
@@ -148,7 +167,7 @@ router.post('/ideas/:id/attachments/:attId/delete', requireLogin, (req, res) => 
     fs.unlink(path.join(UPLOAD_DIR, att.filename), () => {});
     db.prepare('DELETE FROM idea_attachments WHERE id = ?').run(att.id);
   }
-  res.redirect('/ideas/' + req.params.id);
+  res.redirect('/ideas/' + req.params.id + '/edit');
 });
 
 // 削除
