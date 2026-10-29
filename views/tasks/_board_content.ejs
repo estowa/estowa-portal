@@ -37,7 +37,7 @@
                   <span class="names"><%= t.assigneeNames %></span>
                 <% } %>
               </div>
-              <% if (t.startLabel) { %><div class="task-when">開始 <%= t.startLabel %></div><% } %>
+              <% if (t.startLabel) { %><div class="task-when<%= /^(今日|明日)/.test(t.startLabel) ? ' when-near' : '' %>">開始 <%= t.startLabel %></div><% } %>
               <% if (t.dueLabel) { %><div class="task-when <%= t.dueState ? 'due-' + t.dueState : '' %>">締切 <%= t.dueLabel %></div><% } %>
             </div>
           </a>

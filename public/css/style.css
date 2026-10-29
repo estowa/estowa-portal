@@ -337,6 +337,7 @@ table.user-table th, table.user-table td {
 .kanban-card-meta { color: var(--text-muted); font-size: 12px; }
 .kanban-card-meta .due-overdue { color: #d03b3b; font-weight: 600; }
 .kanban-card-meta .due-soon { color: #c2610c; font-weight: 600; }
+.kanban-card-meta .when-near { color: #16a34a; font-weight: 600; }
 .kanban-card-placeholder { opacity: 0.35; }
 .kanban-card-dragging-clone {
   pointer-events: none;
