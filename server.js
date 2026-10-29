@@ -7,6 +7,7 @@ const { sameOriginGuard } = require('./lib/sameOrigin');
 const { applyFreshUser } = require('./lib/sessionUser');
 const { resolveSessionSecret } = require('./lib/sessionSecret');
 const { securityHeaders } = require('./lib/securityHeaders');
+const { createUploadGuard } = require('./lib/uploadGuard');
 const { setUploadHeaders } = require('./lib/uploadHeaders');
 
 const authRoutes = require('./routes/auth');
@@ -57,6 +58,8 @@ app.use(express.json());
 // 他のサイトからの書き込み操作(CSRF)を断る。バックアップ受付APIは上で別に処理済み
 app.use(sameOriginGuard);
 const UPLOADS_ROOT = path.join(__dirname, 'public', 'uploads');
+// 添付・アバターは、ログイン中の人にだけ渡す（セッションは下で定義するので、呼ばれた時点で参照する）
+app.use('/uploads', (req, res, next) => sessionMiddleware(req, res, next), createUploadGuard(db));
 app.use(
   express.static(path.join(__dirname, 'public'), {
     // Service Workerと設定ファイルは、更新がすぐ届くようにキャッシュさせない

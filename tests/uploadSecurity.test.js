@@ -83,6 +83,7 @@ test('uploads内の画像・PDFはそのまま表示できる', () => {
     const h = headersFor(f);
     assert.strictEqual(h['Content-Disposition'], undefined, f);
     assert.strictEqual(h['X-Content-Type-Options'], 'nosniff', f);
+    assert.strictEqual(h['Cache-Control'], 'private', f);
   }
 });
 
