@@ -320,7 +320,7 @@ table.user-table th, table.user-table td {
   user-select: none;
   -webkit-user-drag: none;
 }
-.kanban-card-title { margin-bottom: 4px; }
+.kanban-card-title { font-size: 14px; margin-bottom: 4px; }
 /* 担当者のアイコンは、カードの中では少し大きくして見つけやすくする（名前の文字は、そのままの大きさ） */
 .kanban-card .avatar-xs { width: 24px; height: 24px; font-size: 14px; }
 /* ドラッグ用の「つまみ」。タッチ操作の端末だけに出す（マウスは、カードのどこでもドラッグできる） */
