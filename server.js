@@ -5,6 +5,7 @@ const session = require('express-session');
 const SessionStore = require('./lib/sessionStore');
 const { sameOriginGuard } = require('./lib/sameOrigin');
 const { applyFreshUser } = require('./lib/sessionUser');
+const { resolveSessionSecret } = require('./lib/sessionSecret');
 const { setUploadHeaders } = require('./lib/uploadHeaders');
 
 const authRoutes = require('./routes/auth');
@@ -39,6 +40,10 @@ app.locals.eventCategories = EVENT_CATEGORY_DEFS;
 app.locals.eventCategoryClass = categoryClass;
 const PORT = process.env.PORT || 3000;
 
+// 本番はnginxの背後にある（X-Forwarded-Proto / X-Forwarded-For を1段だけ信用する）。
+// これで HTTPS かどうかと、本当の接続元が分かる
+app.set('trust proxy', 1);
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -67,13 +72,14 @@ app.use(
 
 const sessionMiddleware = session({
   store: new SessionStore({ file: path.join(__dirname, 'db', 'sessions.db') }),
-  secret: process.env.SESSION_SECRET || 'estowa-portal-dev-secret',
+  secret: resolveSessionSecret(),
   resave: false,
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7日間
     httpOnly: true,
     sameSite: 'lax', // 他のサイトからの書き込み操作にはCookieを付けない
+    secure: 'auto', // HTTPSで開いているときだけ secure を付ける（ローカルのhttpでも動くように）
   },
 });
 app.use(sessionMiddleware);
