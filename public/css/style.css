@@ -1797,3 +1797,11 @@ th[aria-sort="descending"] .mt-sort::after { content: " ▼"; font-size: 11px; }
   .home-calendar { order: 6; }
   .home-stack .kpi-grid { order: 7; margin-top: 4px; }
 }
+
+/* ---- タスク管理ページだけの配色（2026-10-29）: ページ背景は白、ボード（列）は薄いグレー、カードは白 ---- */
+body:has(#tasks-board-root) { background: #ffffff; }
+.kanban-column { background: var(--bg); }
+.kanban-card { background: #ffffff; }
+/* 完了の列に入ったカードは、全体を少し透過して完了感を出す（列の移動にも追従する） */
+.kanban-column[data-status="done"] .kanban-card { opacity: 0.55; }
+.kanban-column[data-status="done"] .kanban-card:hover { opacity: 0.85; }
