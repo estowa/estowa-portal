@@ -4,6 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const SessionStore = require('./lib/sessionStore');
 const { sameOriginGuard } = require('./lib/sameOrigin');
+const { applyFreshUser } = require('./lib/sessionUser');
 const { setUploadHeaders } = require('./lib/uploadHeaders');
 
 const authRoutes = require('./routes/auth');
@@ -84,8 +85,14 @@ app.use((req, res, next) => {
     const fresh = db
       .prepare('SELECT id, user_id, display_name, role, avatar_emoji, avatar_color, avatar_image FROM users WHERE user_id = ?')
       .get(req.session.user.user_id);
-    res.locals.currentUser = fresh || req.session.user;
-    res.locals.currentUserAvatar = avatarFor(res.locals.currentUser);
+    // 権限の変更・ユーザーの削除を、残っているセッションにも反映する(削除済みならログアウト扱い)
+    if (applyFreshUser(req.session, fresh)) {
+      res.locals.currentUser = fresh;
+      res.locals.currentUserAvatar = avatarFor(fresh);
+    } else {
+      res.locals.currentUser = null;
+      res.locals.currentUserAvatar = null;
+    }
   } else {
     res.locals.currentUser = null;
     res.locals.currentUserAvatar = null;

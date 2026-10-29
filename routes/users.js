@@ -6,6 +6,8 @@ const { setRemoteUser } = require('../lib/chatRules');
 
 const router = express.Router();
 
+const MIN_PASSWORD_LENGTH = 8;
+
 const USER_LIST_SELECT = 'SELECT id, user_id, display_name, role, email, is_remote, created_at FROM users ORDER BY id';
 
 // ユーザー一覧（管理者のみ）
@@ -21,6 +23,10 @@ router.post('/users', requireLogin, requireAdmin, (req, res) => {
 
   if (!user_id || !password || !display_name) {
     return res.render('users/list', { users, error: '全ての項目を入力してください', success: null });
+  }
+
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return res.render('users/list', { users, error: `パスワードは${MIN_PASSWORD_LENGTH}文字以上にしてください`, success: null });
   }
 
   const existing = db.prepare('SELECT * FROM users WHERE user_id = ?').get(user_id);
@@ -57,8 +63,8 @@ router.post('/users/:id/password', requireLogin, requireAdmin, (req, res) => {
   const { password } = req.body;
   const users = db.prepare(USER_LIST_SELECT).all();
 
-  if (!password || password.length < 4) {
-    return res.render('users/list', { users, error: 'パスワードは4文字以上にしてください', success: null });
+  if (!password || password.length < MIN_PASSWORD_LENGTH) {
+    return res.render('users/list', { users, error: `パスワードは${MIN_PASSWORD_LENGTH}文字以上にしてください`, success: null });
   }
 
   const hash = bcrypt.hashSync(password, 10);
