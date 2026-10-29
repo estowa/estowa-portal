@@ -3,6 +3,8 @@ const path = require('path');
 const express = require('express');
 const session = require('express-session');
 const SessionStore = require('./lib/sessionStore');
+const { sameOriginGuard } = require('./lib/sameOrigin');
+const { setUploadHeaders } = require('./lib/uploadHeaders');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -43,10 +45,14 @@ app.set('views', path.join(__dirname, 'views'));
 app.use('/api/maintenance', require('./routes/maintenanceBackupApi').createBackupApiRouter(db));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+// 他のサイトからの書き込み操作(CSRF)を断る。バックアップ受付APIは上で別に処理済み
+app.use(sameOriginGuard);
+const UPLOADS_ROOT = path.join(__dirname, 'public', 'uploads');
 app.use(
   express.static(path.join(__dirname, 'public'), {
     // Service Workerと設定ファイルは、更新がすぐ届くようにキャッシュさせない
     setHeaders(res, filePath) {
+      setUploadHeaders(res, filePath, UPLOADS_ROOT);
       const name = path.basename(filePath);
       if (name === 'sw.js') {
         res.setHeader('Cache-Control', 'no-cache');
@@ -65,6 +71,8 @@ const sessionMiddleware = session({
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7日間
+    httpOnly: true,
+    sameSite: 'lax', // 他のサイトからの書き込み操作にはCookieを付けない
   },
 });
 app.use(sessionMiddleware);

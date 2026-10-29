@@ -10,19 +10,23 @@ const router = express.Router();
 
 const AVATAR_UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
 fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
+const AVATAR_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, AVATAR_UPLOAD_DIR),
     filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname).slice(0, 10);
-      const safeExt = /^[a-zA-Z0-9.]*$/.test(ext) ? ext : '';
+      // 拡張子は画像の決まった種類だけ（fileFilterで弾くが、保存名でも念のため絞る）
+      const ext = path.extname(file.originalname).toLowerCase();
+      const safeExt = AVATAR_EXT.includes(ext) ? ext : '';
       cb(null, `${req.session.user.user_id}-${Date.now()}${safeExt}`);
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (req, file, cb) => {
-    cb(null, /^image\//.test(file.mimetype));
+    // mimetype はブラウザの自己申告なので、拡張子も確かめる
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, /^image\//.test(file.mimetype) && AVATAR_EXT.includes(ext));
   },
 });
 
