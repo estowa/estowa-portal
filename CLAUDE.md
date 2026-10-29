@@ -14,7 +14,9 @@ npm install        # postinstallでdb/init.jsが自動実行され、db/estowa.d
 node server.js      # http://localhost:3000
 ```
 
-初期管理者: `admin` / `estowa2026`（ログイン後に変更を促す仕組みあり）。
+初期管理者: ID `admin`。初期パスワードは固定ではなく、`node db/init.js`（`npm install`のpostinstallも含む）が管理者を作った
+その一度だけ、実行画面にランダムな値が表示される（見逃したら、DBをリセットして作り直す）。`.env`の`ADMIN_INITIAL_PASSWORD`で指定もできる。
+ログイン後、管理者画面で必ず変更する。
 
 メール通知（タスク更新時）を使う場合は `.env.example` を参考に `.env` を用意する
 （SMTP_HOST / SMTP_PORT / SMTP_SECURE / SMTP_USER / SMTP_PASS / MAIL_FROM / APP_BASE_URL）。

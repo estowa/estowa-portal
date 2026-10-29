@@ -433,11 +433,14 @@ repairMojibake('idea_attachments');
 // 初期管理者アカウント（存在しない場合のみ作成）
 const existingAdmin = db.prepare('SELECT * FROM users WHERE user_id = ?').get('admin');
 if (!existingAdmin) {
-  const hash = bcrypt.hashSync('estowa2026', 10);
+  // 初期パスワードは固定にせず、作成のたびにランダムに作る（.env の ADMIN_INITIAL_PASSWORD で指定もできる）
+  const initialPassword = process.env.ADMIN_INITIAL_PASSWORD || require('crypto').randomBytes(9).toString('base64url');
+  const hash = bcrypt.hashSync(initialPassword, 10);
   db.prepare(
     'INSERT INTO users (user_id, password_hash, display_name, role) VALUES (?, ?, ?, ?)'
   ).run('admin', hash, '管理者', 'admin');
-  console.log('初期管理者アカウントを作成しました → ID: admin / パスワード: estowa2026');
+  console.log('初期管理者アカウントを作成しました → ID: admin');
+  console.log(process.env.ADMIN_INITIAL_PASSWORD ? '初期パスワード: .env の ADMIN_INITIAL_PASSWORD' : `初期パスワード（この一度だけ表示）: ${initialPassword}`);
   console.log('※ ログイン後、必ずパスワードを変更してください');
 } else {
   console.log('管理者アカウントは既に存在します（作成をスキップ）');

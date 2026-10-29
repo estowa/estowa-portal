@@ -6,6 +6,7 @@ const SessionStore = require('./lib/sessionStore');
 const { sameOriginGuard } = require('./lib/sameOrigin');
 const { applyFreshUser } = require('./lib/sessionUser');
 const { resolveSessionSecret } = require('./lib/sessionSecret');
+const { securityHeaders } = require('./lib/securityHeaders');
 const { setUploadHeaders } = require('./lib/uploadHeaders');
 
 const authRoutes = require('./routes/auth');
@@ -43,6 +44,8 @@ const PORT = process.env.PORT || 3000;
 // 本番はnginxの背後にある（X-Forwarded-Proto / X-Forwarded-For を1段だけ信用する）。
 // これで HTTPS かどうかと、本当の接続元が分かる
 app.set('trust proxy', 1);
+
+app.use(securityHeaders);
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
