@@ -139,6 +139,7 @@ app.use(searchRoutes);
 ensureMaintenanceSchema(db);
 require('./lib/pushSchema').ensurePushSchema(db);
 require('./lib/ecSchema').ensureEcSchema(db);
+require('./lib/memberOrder').ensureMemberOrder(db);
 app.use(createMaintenanceRouter(db));
 
 app.use((req, res) => {

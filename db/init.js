@@ -8,6 +8,7 @@ const { ensureChatSchema } = require('../lib/chatSchema');
 const { ensureMaintenanceSchema } = require('../lib/maintenanceSchema');
 const { ensurePushSchema } = require('../lib/pushSchema');
 const { ensureEcSchema } = require('../lib/ecSchema');
+const { ensureMemberOrder } = require('../lib/memberOrder');
 
 const dbPath = path.join(__dirname, 'estowa.db');
 const db = new Database(dbPath);
@@ -38,6 +39,7 @@ ensureChatSchema(db);
 ensureMaintenanceSchema(db);
 ensurePushSchema(db);
 ensureEcSchema(db);
+ensureMemberOrder(db);
 
 // 既存DBに avatar_emoji / avatar_color 列がない場合は追加(マイグレーション)
 // タスク一覧・お知らせでの視認性向上のため、担当者/投稿者をアイコン表示できるようにする

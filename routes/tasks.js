@@ -9,6 +9,7 @@ const badge = require('../lib/badge');
 const { avatarFor } = require('../lib/avatar');
 const { TASK_ORDER_SQL, placeTask } = require('../lib/taskOrder');
 const { dueState } = require('../lib/taskDue');
+const { ORDER_SQL } = require('../lib/memberOrder');
 const { formatWhen } = require('../lib/taskDate');
 const { createUploader } = require('../lib/uploads');
 const { formatJst, nowJstDateTimeStr } = require('../lib/jst');
@@ -149,7 +150,7 @@ function notifyTaskMoved(before, after, actorUserId) {
 
 // 担当者選択チェックリストなどで使う、アイコン付きのユーザー一覧
 function listUsersWithAvatar() {
-  const rows = db.prepare('SELECT user_id, display_name, avatar_emoji, avatar_color, avatar_image FROM users ORDER BY display_name').all();
+  const rows = db.prepare(`SELECT user_id, display_name, avatar_emoji, avatar_color, avatar_image FROM users ORDER BY ${ORDER_SQL}`).all();
   return rows.map((u) => ({ ...u, avatar: avatarFor(u) }));
 }
 
@@ -162,7 +163,8 @@ function attachAssignees(tasks) {
       `SELECT task_assignees.task_id, users.user_id, users.display_name, users.avatar_emoji, users.avatar_color, users.avatar_image
        FROM task_assignees
        LEFT JOIN users ON users.user_id = task_assignees.user_id
-       WHERE task_assignees.task_id IN (${placeholders})`
+       WHERE task_assignees.task_id IN (${placeholders})
+       ORDER BY ${ORDER_SQL}`
     )
     .all(...ids);
   const byTask = {};
