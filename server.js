@@ -2,7 +2,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
+const SessionStore = require('./lib/sessionStore');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -59,7 +59,7 @@ app.use(
 );
 
 const sessionMiddleware = session({
-  store: new SQLiteStore({ db: 'sessions.db', dir: path.join(__dirname, 'db') }),
+  store: new SessionStore({ file: path.join(__dirname, 'db', 'sessions.db') }),
   secret: process.env.SESSION_SECRET || 'estowa-portal-dev-secret',
   resave: false,
   saveUninitialized: false,
