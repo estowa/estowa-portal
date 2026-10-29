@@ -37,7 +37,8 @@
                   <span class="names"><%= t.assigneeNames %></span>
                 <% } %>
               </div>
-              <% if (t.due_at) { %><div class="<%= t.dueState ? 'due-' + t.dueState : '' %>"><%= t.due_at.replace('T', ' ') %></div><% } %>
+              <% if (t.startLabel) { %><div class="task-when">開始 <%= t.startLabel %></div><% } %>
+              <% if (t.dueLabel) { %><div class="task-when <%= t.dueState ? 'due-' + t.dueState : '' %>">締切 <%= t.dueLabel %></div><% } %>
             </div>
           </a>
         <% }) %>

@@ -9,6 +9,7 @@ const badge = require('../lib/badge');
 const { avatarFor } = require('../lib/avatar');
 const { TASK_ORDER_SQL, placeTask } = require('../lib/taskOrder');
 const { dueState } = require('../lib/taskDue');
+const { formatWhen } = require('../lib/taskDate');
 const { createUploader } = require('../lib/uploads');
 const { formatJst, nowJstDateTimeStr } = require('../lib/jst');
 
@@ -196,8 +197,12 @@ router.get('/tasks', requireLogin, (req, res) => {
 
   // 締切日時が過ぎたタスクは赤字、24時間以内は橙色で表示する(完了済みを除く)
   const nowStr = nowJstDateTimeStr();
+  const todayStr = nowStr.slice(0, 10);
   allTasks.forEach((t) => {
     t.dueState = dueState(t.due_at, t.status, nowStr);
+    const [dueDate, dueTime] = (t.due_at || '').split('T');
+    t.dueLabel = formatWhen(dueDate, dueTime, todayStr);
+    t.startLabel = formatWhen(t.start_date, t.start_time, todayStr);
   });
 
   const board = {};
