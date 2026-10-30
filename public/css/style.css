@@ -1787,7 +1787,7 @@ th[aria-sort="descending"] .mt-sort::after { content: " ▼"; font-size: 11px; }
   }
   .sidebar-footer form { width: auto; }
 
-  /* ホームの並び: チャット→通話→お知らせ→個人タスク→メンバー→カレンダー→数値カード */
+  /* ホームの並び: チャット→通話→お知らせ→個人タスク→メンバー→今月のEC売上→カレンダー→数値カード */
   .home-stack { display: flex; flex-direction: column; }
   .home-stack .content-grid, .home-stack .content-grid > div { display: contents; }
   #chat-root { order: 1; }
@@ -1795,8 +1795,9 @@ th[aria-sort="descending"] .mt-sort::after { content: " ▼"; font-size: 11px; }
   .home-announce { order: 3; }
   .home-tasks { order: 4; }
   .home-members { order: 5; }
-  .home-calendar { order: 6; }
-  .home-stack .kpi-grid { order: 7; margin-top: 4px; }
+  .home-ec { order: 6; }
+  .home-calendar { order: 7; }
+  .home-stack .kpi-grid { order: 8; margin-top: 4px; }
 }
 
 /* ---- タスク管理ページだけの配色（2026-10-29）: ページ背景は白、ボード（列）は薄いグレー、カードは白 ---- */
@@ -1813,3 +1814,7 @@ body:has(#tasks-board-root) { background: #ffffff; }
 /* チャットのURLリンク（別タブで開く） */
 .chat-link { color: var(--primary); text-decoration: underline; word-break: break-all; }
 .chat-msg.mine .chat-link { color: #fff; }
+
+/* ホーム: 今月のEC売上のカード（イベントカレンダーの上。幅は右の列＝カレンダーと同じ） */
+.home-ec { margin-bottom: 16px; }
+.home-ec .kpi-card { width: 100%; }

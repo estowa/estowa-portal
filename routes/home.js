@@ -4,6 +4,7 @@ const { requireLogin } = require('../middleware/auth');
 const { toJstParts, nowJstDateStr, nowJstYearMonth } = require('../lib/jst');
 const { mallTotalsForMonth } = require('../lib/ecSales');
 const { eventsByDayForMonth } = require('../lib/events');
+const maintenanceStore = require('../lib/maintenanceStore');
 
 const router = express.Router();
 
@@ -30,6 +31,25 @@ router.get('/', requireLogin, (req, res) => {
        ORDER BY tasks.due_at IS NULL, tasks.due_at ASC LIMIT 5`
     )
     .all(user.user_id);
+
+  // 自分の未完了タスクの件数（完了以外・社内全体ボード。上の一覧は未着手・進行中の5件までなので、別に数える）
+  const myOpenTaskCount = db
+    .prepare(
+      `SELECT COUNT(*) AS cnt FROM tasks
+       JOIN task_assignees ON task_assignees.task_id = tasks.id
+       WHERE task_assignees.user_id = ? AND tasks.status != 'done' AND tasks.board = 'company'`
+    )
+    .get(user.user_id).cnt;
+
+  // サイト保守で確認が必要なサイトの数（要対応・注意）。取れなくてもホームは表示する
+  let siteCheckCount = 0;
+  try {
+    siteCheckCount = maintenanceStore
+      .overview(db, nowJstDateStr())
+      .filter((r) => r.status.level === 'urgent' || r.status.level === 'warn').length;
+  } catch (e) {
+    console.error('[ホーム] サイト確認の件数を数えられませんでした:', e.message);
+  }
 
   // 本日の勤怠状態（最後の打刻がinかoutか）
   const lastLog = db
@@ -83,6 +103,8 @@ router.get('/', requireLogin, (req, res) => {
     announcements,
     unreadAnnouncementCount,
     myTasks,
+    myOpenTaskCount,
+    siteCheckCount,
     isCheckedIn,
     salesSummary,
     teamAttendanceToday,
