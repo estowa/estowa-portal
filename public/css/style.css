@@ -1818,3 +1818,5 @@ body:has(#tasks-board-root) { background: #ffffff; }
 /* ホーム: 今月のEC売上のカード（イベントカレンダーの上。幅は右の列＝カレンダーと同じ） */
 .home-ec { margin-bottom: 16px; }
 .home-ec .kpi-card { width: 100%; }
+.home-ec .kpi-body { flex: 1; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; }
+.home-ec .kpi-card .label { margin-bottom: 0; }
