@@ -21,12 +21,12 @@ router.get('/', requireLogin, (req, res) => {
     )
     .get(user.user_id).cnt;
 
-  // 自分の直近タスク（最大5件、未完了優先）
+  // 自分の直近タスク（未着手・進行中だけ。締切が近い順に最大5件。5件未満ならある分だけ）
   const myTasks = db
     .prepare(
       `SELECT tasks.* FROM tasks
        JOIN task_assignees ON task_assignees.task_id = tasks.id
-       WHERE task_assignees.user_id = ? AND tasks.status != 'done' AND tasks.board = 'company'
+       WHERE task_assignees.user_id = ? AND tasks.status IN ('todo', 'doing') AND tasks.board = 'company'
        ORDER BY tasks.due_at IS NULL, tasks.due_at ASC LIMIT 5`
     )
     .all(user.user_id);

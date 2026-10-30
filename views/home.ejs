@@ -66,7 +66,7 @@
     <div class="panel home-tasks">
       <h2 class="has-chip"><span class="h-chip chip-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 10 2 2 4-4"/><path d="M8.5 16h7"/></svg></span>直近の個人タスク</h2>
       <% if (myTasks.length === 0) { %>
-        <div class="empty-note">未完了のタスクはありません。<a href="/tasks">タスク管理を開く →</a></div>
+        <div class="empty-note">未着手・進行中のタスクはありません。<a href="/tasks">タスク管理を開く →</a></div>
       <% } else { %>
         <% myTasks.forEach(t => { %>
           <div class="task-item">
