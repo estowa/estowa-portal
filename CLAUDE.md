@@ -87,6 +87,7 @@ better-sqlite3はWALモードを使うため、サーバープロセスを止め
 - **メンバーの並び順**（2026-10-29）: `users.sort_order`（小さい順、未設定は後ろに登録順）。担当者の選択欄とカードのアイコンが従う（`lib/memberOrder.js`の`ORDER_SQL`）。列を追加した最初の1回だけ、山口立志→白戸雅和→上田万智→菊地彩花→工藤薫→古川和矢の順を入れる（`ensureMemberOrder`。起動時・`db/init.js`）。新しいメンバーは最後に並ぶ。順を変えたいときは`sort_order`を直接更新する（画面はまだない）。
 - **アイディアの画面**（2026-10-30）: ナレッジと同じ形。一覧のタイトル→詳細（`/ideas/:id`、本文は整形表示・添付・編集/削除ボタン）→編集（`/ideas/:id/edit`）。登録・保存の後の移動先もナレッジと同じ（登録→詳細、更新→編集）。全体検索の結果は詳細へ行く。
 - **チャットのURLリンク**（2026-10-30）: 本文のhttp/httpsのURLは、`public/js/chat.js`の`textWithLinks`がリンクにして、別タブで開く（`target=_blank`・`noopener noreferrer`。文字はtextノードで入れるのでHTMLにならず、文末の句読点・閉じかっこはリンクに含めない）。
+- **タスク詳細のリンク**（2026-10-30）: コメント・変更履歴の本文は`linkify`でURLをリンクにして別タブで開く。概要は編集欄（textarea）なので、その下に「概要のリンク」として`extractUrls`で拾ったURLの一覧を出す（保存したあとの内容から）。
 - **カテゴリの色分け**: 外注先リスト(`lib/vendorCategories.js`)・ナレッジ共有
   (`lib/knowledgeCategories.js`)は固定カテゴリ一覧+色のペア定義を持ち、
   `colorForCategory()`でバッジ色を決める。アイディア

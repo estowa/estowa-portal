@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { linkify } = require('../lib/linkify');
+const { linkify, extractUrls } = require('../lib/linkify');
 
 test('URLは、別タブで開くリンクになる', () => {
   const html = linkify('資料はこちら https://example.com/a?b=1 です');
@@ -25,4 +25,15 @@ test('HTMLタグや危険な文字は、リンクにも文字にもならない'
 test('URLがない本文や空の本文はそのまま', () => {
   assert.strictEqual(linkify('こんにちは'), 'こんにちは');
   assert.strictEqual(linkify(null), '');
+});
+
+test('extractUrls: URLを出てきた順に、重複なし・句読点なしで返す', () => {
+  const { extractUrls } = require('../lib/linkify');
+  assert.deepStrictEqual(
+    extractUrls('資料 https://a.example/x、https://b.example/y。 もう一度 https://a.example/x (https://c.example/z)'),
+    ['https://a.example/x', 'https://b.example/y', 'https://c.example/z']
+  );
+  assert.deepStrictEqual(extractUrls(''), []);
+  assert.deepStrictEqual(extractUrls(null), []);
+  assert.deepStrictEqual(extractUrls('javascript:alert(1)'), []);
 });

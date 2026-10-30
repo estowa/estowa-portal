@@ -24,6 +24,15 @@
     <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:2px;">概要</label>
     <textarea name="description" rows="5" placeholder="タスクの詳細・背景・メモなど"
       style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; resize:vertical;"><%= task.description || '' %></textarea>
+    <% const descUrls = extractUrls(task.description); %>
+    <% if (descUrls.length > 0) { %>
+      <div style="font-size:13px; margin:-4px 0 10px;">
+        <span style="color:var(--text-muted);">概要のリンク（別タブで開きます）</span>
+        <% descUrls.forEach(u => { %>
+          <div><a href="<%= u %>" target="_blank" rel="noopener noreferrer" class="body-link"><%= u %></a></div>
+        <% }) %>
+      </div>
+    <% } %>
 
     <label style="font-size:13px; color:var(--text-muted); display:block; margin-bottom:2px;">ステータス</label>
     <select name="status" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:8px;">
@@ -84,7 +93,7 @@
             </div>
           </div>
           <% if (item.body) { %>
-            <div class="timeline-item-body"><%= item.body %></div>
+            <div class="timeline-item-body"><%- linkify(item.body) %></div>
           <% } %>
           <% if (item.attachments.length > 0) { %>
             <div class="attachment-grid">
