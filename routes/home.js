@@ -41,12 +41,10 @@ router.get('/', requireLogin, (req, res) => {
     )
     .get(user.user_id).cnt;
 
-  // サイト保守で確認が必要なサイトの数（要対応・注意）。取れなくてもホームは表示する
+  // サイト保守で確認が必要なサイトの数（要対応・注意。「応答が遅い」だけのサイトは数えない）。取れなくてもホームは表示する
   let siteCheckCount = 0;
   try {
-    siteCheckCount = maintenanceStore
-      .overview(db, nowJstDateStr())
-      .filter((r) => r.status.level === 'urgent' || r.status.level === 'warn').length;
+    siteCheckCount = maintenanceStore.countNeedsCheck(maintenanceStore.overview(db, nowJstDateStr()));
   } catch (e) {
     console.error('[ホーム] サイト確認の件数を数えられませんでした:', e.message);
   }

@@ -146,3 +146,18 @@ test('【レビュー指摘I-2】証明書の期限は、最後に取れた値�
   assert.ok(row.status.reasons.some((r) => r.code === 'tls'));
   assert.ok(!row.status.reasons.some((r) => r.code === 'down'));
 });
+
+test('countNeedsCheck: 要対応・注意を数え、「応答が遅い」だけのサイトは数えない', () => {
+  const store = require('../lib/maintenanceStore');
+  const row = (level, ...codes) => ({ status: { level, reasons: codes.map((code) => ({ code })) } });
+  const rows = [
+    row('ok'),
+    row('unknown'),
+    row('urgent', 'down'),
+    row('warn', 'slow'),
+    row('warn', 'slow', 'domain'),
+    row('warn', 'pc_backup_failed'),
+  ];
+  assert.strictEqual(store.countNeedsCheck(rows), 3);
+  assert.strictEqual(store.countNeedsCheck([]), 0);
+});
