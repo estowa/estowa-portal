@@ -21,8 +21,8 @@ const STATUS_DEFS = [
   ['todo', '未着手'],
   ['doing', '進行中'],
   ['internal_check', '社内確認'],
-  ['client_check', 'クライアント確認'],
   ['fix', '修正対応'],
+  ['client_check', 'クライアント確認'],
   ['done', '完了'],
 ];
 const STATUSES = STATUS_DEFS.map(([key]) => key);
